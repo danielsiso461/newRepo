@@ -1,0 +1,13 @@
+CLIENT
+	-connect UI to logic
+	-create messages from UI interactions
+	-FOR update we need to get ordernumber
+	-receive from server!!
+	-add ui page for orders
+
+SERVER
+	-ui
+	-get user data
+
+COMMON
+	-more message types
