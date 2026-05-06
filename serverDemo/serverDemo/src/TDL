@@ -8,6 +8,7 @@ CLIENT
 SERVER
 	-ui
 	-get user data
+	-add closing the DB
 
 COMMON
 	-more message types
