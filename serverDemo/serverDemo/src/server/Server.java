@@ -14,7 +14,7 @@ public class Server extends AbstractServer {
 	   * The default port to listen on.
 	   */
 	  final public static int DEFAULT_PORT = 5555;
-	  OrderConnection oc;
+	  private OrderConnection oc;
 	  
 	 //Constructors ****************************************************
 	  
@@ -87,7 +87,29 @@ public class Server extends AbstractServer {
 		  }
 	  }
 
-	    
+	  //server connection info addition
+      @Override
+      protected void clientConnected(ConnectionToClient client) {
+          String hostName = client.getInetAddress().getHostName();
+          String ipAddress = client.getInetAddress().getHostAddress();
+          boolean connected = client.isAlive();
+
+          System.out.println("===== Connected Client Info =====");
+          System.out.println("Host: " + hostName);
+          System.out.println("IP: " + ipAddress);
+          System.out.println("Status: " + (connected ? "Connected" : "Disconnected"));
+          System.out.println("=================================");
+      }
+      
+      public void closeDBConnection() {
+    	  try {
+			oc.close();
+		  } catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		  }
+      }
+	  
 	  /**
 	   * This method overrides the one in the superclass.  Called
 	   * when the server starts listening for connections.
@@ -106,6 +128,7 @@ public class Server extends AbstractServer {
 	  {
 	    System.out.println
 	      ("Server has stopped listening for connections.");
+	    closeDBConnection();
 	  }
 	  
 	  //Class methods ***************************************************

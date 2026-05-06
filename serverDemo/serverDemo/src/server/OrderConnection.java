@@ -1,7 +1,5 @@
 package server;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,29 +9,29 @@ import java.util.List;
 import common.*;
 
 
-public class OrderConnection {
-	private Connection conn;
+public class OrderConnection extends AbstractDBConnection {
+	private final String 
+					ORDER_NUMBER = "order_number",
+					ORDER_DATE = "order_date",
+					VISITOR_NUMBER = "number_of_visitors",
+					USER_ID = "subscriber_id",
+					PLACEMENT_DATE = "date_of_placing_order";
 	
 	public OrderConnection() {
-		try 
-	    {
-	        // Establish connection to MySQL database
-	        conn = DriverManager.getConnection(
-	            "jdbc:mysql://localhost:3306/gonature?"
-	            + "allowLoadLocalInfile=true&serverTimezone=Asia/Jerusalem&useSSL=false",
-	            "root",
-	            "Aa123456"
-	        );
-	    } catch (SQLException ex) 
-	    {
-	        // Handle SQL errors and print details
-	        System.out.println("SQLException: " + ex.getMessage());
-	        System.out.println("SQLState: " + ex.getSQLState());
-	        System.out.println("VendorError: " + ex.getErrorCode());
-	    }
+		super();
+		try {
+			this.connect();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public static void main(String[] args) 
+	public String getTableName() {
+		return ConstantsDBTableNames.ORDER;
+	}
+	
+	/*public static void main(String[] args) 
 	{
 	    try 
 	    {
@@ -65,10 +63,31 @@ public class OrderConnection {
 	        System.out.println("SQLState: " + ex.getSQLState());
 	        System.out.println("VendorError: " + ex.getErrorCode());
 	    }
-	}
+	}*/
 	
 	public void updateOrder(UpdateMessage um) throws SQLException {
-	    StringBuilder sql = new StringBuilder("UPDATE `order` SET ");
+		List<Object> newValues = new ArrayList<>(), keyValues = new ArrayList<>();
+		List<String> columnNames = new ArrayList<>(), keyColumns = new ArrayList<>();
+		
+		if (um.getUpdateDate() != null) {
+			columnNames.add(ORDER_DATE);
+	        newValues.add(java.sql.Date.valueOf(um.getUpdateDate()));
+	    }
+
+	    if (um.getNumberOfVisitors() != 0) {
+	    	columnNames.add(VISITOR_NUMBER);
+	        newValues.add(um.getNumberOfVisitors());
+	    }
+	    
+	    keyColumns.add(ORDER_NUMBER);
+        keyValues.add(um.getOrderNumber());
+	    
+		updateFields(columnNames.toArray(new String[columnNames.size()]), newValues,
+				keyColumns.toArray(new String[keyColumns.size()]), keyValues);
+	}
+	
+	/*public void updateOrder(UpdateMessage um) throws SQLException {
+	    StringBuilder sql = new StringBuilder("UPDATE `" + getTableName() + "` SET ");
 	    List<Object> params = new ArrayList<>();
 
 	    if (um.getUpdateDate() != null) {
@@ -104,7 +123,7 @@ public class OrderConnection {
 	    }
 
 	    ps.close();
-	}
+	}*/
 
 	/*public void updateOrder_date(UpdateMessage um) throws SQLException {
 	    // SQL query to update order date by order number
@@ -150,9 +169,40 @@ public class OrderConnection {
 	    pstmt.close();
 	}*/
 	
-	public List<OrderRow> getUserOrders(Message m) throws SQLException {   
+	public List<OrderRow> getUserOrders(Message m) throws SQLException { 
+		String s = selectByFields(new String[] {"*"}, new String[] {USER_ID});
+		if(s == null)
+			return null;
+		
+		PreparedStatement pstmt = conn.prepareStatement(s);
+        
+		pstmt.setInt(1, Integer.parseInt((String)m.getData()));
+        
+		// Execute update and get number of affected rows
+	    ResultSet rs = pstmt.executeQuery();
+	    
+	    List<OrderRow> l = new ArrayList<>();
+	    while (rs.next()) {
+	        l.add(new OrderRow(
+	        		rs.getInt("order_number"), 
+	        		rs.getDate("order_date").toLocalDate(), 
+	        		rs.getInt("number_of_visitors"),
+	        		rs.getInt("confirmation_code"),
+	        		rs.getInt("subscriber_id"),
+	        		rs.getDate("date_of_placing_order").toLocalDate()
+	        		));
+	    }
+	    
+	    rs.close();
+	    pstmt.close();
+	    
+	    
+	    return l;
+	}
+	
+	public List<OrderRow> OLDgetUserOrders(Message m) throws SQLException {   
 	    // SQL query to update number of visitors by order number
-	    String sql = "SELECT * FROM `order` WHERE subscriber_id=?";
+	    String sql = "SELECT * FROM `" + getTableName() + "` WHERE subscriber_id=?";
 	    PreparedStatement pstmt = conn.prepareStatement(sql);
 	    
 	    // Set parameters for prepared statement
@@ -172,13 +222,15 @@ public class OrderConnection {
 	        		rs.getDate("date_of_placing_order").toLocalDate()
 	        		));
 	    }
-	    pstmt.close();
+	    
 	    rs.close();
+	    pstmt.close();
+	    
 	    
 	    return l;
 	}
 	
-	// Print all orders from the database
+	/*// Print all orders from the database
 	public static void printOrder(Connection conn) throws SQLException {
 	    
 	    // SQL query to retrieve all rows from 'order' table
@@ -205,9 +257,14 @@ public class OrderConnection {
 	    // Close resources
 	    rs.close();     
 	    pstmt.close();  
-	}
-
-
+	}*/
+	
+	/*public static void main(String[] args) {
+		OrderConnection oc = new OrderConnection();
+		UpdateMessage um = new UpdateMessage(LocalDate.now(), -5, 999);
+		try{oc.updateOrder(um);}
+		catch(Exception e){System.out.println(e.getMessage());};
+	}*/
 }
 
 
