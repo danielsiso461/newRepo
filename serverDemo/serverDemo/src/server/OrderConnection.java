@@ -14,6 +14,7 @@ public class OrderConnection extends AbstractDBConnection {
 					ORDER_NUMBER = "order_number",
 					ORDER_DATE = "order_date",
 					VISITOR_NUMBER = "number_of_visitors",
+					CONF_CODE = "confirmation_code",
 					USER_ID = "subscriber_id",
 					PLACEMENT_DATE = "date_of_placing_order";
 	
@@ -184,12 +185,12 @@ public class OrderConnection extends AbstractDBConnection {
 	    List<OrderRow> l = new ArrayList<>();
 	    while (rs.next()) {
 	        l.add(new OrderRow(
-	        		rs.getInt("order_number"), 
-	        		rs.getDate("order_date").toLocalDate(), 
-	        		rs.getInt("number_of_visitors"),
-	        		rs.getInt("confirmation_code"),
-	        		rs.getInt("subscriber_id"),
-	        		rs.getDate("date_of_placing_order").toLocalDate()
+	        		rs.getInt(ORDER_NUMBER), 
+	        		rs.getDate(ORDER_DATE).toLocalDate(), 
+	        		rs.getInt(VISITOR_NUMBER),
+	        		rs.getInt(CONF_CODE),
+	        		rs.getInt(USER_ID),
+	        		rs.getDate(PLACEMENT_DATE).toLocalDate()
 	        		));
 	    }
 	    

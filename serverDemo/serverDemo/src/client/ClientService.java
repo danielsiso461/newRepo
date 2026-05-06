@@ -93,8 +93,6 @@ public class ClientService implements ChatIF {
 			break;
 		case RETURN_ORDER:
 			List<OrderRow> rows = (List<OrderRow>) m.getData();
-			for(OrderRow r : rows)
-				System.out.println(r.toString());
 			controller.setData(rows);
 			break;
 		default:
