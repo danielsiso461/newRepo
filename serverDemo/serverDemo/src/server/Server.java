@@ -87,7 +87,7 @@ public class Server extends AbstractServer {
 		  }
 	  }
 
-	  //server connection info addition
+	  //server connection info addition11
       @Override
       protected void clientConnected(ConnectionToClient client) {
           String hostName = client.getInetAddress().getHostName();
