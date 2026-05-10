@@ -61,10 +61,18 @@ public class Server extends AbstractServer {
 				  //not in prototype
 				  break;
 			  case UPDATE_ORDER:
+				  Protocol typeRet = Protocol.UPDATE_ORDER_SUCCESS;
 				  UpdateMessage um = (UpdateMessage) m.getData();
 				  try {
 					  oc.updateOrder(um);
 				  } catch(SQLException e) {
+					  typeRet = Protocol.UPDATE_ORDER_FAILURE;
+					  System.out.println(e.getMessage());
+				  }
+				  
+				  try {
+					  client.sendToClient(new Message(m.getData(), typeRet));
+				  } catch(IOException e) {
 					  System.out.println(e.getMessage());
 				  }
 				  break;
@@ -87,7 +95,7 @@ public class Server extends AbstractServer {
 		  }
 	  }
 
-	  //server connection info addition11
+	  //server connection info addition
       @Override
       protected void clientConnected(ConnectionToClient client) {
           String hostName = client.getInetAddress().getHostName();
