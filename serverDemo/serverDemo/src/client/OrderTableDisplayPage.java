@@ -74,7 +74,7 @@ public class OrderTableDisplayPage {
 		Pane root = loader.load(getClass().getResource("/client/OrderUpdatePage.fxml").openStream());
 		OrderUpdatePage OrderUpdatePageController = loader.getController();		
 		
-		
+		addOrderToUpdateWaitingList(selectedRow.getOrderId());
 		// @todo these needs to be on the update page controller
 		// studentFormController.loadStudent(ChatClient.s1);
 		// studentFormController.loadPrevStage((Stage) ((Node)event.getSource()).getScene().getWindow());
