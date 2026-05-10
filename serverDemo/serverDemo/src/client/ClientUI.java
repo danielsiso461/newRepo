@@ -25,7 +25,7 @@ public class ClientUI extends Application {
 		Scene scene = new Scene(root);
 		stage.setScene(scene);
 		stage.setTitle("Order Table");
-		stage.show();
+		stage.show();        
 		
 		// get initial data for table view
 		//client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));

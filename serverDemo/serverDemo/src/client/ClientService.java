@@ -62,6 +62,10 @@ public class ClientService implements ChatIF {
 		client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));
 	}
 	
+	public void requestUpdate(UpdateMessage um) {
+		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
+	}
+	
 	// Instance methods ************************************************
 	
 	/**
@@ -88,15 +92,18 @@ public class ClientService implements ChatIF {
 	public void display(Message m) {
 		Protocol type = m.getType();
 		switch (type) {
-		case UPDATE_ORDER:
-			// placeholder
+		case UPDATE_ORDER_SUCCESS:
+			// @todo deal with update success
+			break;
+		case UPDATE_ORDER_FAILURE:
+			// @todo deal with update fail
 			break;
 		case RETURN_ORDER:
 			List<OrderRow> rows = (List<OrderRow>) m.getData();
 			controller.setData(rows);
 			break;
 		default:
-			System.out.println("Error: ClientService display");
+			System.out.println("Error: Server Response Unknown in ClientService display");
 		}
 	}
 

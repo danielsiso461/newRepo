@@ -38,11 +38,12 @@ public class Client extends AbstractClient {
 	 */
 	public void handleMessageFromServer(Object msg) {
 		Message m = (Message) msg;
-		handleResponseFromServer(m);
+		clientUI.display(m);
+		//handleResponseFromServer(m);
 		//clientUI.display(m);
 	}
 	
-	private void handleResponseFromServer(Message m) {
+	/*private void handleResponseFromServer(Message m) {
 		//@todo is this switch case needed?
 		  Protocol type = m.getType();
 		  switch(type) {
@@ -64,7 +65,7 @@ public class Client extends AbstractClient {
 			  default:
 				  System.out.println("Error: sever response unknown");
 		  }
-	  }
+	  }*/
 
 	/**
 	 * This method handles all data coming from the UI

@@ -6,8 +6,10 @@ package client;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import common.OrderRow;
 import javafx.application.Platform;
@@ -15,14 +17,22 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class OrderTableDisplayPage {
 	private ClientService service;
+	private Set<Integer> awaitingUpdate = new HashSet<>();
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
 	private ResourceBundle resources;
@@ -52,10 +62,29 @@ public class OrderTableDisplayPage {
 	private Button updateButton; // Value injected by FXMLLoader
 
 	@FXML
-	void updateButtonClick(ActionEvent event) {
+	void updateButtonClick(ActionEvent event) throws Exception {
 		// get order id from selected row
 		int id = selectedRow.getOrderId();
+		
 		// @todo should launch the order update screen
+		FXMLLoader loader = new FXMLLoader();
+		((Node)event.getSource()).getScene().getWindow().hide(); //hiding primary window
+		
+		Stage primaryStage = new Stage();
+		Pane root = loader.load(getClass().getResource("/client/OrderUpdatePage.fxml").openStream());
+		OrderUpdatePage OrderUpdatePageController = loader.getController();		
+		
+		
+		// @todo these needs to be on the update page controller
+		// studentFormController.loadStudent(ChatClient.s1);
+		// studentFormController.loadPrevStage((Stage) ((Node)event.getSource()).getScene().getWindow());
+	
+		Scene scene = new Scene(root);			
+		scene.getStylesheets().add(getClass().getResource("/client/OrderUpdatePage.fxml").toExternalForm());
+		primaryStage.setTitle("Order Update Page");
+
+		primaryStage.setScene(scene);		
+		primaryStage.show();
 	}
 
 	private void handleRowSelection(ObservableValue<? extends OrderRow> obs, OrderRow oldSelection,
@@ -68,8 +97,11 @@ public class OrderTableDisplayPage {
 	private void onRowSelected(OrderRow row) {
 		selectedRow = row;
 		LocalDate orderDate = row.getOrderDate();
+		// making sure user is trying to update relevant order
 		boolean expired = orderDate.isBefore(LocalDate.now());
-		updateButton.setDisable(expired);
+		// making sure the order is not awaiting update already
+		if(!awaitingUpdate.contains(row.getOrderId()))
+			updateButton.setDisable(expired);
 	}
 
 	@FXML // This method is called by the FXMLLoader when initialization is complete
@@ -94,6 +126,21 @@ public class OrderTableDisplayPage {
 		
 		orderTable.setItems(data);
 		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);
+		
+		// this handles closing the program when pressing the red X button
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				Stage stage = (Stage) orderTable.getScene().getWindow();
+				stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+				    @Override
+				    public void handle(WindowEvent event) {
+				    	Platform.exit();
+				        System.exit(0);
+				    }
+				});
+			}
+		});
 	}
 
 	// DATA FUNCTIONS @todo this is weird need to get a better understanding of it
@@ -106,5 +153,12 @@ public class OrderTableDisplayPage {
 	public void setClientService(ClientService service) {
 		this.service = service;
 	}
-
+	
+	protected void addOrderToUpdateWaitingList(int orderNumber) {
+		awaitingUpdate.add(orderNumber);
+	}
+	
+	protected void removeOrderFromUpdateWaitingList(int orderNumber) {
+		awaitingUpdate.remove(orderNumber);
+	}
 }
