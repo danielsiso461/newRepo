@@ -5,16 +5,24 @@ import java.time.LocalDate;
 
 public class UpdateMessage implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private int orderNumber;
+	private String ordererId;
+	private int orderNumber, orderId;
 	private LocalDate updateDate = null;
 	private Integer numberOfVisitors = 0;
 	
-	public UpdateMessage(LocalDate updateDate, Integer numberOfVisitors, int orderNumber) {
-		this.orderNumber = orderNumber;
+	public UpdateMessage(LocalDate updateDate, Integer numberOfVisitors, 
+			int orderId, int orderNumber, String ordererId) {
+		this.orderId = orderId;
 		if(updateDate != null)
 			this.updateDate = updateDate;
 		if(numberOfVisitors != 0)
 			this.numberOfVisitors = numberOfVisitors;
+		this.orderNumber = orderNumber;
+		this.ordererId = ordererId;
+	}
+	
+	public int getOrderId() {
+		return orderId;
 	}
 	
 	public int getOrderNumber() {
@@ -27,5 +35,9 @@ public class UpdateMessage implements Serializable {
 	
 	public int getNumberOfVisitors() {
 		return numberOfVisitors.intValue();
+	}
+	
+	public String getOrdererId() {
+		return ordererId;
 	}
 }

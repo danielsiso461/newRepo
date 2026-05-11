@@ -47,6 +47,14 @@ public class OrderRow implements Serializable {
 		return placementDate;
 	}
 	
+	public void setOrderDate(LocalDate orderDate) {
+		this.orderDate = orderDate;
+	}
+	
+	public void setNumberOfVisitors(int visitorNumber) {
+		this.visitorNumber = visitorNumber;
+	}
+	
 	public String toString() {
 		return "Order Number: " + orderId + " " + 
 				"# Visitors: " + visitorNumber + " " + 

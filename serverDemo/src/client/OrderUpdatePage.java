@@ -44,8 +44,9 @@ public class OrderUpdatePage {
 
     @FXML // fx:id="OrderUpdatePageVisitorsCheckBox"
     private CheckBox OrderUpdatePageVisitorsCheckBox; // Value injected by FXMLLoader
-
-    private int orderNumber;
+    
+    private String ordererId;
+    private int orderId, orderNumber;
     private LocalDate originalDate;
     private int originalVisitors;
     private ClientService service;
@@ -64,10 +65,13 @@ public class OrderUpdatePage {
         this.prevController = prevController;
     }
 
-    public void setOrderData(int orderNumber, LocalDate orderDate, int numberOfVisitors) {
-        this.orderNumber = orderNumber;
+    public void setOrderData(int orderId, LocalDate orderDate, int numberOfVisitors,
+    		int orderNumber, String ordererId) {
+        this.orderId = orderId;
         this.originalDate = orderDate;
         this.originalVisitors = numberOfVisitors;
+        this.orderNumber = orderNumber;
+        this.ordererId = ordererId;
 
         OrderUpdatePageDatePicker.setValue(orderDate);
         OrderUpdatePageSpinner.getValueFactory().setValue(numberOfVisitors);
@@ -76,15 +80,10 @@ public class OrderUpdatePage {
     @FXML
     void OrderUpdatePageCancelButtonHandler(ActionEvent event) {
         if (prevController != null) {
-            prevController.removeOrderFromUpdateWaitingList(orderNumber);
+            prevController.removeOrderFromUpdateWaitingList(orderId);
         }
-
-        Stage currentStage = (Stage) OrderUpdatePageCancelButton.getScene().getWindow();
-        currentStage.close();
-
-        if (prevStage != null) {
-            prevStage.show();
-        }
+        
+        returnToOrderTable(OrderUpdatePageCancelButton);
     }
 
     @FXML
@@ -106,11 +105,32 @@ public class OrderUpdatePage {
             System.out.println("No fields were selected for update.");
             return;
         }
-
+        
+        if(dateToSend != null && originalDate.equals(dateToSend))
+        	dateToSend = null;
+        if(visitorsToSend > 0 && originalVisitors == visitorsToSend)
+        	visitorsToSend = 0;
+        
+        if(dateToSend == null && visitorsToSend == 0) {
+        	System.out.println("No update occured.");
+            return;
+        }
+        
         UpdateMessage um =
-                new UpdateMessage(dateToSend, visitorsToSend, orderNumber);
+                new UpdateMessage(dateToSend, visitorsToSend, 
+                		orderId, orderNumber, ordererId);
 
         service.requestUpdate(um);
+        returnToOrderTable(OrderUpdatePageUpdateButton);
+    }
+    
+    void returnToOrderTable(Button btn) {
+    	Stage currentStage = (Stage) btn.getScene().getWindow();
+        currentStage.close();
+
+        if (prevStage != null) {
+            prevStage.show();
+        }
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -122,7 +142,7 @@ public class OrderUpdatePage {
         assert OrderUpdatePageDateCheckBox != null : "fx:id=\"OrderUpdatePageDateCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert OrderUpdatePageVisitorsCheckBox != null : "fx:id=\"OrderUpdatePageVisitorsCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
 
-        OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 15, 0));
+        OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15, 1));
 
         OrderUpdatePageDatePicker.setEditable(false);
 
