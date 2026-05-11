@@ -5,25 +5,22 @@ import java.time.LocalDate;
 
 public class OrderRow implements Serializable {
 	private static final long serialVersionUID = 1L;
-	private int orderId, visitorNumber, confCode, userId;
+	private int orderNumber, orderId, visitorNumber, confCode, userId;
 	private LocalDate orderDate, placementDate;
-
-	/*orderNumber
-	orderId
-	orderDate
-	visitorNumber
-	confCode
-	userId
-	placementDate*/
 	
-	public OrderRow(int orderId, LocalDate orderDate, int visitorNumber, 
+	public OrderRow(int orderNumber, int orderId, LocalDate orderDate, int visitorNumber, 
 			int confCode, int userId, LocalDate placementDate) {
+		this.orderNumber = orderNumber;
 		this.orderId = orderId;
 		this.orderDate = orderDate;
 		this.visitorNumber = visitorNumber;
 		this.confCode = confCode;
 		this.userId = userId;
 		this.placementDate = placementDate;
+	}
+	
+	public Integer getOrderNumber() {
+		return orderNumber;
 	}
 	
 	public Integer getOrderId() {

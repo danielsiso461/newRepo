@@ -183,8 +183,10 @@ public class OrderConnection extends AbstractDBConnection {
 	    ResultSet rs = pstmt.executeQuery();
 	    
 	    List<OrderRow> l = new ArrayList<>();
+	    int i = 1;
 	    while (rs.next()) {
 	        l.add(new OrderRow(
+	        		i++,
 	        		rs.getInt(ORDER_NUMBER), 
 	        		rs.getDate(ORDER_DATE).toLocalDate(), 
 	        		rs.getInt(VISITOR_NUMBER),
@@ -201,7 +203,7 @@ public class OrderConnection extends AbstractDBConnection {
 	    return l;
 	}
 	
-	public List<OrderRow> OLDgetUserOrders(Message m) throws SQLException {   
+	/*public List<OrderRow> OLDgetUserOrders(Message m) throws SQLException {   
 	    // SQL query to update number of visitors by order number
 	    String sql = "SELECT * FROM `" + getTableName() + "` WHERE subscriber_id=?";
 	    PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -229,7 +231,7 @@ public class OrderConnection extends AbstractDBConnection {
 	    
 	    
 	    return l;
-	}
+	}*/
 	
 	/*// Print all orders from the database
 	public static void printOrder(Connection conn) throws SQLException {

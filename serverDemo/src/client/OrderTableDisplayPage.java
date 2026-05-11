@@ -58,17 +58,15 @@ public class OrderTableDisplayPage implements OrderObserver{
 	private TableColumn<OrderRow, Integer> userId; // Value injected by FXMLLoader
 	@FXML // fx:id="visitorNumber"
 	private TableColumn<OrderRow, Integer> visitorNumber; // Value injected by FXMLLoader
-
+	@FXML // fx:id="orderNumber"
+	private TableColumn<OrderRow, Integer> orderNumber; // Value injected by FXMLLoader
+	
 	@FXML // fx:id="updateButton"
 	private Button updateButton; // Value injected by FXMLLoader
 
 	@FXML
 	void updateButtonClick(ActionEvent event) throws Exception {
-		// get order id from selected row
-		int id = selectedRow.getOrderId();
-		
-		// @todo should launch the order update screen
-		//done
+		// launch the order update screen
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/OrderUpdatePage.fxml"));
 		Pane root = loader.load();
 
@@ -76,7 +74,6 @@ public class OrderTableDisplayPage implements OrderObserver{
 
 		addOrderToUpdateWaitingList(selectedRow.getOrderId());
 		
-		// @todo these needs to be on the update page controller
 		OrderUpdatePageController.setClientService(service);
 		OrderUpdatePageController.setOrderData(
 				selectedRow.getOrderId(),
@@ -128,6 +125,7 @@ public class OrderTableDisplayPage implements OrderObserver{
 
 		updateButton.setDisable(true);
 		
+		orderNumber.setCellValueFactory(new PropertyValueFactory<>("orderNumber"));
 		orderId.setCellValueFactory(new PropertyValueFactory<>("orderId"));
 		orderDate.setCellValueFactory(new PropertyValueFactory<>("orderDate"));
 		visitorNumber.setCellValueFactory(new PropertyValueFactory<>("visitorNumber"));
@@ -184,7 +182,6 @@ public class OrderTableDisplayPage implements OrderObserver{
 		if (success) {
 			System.out.println("Order updated successfully.");
 
-			removeOrderFromUpdateWaitingList(updateMessage.getOrderNumber());
 
 			if (service != null) {
 				service.requestOrders();
@@ -192,5 +189,7 @@ public class OrderTableDisplayPage implements OrderObserver{
 		} else {
 			System.out.println("Order update failed.");
 		}
+		// removing order from waiting list
+		removeOrderFromUpdateWaitingList(updateMessage.getOrderNumber());
 	}
 }
