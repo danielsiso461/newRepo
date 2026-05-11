@@ -3,8 +3,13 @@ package client;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
-import common.*;
+import common.ChatIF;
+import common.Message;
+import common.OrderRow;
+import common.Protocol;
+import common.UpdateMessage;
 import javafx.application.Platform;
 
 public class ClientService implements ChatIF {
@@ -33,6 +38,26 @@ public class ClientService implements ChatIF {
 			System.out.println("Error: Can't setup connection!" + " Terminating client.");
 			System.exit(1);
 		}
+		
+		//@todo THIS IS THE INPUT CHECK FOR ID DO NOT DELETE
+		/*Scanner s = new Scanner(System.in);
+		while (true) {
+			System.out.println("Enter ID number: ");
+			id = s.nextLine();
+			// ID should have 9 characters
+			if (id.length() != 9)
+				continue;
+			// check if it's a positive integer
+			try {
+				int val = Integer.parseInt(id);
+				if (val > 0) {
+					break;
+				}
+			} catch (NumberFormatException e) {
+				continue;
+			}
+		}
+		s.close();*/
 	}
 
 	// Observer pattern addition
