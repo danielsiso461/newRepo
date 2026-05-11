@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="var" path="JRE_LIB" rootpath="JRE_SRCROOT" sourcepath="JRE_SRC"/>
+	<classpathentry kind="src" path="fxmlthing/test/src"/>
+	<classpathentry kind="src" path="GoNature/src"/>
+	<classpathentry kind="lib" path="GoNature/lib/mysql-connector-j-9.5.0.jar"/>
+	<classpathentry kind="output" path="GoNature/bin"/>
+</classpath>
