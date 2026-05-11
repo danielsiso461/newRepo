@@ -81,7 +81,7 @@ public class OrderConnection extends AbstractDBConnection {
 	    }
 	    
 	    keyColumns.add(ORDER_NUMBER);
-        keyValues.add(um.getOrderNumber());
+        keyValues.add(um.getOrderId());
 	    
 		updateFields(columnNames.toArray(new String[columnNames.size()]), newValues,
 				keyColumns.toArray(new String[keyColumns.size()]), keyValues);

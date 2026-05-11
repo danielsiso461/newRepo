@@ -78,7 +78,9 @@ public class OrderTableDisplayPage implements OrderObserver{
 		OrderUpdatePageController.setOrderData(
 				selectedRow.getOrderId(),
 				selectedRow.getOrderDate(),
-				selectedRow.getVisitorNumber()
+				selectedRow.getVisitorNumber(),
+				selectedRow.getOrderNumber(),
+				selectedRow.getUserId().toString()
 		);
 
 		Stage prevStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -181,15 +183,18 @@ public class OrderTableDisplayPage implements OrderObserver{
 	public void onUpdateResult(boolean success, UpdateMessage updateMessage) {
 		if (success) {
 			System.out.println("Order updated successfully.");
-
-
-			if (service != null) {
-				service.requestOrders();
-			}
+			
+			// updating order in tableview - update is local, as it was confirmed by server
+			OrderRow updatedRow = data.get(updateMessage.getOrderNumber() - 1);
+			if(updateMessage.getUpdateDate() != null)
+				updatedRow.setOrderDate(updateMessage.getUpdateDate());
+			if(updateMessage.getNumberOfVisitors() > 0)
+				updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
+			data.set(updateMessage.getOrderNumber() - 1, updatedRow);
 		} else {
 			System.out.println("Order update failed.");
 		}
 		// removing order from waiting list
-		removeOrderFromUpdateWaitingList(updateMessage.getOrderNumber());
+		removeOrderFromUpdateWaitingList(updateMessage.getOrderId());
 	}
 }
