@@ -31,7 +31,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-public class OrderTableDisplayPage implements OrderObserver{
+public class OrderTableDisplayPage implements OrderObserver, Runnable {
 	private ClientService service;
 	private Set<Integer> awaitingUpdate = new HashSet<>();
 
@@ -136,25 +136,36 @@ public class OrderTableDisplayPage implements OrderObserver{
 		placementDate.setCellValueFactory(new PropertyValueFactory<>("placementDate"));
 		
 		orderTable.setItems(data);
-		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);
+		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);		
 		
-		// this handles closing the program when pressing the red X button
-		Platform.runLater(new Runnable() {
-			@Override
-			public void run() {
-				Stage stage = (Stage) orderTable.getScene().getWindow();
-				stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-				    @Override
-				    public void handle(WindowEvent event) {
-				    	Platform.exit();
-				        System.exit(0);
-				    }
-				});
-			}
+		Platform.runLater(() -> {run();});
+	}
+	
+	public void handleExit() {
+		Platform.runLater(() -> {
+			Platform.exit();
+	        System.exit(0);
 		});
 	}
-
-	// DATA FUNCTIONS @todo this is weird need to get a better understanding of it
+	
+	@Override
+	public void run() {
+		Stage stage = (Stage) orderTable.getScene().getWindow();
+		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+		    @Override
+		    public void handle(WindowEvent event) {
+		    	event.consume();
+		    	userIssuedDisconnect();
+		    }
+		});
+	}
+	
+	private void userIssuedDisconnect() {
+		service.setUserIssuedDisconnect(true);
+		service.disconnectFromServer();
+	}
+	
+	// DATA FUNCTIONS
 	public void setData(List<OrderRow> rows) {
 		Platform.runLater(() -> {
 			data.setAll(rows);
