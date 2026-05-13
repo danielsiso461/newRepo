@@ -1,10 +1,8 @@
-package server;
-
+package databaseControllers;
+// this class holds table names that exist on the DB
 public final class ConstantsDBTableNames {
 	protected static final String  
 							ORDER = "order";
-	
-	protected static final int DEFAULT_PORT = 5555;
 
 	private ConstantsDBTableNames() {}
 }
