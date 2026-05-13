@@ -1,175 +1,126 @@
 package server;
 
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
 
-import ocsf.server.*;
-import common.*;
+import common.Message;
+import common.Protocol;
+import ocsf.server.AbstractServer;
+import ocsf.server.ConnectionToClient;
+import serverCommon.ServerAndControllerConnection;
+import serverCommon.User;
 
+// this class represents the networking side of the server
 public class Server extends AbstractServer {
-	//Class variables *************************************************
-	  
-	  /**
-	   * The default port to listen on.
-	   */
-	  final public static int DEFAULT_PORT = 5555;
-	  private OrderConnection oc;
-	  
-	 //Constructors ****************************************************
-	  
-	 /**
-	  * Constructs an instance of the echo server.
-	  *
-	   * @param port The port number to connect on.
-	   */
-	  public Server(int port) 
-	  {
-	    super(port);
-	    oc = new OrderConnection();
-	  }
+	ServerAndControllerConnection serverController;
 
-	  
-	  //Instance methods ************************************************
-	  
-	  /**
-	   * This method handles any messages received from the client.
-	   *
-	   * @param msg The message received from the client.
-	   * @param client The connection from which the message originated.
-	   */
-	  public void handleMessageFromClient
-	    (Object msg, ConnectionToClient client)
-	  {
-		    System.out.println(
-		    		"Message received: " + msg + " from " + client);
-		    
-		    Message m = (Message)msg;
-		    handleRequest(m, client);
-	  }
-	  
-	  private void handleRequest(Message m, ConnectionToClient client) {
-		  Protocol type = m.getType();
-		  switch(type) {
-			  case CLIENT_CONNECT:
-				  //placeholder
-				  break;
-			  case CLIENT_DISCONNECT:
-				  //placeholder
-				  break;
-			  case MAKE_ORDER:
-				  //not in prototype
-				  break;
-			  case UPDATE_ORDER:
-				  Protocol typeRet = Protocol.UPDATE_ORDER_SUCCESS;
-				  UpdateMessage um = (UpdateMessage) m.getData();
-				  try {
-					  oc.updateOrder(um);
-				  } catch(SQLException e) {
-					  typeRet = Protocol.UPDATE_ORDER_FAILURE;
-					  System.out.println(e.getMessage());
-				  }
-				  
-				  try {
-					  client.sendToClient(new Message(m.getData(), typeRet));
-				  } catch(IOException e) {
-					  System.out.println(e.getMessage());
-				  }
-				  break;
-			  case RETURN_ORDER:
-				  List<OrderRow> req = null;
-				  try {
-					  req = oc.getUserOrders(m);
-				  } catch(SQLException e) {
-					  System.out.println(e.getMessage());
-				  }
-				  try {
-					  if(req != null)
-						  client.sendToClient(new Message(req, Protocol.RETURN_ORDER));
-				  } catch(IOException e) {
-					  System.out.println(e.getMessage());
-				  }
-				  break;
-			  default:
-				  System.out.println("Error: client request unknown");
-		  }
-	  }
+	// Constructors ****************************************************
 
-	  //server connection info addition
-      @Override
-      protected void clientConnected(ConnectionToClient client) {
-          String hostName = client.getInetAddress().getHostName();
-          String ipAddress = client.getInetAddress().getHostAddress();
-          boolean connected = client.isAlive();
+	/**
+	 * Constructs an instance of the server.
+	 *
+	 * @param port             The port number to connect on.
+	 * @param serverController the logic of the server and the connector to UI
+	 */
+	public Server(int port, ServerAndControllerConnection serverController) {
+		super(port);
+		this.serverController = serverController;
+	}
 
-          System.out.println("===== Connected Client Info =====");
-          System.out.println("Host: " + hostName);
-          System.out.println("IP: " + ipAddress);
-          System.out.println("Status: " + (connected ? "Connected" : "Disconnected"));
-          System.out.println("=================================");
-      }
-      
-      public void closeDBConnection() {
-    	  try {
-			oc.close();
-		  } catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		  }
-      }
-	  
-	  /**
-	   * This method overrides the one in the superclass.  Called
-	   * when the server starts listening for connections.
-	   */
-	  protected void serverStarted()
-	  {
-	    System.out.println
-	      ("Server listening for connections on port " + getPort());
-	  }
-	  
-	  /**
-	   * This method overrides the one in the superclass.  Called
-	   * when the server stops listening for connections.
-	   */
-	  protected void serverStopped()
-	  {
-	    System.out.println
-	      ("Server has stopped listening for connections.");
-	    closeDBConnection();
-	  }
-	  
-	  //Class methods ***************************************************
-	  
-	  /**
-	   * This method is responsible for the creation of 
-	   * the server instance (there is no UI in this phase).
-	   *
-	   * @param args[0] The port number to listen on.  Defaults to 5555 
-	   *          if no argument is entered.
-	   */
-	  public static void main(String[] args) 
-	  {
-	    int port = 0; //Port to listen on
+	// Instance methods ************************************************
 
-	    try
-	    {
-	      port = Integer.parseInt(args[0]); //Get port from command line
-	    }
-	    catch(Throwable t)
-	    {
-	      port = DEFAULT_PORT; //Set port to 5555
-	    }
-		
-	    Server sv = new Server(port);
-	    
-	    try 
-	    {
-	      sv.listen(); //Start listening for connections
-	    } 
-	    catch (Exception ex) 
-	    {
-	      System.out.println("ERROR - Could not listen for clients!");
-	    }
-	  }
+	/**
+	 * This method handles any messages received from the client.
+	 *
+	 * @param msg    The message received from the client.
+	 * @param client The connection from which the message originated.
+	 */
+	public void handleMessageFromClient(Object msg, ConnectionToClient client) {
+		System.out.println("Message received: " + msg + " from " + client);
+		if(msg == null)
+			return;
+		// makes a user instance for a client
+		// if the id bound to the client is a duplicate it disconnects the client
+		// otherwise binds a User instance to the client
+		Message m = (Message) msg;
+		if (m.getType() == Protocol.RETURN_ORDER) {
+			User u = makeUserFromConnectionToClient(client);
+			u.setUserId((String) m.getData());
+			if (!serverController.addUserOnUserConnected(u)) {
+				try {
+					client.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else
+				client.setInfo("User", u);
+		}
+
+		// handling client requests
+		try {
+			Message returnMessage = serverController.handleRequest(m);
+			if (returnMessage != null)
+				client.sendToClient(returnMessage);
+			else
+				System.out.println("Error: request handling failure");
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+		}
+	}
+
+	/**
+	 * This method handles client disconnects
+	 *
+	 * @param client The client disconnecting.
+	 */
+	@Override
+	protected void clientDisconnected(ConnectionToClient client) {
+		User u = (User) client.getInfo("User");
+		serverController.removeUserOnUserDisconnected(u);
+	}
+
+	/**
+	 * This method overrides the one in the superclass. Called when the server
+	 * starts listening for connections.
+	 */
+	protected void serverStarted() {
+		System.out.println("Server listening for connections on port " + getPort());
+	}
+
+	/**
+	 * This method overrides the one in the superclass. Called when the server stops
+	 * listening for connections. it calls the controller to close everything
+	 * running on the server
+	 */
+	protected void serverStopped() {
+		serverController.closeServer();
+		System.out.println("Server has stopped listening for connections.");
+	}
+
+	/**
+	 * This method handles client exceptions here we use it to handle disconnects
+	 * that happened ungracefully
+	 *
+	 * @param client    The client disconnecting.
+	 * @param exception the exception thrown
+	 */
+	@Override
+	protected void clientException(ConnectionToClient client, Throwable exception) {
+		if (exception instanceof java.io.EOFException) {
+			User u = (User) client.getInfo("User");
+			serverController.removeUserOnUserDisconnected(u);
+			return;
+		}
+		exception.printStackTrace();
+	}
+
+	/**
+	 * This method makes a User instance for a given client
+	 *
+	 * @param client The client whose data we save into a User instance.
+	 * @return returns said User instance
+	 */
+	public static User makeUserFromConnectionToClient(ConnectionToClient client) {
+		return new User(client.getInetAddress().getHostName(), client.getInetAddress().getHostAddress(),
+				client.isAlive());
+	}
 }
