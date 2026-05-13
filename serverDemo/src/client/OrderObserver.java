@@ -9,4 +9,6 @@ public interface OrderObserver {
     void onOrdersReceived(List<OrderRow> rows);
 
     void onUpdateResult(boolean success, UpdateMessage updateMessage);
+    
+    void handleExit();
 }

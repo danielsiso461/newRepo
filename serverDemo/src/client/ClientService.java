@@ -19,7 +19,8 @@ public class ClientService implements ChatIF {
 	// The instance of the client that created this ConsoleChat.
 	private Client client;
 	private String id = "907428969";//null
-	
+	private boolean userIssuedDisconnect = false;
+
 	// Observer pattern addition
 	private List<OrderObserver> observers = new ArrayList<>();
 
@@ -95,21 +96,6 @@ public class ClientService implements ChatIF {
 	}
 	
 	// Instance methods ************************************************
-	
-	/**
-	 * This method waits for input from the console. Once it is received, it sends
-	 * it to the client's message handler.
-	 */
-	public void accept() {
-		try {
-			while (true) {
-				//receives from UI - @todo
-				//client.handleMessageFromClientUI(new Message());
-			}
-		} catch (Exception ex) {
-			System.out.println("Unexpected error while reading from user!");
-		}
-	}
 
 	/**
 	 * This method overrides the method in the ChatIF interface. It displays a
@@ -140,15 +126,22 @@ public class ClientService implements ChatIF {
 			}
 		});
 	}
+	
+	public void disconnectFromServer() {
+		client.quit();
+	}
+	
+	public void handleServerIssuedDisconnect() {
+		for (OrderObserver observer : observers) {
+			observer.handleExit();
+		}
+	}
+	
+	public boolean isUserIssuedDisconnect() {
+		return userIssuedDisconnect;
+	}
 
-	// Class methods ***************************************************
-
-	/**
-	 * This method is responsible for the creation of the Client UI.
-	 *
-	 * @param args[0] The host to connect to.
-	 */
-	public static void main(String[] args) {
-
+	public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
+		this.userIssuedDisconnect = userIssuedDisconnect;
 	}
 }

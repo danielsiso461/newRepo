@@ -1,8 +1,10 @@
 package client;
 
-import ocsf.client.*;
-import common.*;
-import java.io.*;
+import java.io.IOException;
+
+import common.Message;
+import javafx.application.Platform;
+import ocsf.client.AbstractClient;
 
 public class Client extends AbstractClient {
 //Instance variables **********************************************
@@ -11,7 +13,7 @@ public class Client extends AbstractClient {
 	 * The interface type variable. It allows the implementation of the display
 	 * method in the client.
 	 */
-	ChatIF clientUI;
+	ClientService clientController;
 
 //Constructors ****************************************************
 
@@ -23,9 +25,9 @@ public class Client extends AbstractClient {
 	 * @param clientUI The interface type variable.
 	 */
 
-	public Client(String host, int port, ChatIF clientUI) throws IOException {
+	public Client(String host, int port, ClientService clientController) throws IOException {
 		super(host, port); // Call the superclass constructor
-		this.clientUI = clientUI;
+		this.clientController = clientController;
 		openConnection();
 	}
 
@@ -38,34 +40,8 @@ public class Client extends AbstractClient {
 	 */
 	public void handleMessageFromServer(Object msg) {
 		Message m = (Message) msg;
-		clientUI.display(m);
-		//handleResponseFromServer(m);
-		//clientUI.display(m);
+		clientController.display(m);
 	}
-	
-	/*private void handleResponseFromServer(Message m) {
-		//@todo is this switch case needed?
-		  Protocol type = m.getType();
-		  switch(type) {
-			  case CLIENT_CONNECT:
-				  //placeholder
-				  break;
-			  case CLIENT_DISCONNECT:
-				  //placeholder
-				  break;
-			  case MAKE_ORDER:
-				  //not in prototype
-				  break;
-			  case UPDATE_ORDER:
-				  //placeholder
-				  break;
-			  case RETURN_ORDER:
-				  clientUI.display(m);
-				  break;
-			  default:
-				  System.out.println("Error: sever response unknown");
-		  }
-	  }*/
 
 	/**
 	 * This method handles all data coming from the UI
@@ -77,9 +53,20 @@ public class Client extends AbstractClient {
 			sendToServer(msg);
 		} catch (IOException e) {
 			System.out.println("err");
-			//clientUI.display("Could not send message to server.  Terminating client.");
 			quit();
 		}
+	}
+	
+	@Override
+	protected void connectionClosed() {
+		if(clientController.isUserIssuedDisconnect()) {
+			Platform.runLater(() -> {
+	            Platform.exit();
+	            System.exit(0);
+	        });
+		}
+		else
+			clientController.handleServerIssuedDisconnect();
 	}
 
 	/**
@@ -89,8 +76,8 @@ public class Client extends AbstractClient {
 		try {
 			closeConnection();
 		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		System.exit(0);
 	}
 }
 //End of ChatClient class

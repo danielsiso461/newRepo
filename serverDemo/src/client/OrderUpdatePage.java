@@ -9,7 +9,9 @@ import java.time.LocalDate;
 import java.util.ResourceBundle;
 
 import common.UpdateMessage;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -18,6 +20,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class OrderUpdatePage {
 
@@ -156,6 +159,20 @@ public class OrderUpdatePage {
                 }
             }
         });
+        
+        // this handles returning to order table when pressing the red X button
+     		Platform.runLater(new Runnable() {
+     			@Override
+     			public void run() {
+     				Stage stage = (Stage) OrderUpdatePageUpdateButton.getScene().getWindow();
+     				stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+     				    @Override
+     				    public void handle(WindowEvent event) {
+     				    	OrderUpdatePageCancelButtonHandler(null);
+     				    }
+     				});
+     			}
+     		});
     }
 
 }
