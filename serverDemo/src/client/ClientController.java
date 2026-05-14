@@ -12,13 +12,17 @@ import common.Protocol;
 import common.UpdateMessage;
 import javafx.application.Platform;
 
-public class ClientService implements ChatIF {
+/*
+ * this class is the controller that connects the client networking side to the UI side
+ * it is also taking care of the logic between the two components
+ */
+public class ClientController implements ChatIF {
 	// Class variables *************************************************
-	
+
 	// Instance variables **********************************************
 	// The instance of the client that created this ConsoleChat.
 	private Client client;
-	private String id = "1";//"907428969";//null
+	private String id = null;
 	private boolean userIssuedDisconnect = false;
 
 	// Observer pattern addition
@@ -27,21 +31,22 @@ public class ClientService implements ChatIF {
 	// Constructors ****************************************************
 
 	/**
-	 * Constructs an instance of the ClientConsole UI.
+	 * Constructs an instance of the ClientController. also get the user ID from
+	 * console
 	 *
 	 * @param host The host to connect to.
 	 * @param port The port to connect on.
 	 */
-	public ClientService(String host, int port) {
+	public ClientController(String host, int port) {
 		try {
 			client = new Client(host, port, this);
 		} catch (IOException exception) {
 			System.out.println("Error: Can't setup connection!" + " Terminating client.");
 			System.exit(1);
 		}
-		
-		//@todo THIS IS THE INPUT CHECK FOR ID DO NOT DELETE
-		/*Scanner s = new Scanner(System.in);
+
+		// input handling making sure the input is a valid ID
+		Scanner s = new Scanner(System.in);
 		while (true) {
 			System.out.println("Enter ID number: ");
 			id = s.nextLine();
@@ -58,50 +63,79 @@ public class ClientService implements ChatIF {
 				continue;
 			}
 		}
-		s.close();*/
+		s.close();
 	}
 
-	// Observer pattern addition
+	/*
+	 * Observer pattern addition
+	 * adding observer to observer list
+	 * 
+	 * @param observer observer to add
+	 */
 	public void addObserver(OrderObserver observer) {
 		if (observer != null && !observers.contains(observer)) {
 			observers.add(observer);
 		}
 	}
 
-	// Observer pattern addition
+	/*
+	 * Observer pattern addition
+	 * removing observer from observer list
+	 * 
+	 * @param observer observer to remove
+	 */
 	public void removeObserver(OrderObserver observer) {
 		observers.remove(observer);
 	}
 
-	// Observer pattern addition
+	/*
+	 * Observer pattern addition
+	 * notifies the observers of the received orders and sent them said orders
+	 * 
+	 * @param rows the received orders
+	 */
 	private void notifyOrdersReceived(List<OrderRow> rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
 		}
 	}
 
-	// Observer pattern addition
+	/*
+	 * Observer pattern addition
+	 * notifies the observers the update request's success
+	 * 
+	 * @param success true if the update succeeded, false otherwise
+	 * @param updateMessage the data of the update
+	 */
 	private void notifyUpdateResult(boolean success, UpdateMessage updateMessage) {
 		for (OrderObserver observer : observers) {
 			observer.onUpdateResult(success, updateMessage);
 		}
 	}
-
+	
+	/*
+	 * sends the server a request for all orders of the user
+	 */
 	public void requestOrders() {
 		client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));
 	}
 	
+	/*
+	 * sends the server a request to update a specific order
+	 * 
+	 * @param um the data to update
+	 */
 	public void requestUpdate(UpdateMessage um) {
 		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
 	}
-	
+
 	// Instance methods ************************************************
 
 	/**
-	 * This method overrides the method in the ChatIF interface. It displays a
-	 * message onto the screen.
+	 * This method overrides the method in the ChatIF interface. 
+	 * it handles updating the UI according to the message received by the server
 	 *
-	 * @param message The string to be displayed.
+	 * @param message the message received from the server
 	 */
 	public void display(Message m) {
 		Protocol type = m.getType();
@@ -125,16 +159,25 @@ public class ClientService implements ChatIF {
 				break;
 
 			default:
-				System.out.println("Error: Server Response Unknown in ClientService display");
+				System.out.println("Error: Server Response Unknown in "
+						+ "ClientController display");
 			}
 		});
 	}
 	
+	/*
+	 * this method handles clean disconnect from the server
+	 * when disconnect is issued by the user
+	 */
 	public void disconnectFromServer() {
 		client.handleMessageFromClientUI(new Message(null, Protocol.CLIENT_DISCONNECT_USER));
 		client.quit();
 	}
 	
+	/*
+	 * this method handles clean disconnect from the server
+	 * when disconnect is issued by the server
+	 */
 	public void handleServerIssuedDisconnect() {
 		for (OrderObserver observer : observers) {
 			observer.handleExit();
