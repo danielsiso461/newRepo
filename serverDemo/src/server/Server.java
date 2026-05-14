@@ -50,7 +50,8 @@ public class Server extends AbstractServer {
 					client.close();
 				} catch (IOException e) {
 					e.printStackTrace();
-				}
+				} 
+				return;
 			} else
 				client.setInfo("User", u);
 		}
