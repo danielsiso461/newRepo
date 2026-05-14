@@ -16,7 +16,7 @@ import javafx.stage.WindowEvent;
 import serverCommon.User;
 import serverController.ServerController;
 // this class is the UI controller for the server
-public class ClientConnectionTableController implements serverCommon.UserObserver {
+public class ClientConnectionTableController {
 	ServerController serverController;
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
@@ -72,7 +72,6 @@ public class ClientConnectionTableController implements serverCommon.UserObserve
 				stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
 					@Override
 					public void handle(WindowEvent event) {
-						System.out.println("should close the server properly and exit");
 						serverController.closeServer();
 						Platform.exit();
 						System.exit(0);
@@ -87,7 +86,6 @@ public class ClientConnectionTableController implements serverCommon.UserObserve
 	 * 
 	 * @param u the user to add
 	 */
-	@Override
 	public void onUserConnected(User u) {
 		Platform.runLater(() -> {
 			data.add(u);
@@ -99,7 +97,6 @@ public class ClientConnectionTableController implements serverCommon.UserObserve
 	 * 
 	 * @param u the user to update
 	 */
-	@Override
 	public void onUserDisconnected(User u) {
 		Platform.runLater(() -> {
 			data.set(u.getUserNumber() - 1, u);

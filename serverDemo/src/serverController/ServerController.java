@@ -1,5 +1,6 @@
 package serverController;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
@@ -133,8 +134,16 @@ public class ServerController implements ServerAndControllerConnection {
 	 */
 	@Override
 	public void closeServer() {
-		closeDBConnection();
-		// @todo close server and disconnect users
+		server.stopListening();
+		server.sendToAllClients(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
+		try {
+			server.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		finally {
+			closeDBConnection();
+		}
 	}
 
 }
