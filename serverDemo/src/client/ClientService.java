@@ -18,7 +18,7 @@ public class ClientService implements ChatIF {
 	// Instance variables **********************************************
 	// The instance of the client that created this ConsoleChat.
 	private Client client;
-	private String id = "907428969";//null
+	private String id = "1";//"907428969";//null
 	private boolean userIssuedDisconnect = false;
 
 	// Observer pattern addition
@@ -108,6 +108,9 @@ public class ClientService implements ChatIF {
 
 		Platform.runLater(() -> {
 			switch (type) {
+			case CLIENT_DISCONNECT_SERVER:
+				handleServerIssuedDisconnect();
+				break;
 			case UPDATE_ORDER_SUCCESS:
 				notifyUpdateResult(true, (UpdateMessage) m.getData());
 				break;
@@ -128,6 +131,7 @@ public class ClientService implements ChatIF {
 	}
 	
 	public void disconnectFromServer() {
+		client.handleMessageFromClientUI(new Message(null, Protocol.CLIENT_DISCONNECT_USER));
 		client.quit();
 	}
 	
