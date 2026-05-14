@@ -47,6 +47,7 @@ public class Server extends AbstractServer {
 			u.setUserId((String) m.getData());
 			if (!serverController.addUserOnUserConnected(u)) {
 				try {
+					client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
 					client.close();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -55,28 +56,24 @@ public class Server extends AbstractServer {
 			} else
 				client.setInfo("User", u);
 		}
+		
+		// check if the user issued a disconnect
+		if(m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
+			User u = (User) client.getInfo("User");
+			serverController.removeUserOnUserDisconnected(u);
+			return;
+		}	
 
 		// handling client requests
 		try {
 			Message returnMessage = serverController.handleRequest(m);
-			if (returnMessage != null)
+			if(returnMessage != null)
 				client.sendToClient(returnMessage);
 			else
 				System.out.println("Error: request handling failure");
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 		}
-	}
-
-	/**
-	 * This method handles client disconnects
-	 *
-	 * @param client The client disconnecting.
-	 */
-	@Override
-	protected void clientDisconnected(ConnectionToClient client) {
-		User u = (User) client.getInfo("User");
-		serverController.removeUserOnUserDisconnected(u);
 	}
 
 	/**
@@ -95,23 +92,6 @@ public class Server extends AbstractServer {
 	protected void serverStopped() {
 		serverController.closeServer();
 		System.out.println("Server has stopped listening for connections.");
-	}
-
-	/**
-	 * This method handles client exceptions here we use it to handle disconnects
-	 * that happened ungracefully
-	 *
-	 * @param client    The client disconnecting.
-	 * @param exception the exception thrown
-	 */
-	@Override
-	protected void clientException(ConnectionToClient client, Throwable exception) {
-		if (exception instanceof java.io.EOFException) {
-			User u = (User) client.getInfo("User");
-			serverController.removeUserOnUserDisconnected(u);
-			return;
-		}
-		exception.printStackTrace();
 	}
 
 	/**

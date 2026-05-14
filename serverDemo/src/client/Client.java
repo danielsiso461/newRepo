@@ -5,6 +5,7 @@ import java.io.IOException;
 import common.Message;
 import javafx.application.Platform;
 import ocsf.client.AbstractClient;
+import serverCommon.User;
 
 public class Client extends AbstractClient {
 //Instance variables **********************************************
@@ -65,8 +66,6 @@ public class Client extends AbstractClient {
 	            System.exit(0);
 	        });
 		}
-		else
-			clientController.handleServerIssuedDisconnect();
 	}
 
 	/**

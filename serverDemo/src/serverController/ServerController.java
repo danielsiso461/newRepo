@@ -87,6 +87,8 @@ public class ServerController implements ServerAndControllerConnection {
 	public Message handleRequest(Message m) {
 		Protocol type = m.getType();
 		switch (type) {
+		case CLIENT_DISCONNECT_USER:
+			return m;
 		case UPDATE_ORDER:
 			Protocol typeRet = Protocol.UPDATE_ORDER_SUCCESS;
 			UpdateMessage um = (UpdateMessage) m.getData();
@@ -105,7 +107,7 @@ public class ServerController implements ServerAndControllerConnection {
 			} catch (SQLException e) {
 				System.out.println(e.getMessage());
 			}
-
+			
 			if (req != null)
 				return new Message(req, Protocol.RETURN_ORDER);
 			break;
