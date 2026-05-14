@@ -2,7 +2,10 @@ package common;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-
+/*
+ * this class represents a row of the order DB
+ * we hold the order information and the number of the order in the used query
+ */
 public class OrderRow implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int orderNumber, orderId, visitorNumber, confCode, userId;
@@ -46,11 +49,15 @@ public class OrderRow implements Serializable {
 	public LocalDate getPlacementDate() {
 		return placementDate;
 	}
-	
+	/*
+	 * this function is used in case of updates
+	 */
 	public void setOrderDate(LocalDate orderDate) {
 		this.orderDate = orderDate;
 	}
-	
+	/*
+	 * this function is used in case of updates
+	 */
 	public void setNumberOfVisitors(int visitorNumber) {
 		this.visitorNumber = visitorNumber;
 	}
