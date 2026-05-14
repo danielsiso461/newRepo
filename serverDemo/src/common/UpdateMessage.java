@@ -2,7 +2,11 @@ package common;
 
 import java.io.Serializable;
 import java.time.LocalDate;
-
+/*
+ * this class represents the data in a <Message> class when the
+ * requests and replies are regarding updating an order
+ * we also hold the orderNumber relevant to the user
+ */
 public class UpdateMessage implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private String ordererId;
