@@ -5,7 +5,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
+// this class launches the client application
 public class ClientUI extends Application {
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -15,36 +15,25 @@ public class ClientUI extends Application {
 		
 		// get controller
 		OrderTableDisplayPage controller = loader.getController();
+		// establish connection between UI controller and client controller
+		ClientController clientController = new ClientController(ConstantsUI.DEFAULT_HOST, ConstantsUI.DEFAULT_PORT);
+		controller.setClientController(clientController);
 		
-		ClientService service = new ClientService(ConstantsUI.DEFAULT_HOST, ConstantsUI.DEFAULT_PORT);
-		controller.setClientService(service);
-		service.requestOrders();
+		// get the orders of the user and load them into the order table
+		clientController.requestOrders();
 		
 		// show UI
 		Scene scene = new Scene(root);
 		stage.setScene(scene);
 		stage.setTitle("Order Table");
 		stage.show();        
-		
-		// get initial data for table view
-		//client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));
 	}
-
-	// Constructors ****************************************************
 	
 	public ClientUI() {
 		// for javafx
 	}
-	
-	// Class methods ***************************************************
 
-	/**
-	 * This method is responsible for the creation of the Client UI.
-	 *
-	 * @param args[0] The host to connect to.
-	 */
 	public static void main(String[] args) {
 		launch(args);
 	}
 }
-//907428969

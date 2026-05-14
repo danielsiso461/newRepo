@@ -52,22 +52,46 @@ public class OrderUpdatePage {
     private int orderId, orderNumber;
     private LocalDate originalDate;
     private int originalVisitors;
-    private ClientService service;
+    private ClientController clientController;
     private Stage prevStage;
     private OrderTableDisplayPage prevController;
-
-    public void setClientService(ClientService service) {
-        this.service = service;
+    
+    /*
+     * setter that sets the ClientController on the UI side
+     * 
+     * @param controller the ClientController
+     */
+    public void setClientController(ClientController controller) {
+        this.clientController = controller;
     }
     
-    public void loadPrevStage(Stage prevStage) {
+    /*
+     * setter that sets the previous stage, 
+     * used for when the update is done to load the order table again
+     * 
+     * @param prevStage the previous stage
+     */
+    public void setPrevStage(Stage prevStage) {
         this.prevStage = prevStage;
     }
-
-    public void loadPrevController(OrderTableDisplayPage prevController) {
+    /*
+     * setter that sets the previous UI page's controller, 
+     * used for when the update is done to load the order table again
+     * 
+     * @param prevController the previous stage's controller
+     */
+    public void setPrevController(OrderTableDisplayPage prevController) {
         this.prevController = prevController;
     }
-
+    /*
+     * this method sets up the update page and relevant order data
+     * 
+     * @param orderId 			the ID of the order
+     * @param orderDate 		the date of the order
+     * @param numberOfVisitors	the number of visitors of the order
+     * @param orderNumber		the number of the order in the order table of the user
+     * @param ordererId 		the ID of the user
+     */
     public void setOrderData(int orderId, LocalDate orderDate, int numberOfVisitors,
     		int orderNumber, String ordererId) {
         this.orderId = orderId;
@@ -79,7 +103,12 @@ public class OrderUpdatePage {
         OrderUpdatePageDatePicker.setValue(orderDate);
         OrderUpdatePageSpinner.getValueFactory().setValue(numberOfVisitors);
     }
-
+    
+    /*
+     * this function handles pressing the cancel button
+     * 
+     * @param event		the event of pressing the cancel button
+     */
     @FXML
     void OrderUpdatePageCancelButtonHandler(ActionEvent event) {
         if (prevController != null) {
@@ -88,7 +117,12 @@ public class OrderUpdatePage {
         
         returnToOrderTable(OrderUpdatePageCancelButton);
     }
-
+    
+    /*
+     * this function handles pressing the update button
+     * 
+     * @param event		the event of pressing the update button
+     */
     @FXML
     void OrderUpdatePageUpdateButtonHandler(ActionEvent event) {
     	//need to check if the date wasnt changed then spinner needs to change
@@ -109,13 +143,14 @@ public class OrderUpdatePage {
             return;
         }
         
+        // check an actual update occurred
         if(dateToSend != null && originalDate.equals(dateToSend))
         	dateToSend = null;
         if(visitorsToSend > 0 && originalVisitors == visitorsToSend)
         	visitorsToSend = 0;
         
         if(dateToSend == null && visitorsToSend == 0) {
-        	System.out.println("No update occured.");
+        	System.out.println("No update occurred.");
             return;
         }
         
@@ -123,10 +158,15 @@ public class OrderUpdatePage {
                 new UpdateMessage(dateToSend, visitorsToSend, 
                 		orderId, orderNumber, ordererId);
 
-        service.requestUpdate(um);
+        clientController.requestUpdate(um);
         returnToOrderTable(OrderUpdatePageUpdateButton);
     }
     
+    /*
+     * this function handles changing the scene to order table
+     * 
+     * @param btn		the button clicked
+     */
     void returnToOrderTable(Button btn) {
     	Stage currentStage = (Stage) btn.getScene().getWindow();
         currentStage.close();
@@ -144,11 +184,13 @@ public class OrderUpdatePage {
         assert OrderUpdatePageUpdateButton != null : "fx:id=\"OrderUpdatePageUpdateButton\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert OrderUpdatePageDateCheckBox != null : "fx:id=\"OrderUpdatePageDateCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert OrderUpdatePageVisitorsCheckBox != null : "fx:id=\"OrderUpdatePageVisitorsCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
-
+        
+        // setting up the spinner
         OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15, 1));
-
+        
+        // setting up the date picker
+        // grays out all dates before the current date, makes the unselectable
         OrderUpdatePageDatePicker.setEditable(false);
-
         OrderUpdatePageDatePicker.setDayCellFactory(picker -> new DateCell() {
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
@@ -161,18 +203,17 @@ public class OrderUpdatePage {
         });
         
         // this handles returning to order table when pressing the red X button
-     		Platform.runLater(new Runnable() {
-     			@Override
-     			public void run() {
-     				Stage stage = (Stage) OrderUpdatePageUpdateButton.getScene().getWindow();
-     				stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-     				    @Override
-     				    public void handle(WindowEvent event) {
-     				    	OrderUpdatePageCancelButtonHandler(null);
-     				    }
-     				});
-     			}
-     		});
+     	Platform.runLater(new Runnable() {
+     		@Override
+     		public void run() {
+     			Stage stage = (Stage) OrderUpdatePageUpdateButton.getScene().getWindow();
+     			stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+     				@Override
+     				public void handle(WindowEvent event) {
+     					OrderUpdatePageCancelButtonHandler(null);
+     				}
+     			});
+     		}
+     	});
     }
-
 }

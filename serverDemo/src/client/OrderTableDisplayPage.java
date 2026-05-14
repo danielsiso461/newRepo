@@ -30,9 +30,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-
+/*
+ * this class is the UI controller for the update page
+ */
 public class OrderTableDisplayPage implements OrderObserver, Runnable {
-	private ClientService service;
+	private ClientController clientController;
 	private Set<Integer> awaitingUpdate = new HashSet<>();
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
@@ -63,7 +65,15 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 	
 	@FXML // fx:id="updateButton"
 	private Button updateButton; // Value injected by FXMLLoader
-
+	
+	/*
+	 * this method handles click the update button
+	 * it loads the update page, 
+	 * puts selected order into a waiting list and 
+	 * hides current screen
+	 * 
+	 * @param event 	the update button click
+	 */
 	@FXML
 	void updateButtonClick(ActionEvent event) throws Exception {
 		// launch the order update screen
@@ -74,7 +84,7 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 
 		addOrderToUpdateWaitingList(selectedRow.getOrderId());
 		
-		OrderUpdatePageController.setClientService(service);
+		OrderUpdatePageController.setClientController(clientController);
 		OrderUpdatePageController.setOrderData(
 				selectedRow.getOrderId(),
 				selectedRow.getOrderDate(),
@@ -86,8 +96,8 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		Stage prevStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 		prevStage.hide();
 
-		OrderUpdatePageController.loadPrevStage(prevStage);
-		OrderUpdatePageController.loadPrevController(this);
+		OrderUpdatePageController.setPrevStage(prevStage);
+		OrderUpdatePageController.setPrevController(this);
 
 		Scene scene = new Scene(root);
 
@@ -96,14 +106,28 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		primaryStage.setScene(scene);
 		primaryStage.show();
 	}
-
-	private void handleRowSelection(ObservableValue<? extends OrderRow> obs, OrderRow oldSelection,
-			OrderRow newSelection) {
+	
+	/*
+	 * this method recognizes a change in selected row and 
+	 * calls the relevant handler for updating
+	 * (some parameters are here to match the javafx contract)
+	 * 
+	 * @param obs				the observable property of the tableView (OrderRow)
+	 * @param oldSelection		the old row selection
+	 * @param newSelection		the newly selected row
+	 */
+	private void handleRowSelection(ObservableValue<? extends OrderRow> obs, 
+			OrderRow oldSelection, OrderRow newSelection) {
 		if (newSelection != null) {
 			onRowSelected(newSelection);
 		}
 	}
-
+	/*
+	 * this method handles updating which row is selected
+	 * and whether the update button should be available for it
+	 * 
+	 * @param row 	the selected row		
+	 */
 	private void onRowSelected(OrderRow row) {
 		selectedRow = row;
 		LocalDate orderDate = row.getOrderDate();
@@ -124,9 +148,11 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		assert updateButton != null : "fx:id=\"updateButton\" was not injected: check your FXML file 'Untitled'.";
 		assert userId != null : "fx:id=\"userId\" was not injected: check your FXML file 'Untitled'.";
 		assert visitorNumber != null : "fx:id=\"visitorNumber\" was not injected: check your FXML file 'Untitled'.";
-
+		
+		// initializing the update button
 		updateButton.setDisable(true);
 		
+		// sets where the table columns get their data from (of the given object) 
 		orderNumber.setCellValueFactory(new PropertyValueFactory<>("orderNumber"));
 		orderId.setCellValueFactory(new PropertyValueFactory<>("orderId"));
 		orderDate.setCellValueFactory(new PropertyValueFactory<>("orderDate"));
@@ -134,13 +160,20 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		confCode.setCellValueFactory(new PropertyValueFactory<>("confCode"));
 		userId.setCellValueFactory(new PropertyValueFactory<>("userId"));
 		placementDate.setCellValueFactory(new PropertyValueFactory<>("placementDate"));
-		
+		// sets the table to get it's data from the ObservableList set up to hold order
+		// data
 		orderTable.setItems(data);
+		// adds listener to row selection
 		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);		
 		
+		// handler for pressing red X button
 		Platform.runLater(() -> {run();});
 	}
 	
+	/* 
+	 * this method handles closing the client program if the server 
+	 * closed the user connection
+	 */
 	public void handleExit() {
 		Platform.runLater(() -> {
 			Platform.exit();
@@ -148,6 +181,10 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		});
 	}
 	
+	/*
+	 * this method handles disconnecting the user and closing the program
+	 * once the user clicked the red X button
+	 */
 	@Override
 	public void run() {
 		Stage stage = (Stage) orderTable.getScene().getWindow();
@@ -159,39 +196,76 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		    }
 		});
 	}
-	
+	/*
+	 * this method disconnects the user from the server
+	 */
 	private void userIssuedDisconnect() {
-		service.setUserIssuedDisconnect(true);
-		service.disconnectFromServer();
+		clientController.setUserIssuedDisconnect(true);
+		clientController.disconnectFromServer();
 	}
 	
-	// DATA FUNCTIONS
+	/*
+	 * this method sets the order data to the ObservableList the tableView is connected to
+	 * 
+	 * @param rows		the order data
+	 */
 	public void setData(List<OrderRow> rows) {
 		Platform.runLater(() -> {
 			data.setAll(rows);
 		});
 	}
-
-	public void setClientService(ClientService service) {
-		this.service = service;
-		this.service.addObserver(this);
+	/*
+	 * this method sets the ClientController on the UI side
+	 * add this UI controller to the ClientController observer List
+	 * 
+	 * @param clientController 		the ClientController
+	 */
+	public void setClientController(ClientController clientController) {
+		this.clientController = clientController;
+		this.clientController.addObserver(this);
 	}
 	
-	protected void addOrderToUpdateWaitingList(int orderNumber) {
+	/*
+	 * this method adds orders to the update waiting list
+	 * 
+	 * @param orderNumber 	the number of the order to add to the waiting list
+	 */
+	private void addOrderToUpdateWaitingList(int orderNumber) {
 		awaitingUpdate.add(orderNumber);
 	}
 	
+	/*
+	 * this method removes orders from the update waiting list
+	 * 
+	 * @param orderNumber 	the number of the order to remove from the waiting list
+	 */
 	protected void removeOrderFromUpdateWaitingList(int orderNumber) {
 		awaitingUpdate.remove(orderNumber);
 	}
 	
+	/*
+	 * this method sets the object holding the orders to the data received from the server
+	 * 
+	 * @param rows 	the order list
+	 */
 	@Override
 	public void onOrdersReceived(List<OrderRow> rows) {
 		setData(rows);
 	}
-
+	
+	/*
+	 * this method handles updating the UI upon reply from 
+	 * the server to requesting an order update
+	 * 
+	 * @param success 			whether the update was successful
+	 * @param updateMessage 	the update request's data
+	 */
 	@Override
 	public void onUpdateResult(boolean success, UpdateMessage updateMessage) {
+		if(updateMessage == null) {
+			System.out.println("Error: invalid data");
+			return;
+		}
 		if (success) {
 			System.out.println("Order updated successfully.");
 			
@@ -203,7 +277,8 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 				updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
 			data.set(updateMessage.getOrderNumber() - 1, updatedRow);
 		} else {
-			System.out.println("Order update failed.");
+			System.out.println("Order update for order#: " + 
+					updateMessage.getOrderNumber() + " failed.");
 		}
 		// removing order from waiting list
 		removeOrderFromUpdateWaitingList(updateMessage.getOrderId());

@@ -1,5 +1,7 @@
 package client;
-
+/*
+ * this class holds constants relevant to the client
+ */
 public final class ConstantsUI {
 	protected static final String 
 			OrderTable = "/client/OrderTableDisplayPage.fxml",

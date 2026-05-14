@@ -6,27 +6,23 @@ import common.Message;
 import javafx.application.Platform;
 import ocsf.client.AbstractClient;
 import serverCommon.User;
-
+/*
+ * this class represents the networking side of the client
+ */
 public class Client extends AbstractClient {
-//Instance variables **********************************************
+	ClientController clientController;
+
+	//Constructors ****************************************************
 
 	/**
-	 * The interface type variable. It allows the implementation of the display
-	 * method in the client.
-	 */
-	ClientService clientController;
-
-//Constructors ****************************************************
-
-	/**
-	 * Constructs an instance of the chat client.
+	 * Constructs an instance of the client.
 	 *
-	 * @param host     The server to connect to.
-	 * @param port     The port number to connect on.
-	 * @param clientUI The interface type variable.
+	 * @param host    			 The server to connect to.
+	 * @param port    			 The port number to connect on.
+	 * @param clientController 	 The controller for the client
 	 */
 
-	public Client(String host, int port, ClientService clientController) throws IOException {
+	public Client(String host, int port, ClientController clientController) throws IOException {
 		super(host, port); // Call the superclass constructor
 		this.clientController = clientController;
 		openConnection();
@@ -46,8 +42,9 @@ public class Client extends AbstractClient {
 
 	/**
 	 * This method handles all data coming from the UI
+	 * and sends it to the server
 	 *
-	 * @param message The message from the UI.
+	 * @param msg The message from the UI.
 	 */
 	public void handleMessageFromClientUI(Message msg) {
 		try {
@@ -58,6 +55,9 @@ public class Client extends AbstractClient {
 		}
 	}
 	
+	/*
+	 * this method handles closing the client when a user quits
+	 */
 	@Override
 	protected void connectionClosed() {
 		if(clientController.isUserIssuedDisconnect()) {
