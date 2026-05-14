@@ -24,6 +24,14 @@ public interface ServerAndControllerConnection {
 	 */
 	public abstract Message handleRequest(Message m);
 
+	/*
+	 * this method presents the connection details of the server
+	 * 
+	 * @param hostName 	the server's hostName
+	 * @param ip		the server's ip
+	 */
+	public abstract void presentServerConnection(String hostName, String ip);
+	
 	/**
 	 * Method that when overriden is used to close the server safely.
 	 */

@@ -1,6 +1,7 @@
 package server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 
 import common.Message;
 import common.Protocol;
@@ -82,6 +83,13 @@ public class Server extends AbstractServer {
 	 */
 	protected void serverStarted() {
 		System.out.println("Server listening for connections on port " + getPort());
+		try {
+			serverController.presentServerConnection(
+					InetAddress.getLocalHost().getHostName(),
+					InetAddress.getLocalHost().getHostAddress());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 
 	/**

@@ -7,6 +7,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import serverController.ServerController;
 // this class is the main for launching server
+@SuppressWarnings("deprecation")
 public class ServerMain extends Application {
 	
 	public ServerMain() {

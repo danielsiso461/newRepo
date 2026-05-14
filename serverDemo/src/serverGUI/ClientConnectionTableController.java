@@ -8,6 +8,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -16,6 +17,7 @@ import javafx.stage.WindowEvent;
 import serverCommon.User;
 import serverController.ServerController;
 // this class is the UI controller for the server
+@SuppressWarnings("deprecation")
 public class ClientConnectionTableController {
 	ServerController serverController;
 
@@ -24,6 +26,12 @@ public class ClientConnectionTableController {
 
 	@FXML // URL location of the FXML file that was given to the FXMLLoader
 	private URL location;
+	
+	@FXML // fx:id="hostNameLabel"
+    private Label hostNameLabel; // Value injected by FXMLLoader
+
+    @FXML // fx:id="ipAddressLabel"
+    private Label ipAddressLabel; // Value injected by FXMLLoader
 
 	@FXML // fx:id="hostName"
 	private TableColumn<User, String> hostName; // Value injected by FXMLLoader
@@ -46,6 +54,8 @@ public class ClientConnectionTableController {
 
 	@FXML // This method is called by the FXMLLoader when initialization is complete
 	void initialize() {
+		assert hostNameLabel != null : "fx:id=\"hostNameLabel\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
+	    assert ipAddressLabel != null : "fx:id=\"ipAddressLabel\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
 		assert hostName != null
 				: "fx:id=\"hostName\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
 		assert status != null : "fx:id=\"status\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
@@ -110,5 +120,15 @@ public class ClientConnectionTableController {
 	 */
 	public void setServerController(ServerController serverController) {
 		this.serverController = serverController;
+	}
+	/*
+	 * this method updates the labels with server data
+	 * 
+	 * @param hostName 	the server's hostName
+	 * @param ip		the server's ip
+	 */
+	public void setLabels(String hostName, String ip) {
+		hostNameLabel.setText(hostName);
+		ipAddressLabel.setText(ip);
 	}
 }

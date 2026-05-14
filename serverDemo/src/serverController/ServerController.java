@@ -37,7 +37,18 @@ public class ServerController implements ServerAndControllerConnection {
 			System.out.println("ERROR - Could not listen for clients!");
 		}
 	}
-
+	
+	/*
+	 * this method presents the connection details of the server
+	 * 
+	 * @param hostName 	the server's hostName
+	 * @param ip		the server's ip
+	 */
+	@Override
+	public void presentServerConnection(String hostName, String ip) {
+		serverGUIController.setLabels(hostName, ip);
+	}
+	
 	/*
 	 * this method adds a user to the set of users on the server if this user is not
 	 * already in the set, it sets the userNumber then it calls the UI handler for
