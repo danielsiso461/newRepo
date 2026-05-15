@@ -20,6 +20,7 @@ import serverGUI.ClientConnectionTableController;
 // the networking part of the server and the UI part of it. 
 // It is also the logic behind it
 public class ServerController implements ServerAndControllerConnection {
+
 	private Server server;
 	private Set<User> users = new HashSet<>();
 	private OrderConnection oc;
@@ -28,8 +29,9 @@ public class ServerController implements ServerAndControllerConnection {
 
 	public ServerController(ClientConnectionTableController serverGUIController) {
 		this.serverGUIController = serverGUIController;
-		server = new Server(serverGUI.ConstantsServerGUI.DEFAULT_PORT, this);
-		oc = new OrderConnection();
+
+		server = Server.getInstance(serverGUI.ConstantsServerGUI.DEFAULT_PORT, this);
+		oc = OrderConnection.getInstance();
 
 		try {
 			server.listen(); // Start listening for connections
@@ -37,7 +39,7 @@ public class ServerController implements ServerAndControllerConnection {
 			System.out.println("ERROR - Could not listen for clients!");
 		}
 	}
-	
+
 	/*
 	 * this method presents the connection details of the server
 	 * 
@@ -48,7 +50,7 @@ public class ServerController implements ServerAndControllerConnection {
 	public void presentServerConnection(String hostName, String ip) {
 		serverGUIController.setLabels(hostName, ip);
 	}
-	
+
 	/*
 	 * this method adds a user to the set of users on the server if this user is not
 	 * already in the set, it sets the userNumber then it calls the UI handler for
@@ -59,10 +61,12 @@ public class ServerController implements ServerAndControllerConnection {
 	@Override
 	public boolean addUserOnUserConnected(User u) {
 		boolean userIdNotConnected = users.add(u);
+
 		if (userIdNotConnected) {
 			u.setUserNumber(allTimeUserCount++);
 			serverGUIController.onUserConnected(u);
 		}
+
 		return userIdNotConnected;
 	}
 
@@ -75,19 +79,24 @@ public class ServerController implements ServerAndControllerConnection {
 	 */
 	@Override
 	public void removeUserOnUserDisconnected(User u) {
-		if (u == null)
+		if (u == null) {
 			return;
+		}
+
 		if (u.getUserNumber() != null) {
 			u.setStatus(false);
 			serverGUIController.onUserDisconnected(u);
 		}
+
 		users.remove(u);
 	}
 
 	private void printUsers(String s) {
 		System.out.println(s);
-		for (User u : users)
+
+		for (User u : users) {
 			System.out.println(u.toString());
+		}
 	}
 
 	/*
@@ -98,12 +107,15 @@ public class ServerController implements ServerAndControllerConnection {
 	@Override
 	public Message handleRequest(Message m) {
 		Protocol type = m.getType();
+
 		switch (type) {
 		case CLIENT_DISCONNECT_USER:
 			return m;
+
 		case UPDATE_ORDER:
 			Protocol typeRet = Protocol.UPDATE_ORDER_SUCCESS;
 			UpdateMessage um = (UpdateMessage) m.getData();
+
 			try {
 				oc.updateOrder(um);
 			} catch (SQLException e) {
@@ -112,20 +124,26 @@ public class ServerController implements ServerAndControllerConnection {
 			}
 
 			return new Message(m.getData(), typeRet);
+
 		case RETURN_ORDER:
 			List<OrderRow> req = null;
+
 			try {
 				req = oc.getUserOrders(m);
 			} catch (SQLException e) {
 				System.out.println(e.getMessage());
 			}
-			
-			if (req != null)
+
+			if (req != null) {
 				return new Message(req, Protocol.RETURN_ORDER);
+			}
+
 			break;
+
 		default:
 			System.out.println("Error: client request unknown");
 		}
+
 		return null;
 	}
 
@@ -145,16 +163,14 @@ public class ServerController implements ServerAndControllerConnection {
 	 */
 	@Override
 	public void closeServer() {
-		server.stopListening();
-		server.sendToAllClients(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
 		try {
+			server.sendToAllClients(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
+			server.stopListening();
 			server.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			closeDBConnection();
 		}
 	}
-
 }

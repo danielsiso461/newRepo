@@ -10,24 +10,47 @@ import ocsf.server.ConnectionToClient;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 
-// this class represents the networking side of the server
-public class Server extends AbstractServer {
-	ServerAndControllerConnection serverController;
+/**
+ * This class represents the networking side of the server.
+ * 
+ * The class is implemented as a Singleton, so only one server instance can exist
+ * during runtime.
+ */
+public final class Server extends AbstractServer {
 
-	// Constructors ****************************************************
+	private static Server instance = null;
+
+	private ServerAndControllerConnection serverController;
 
 	/**
 	 * Constructs an instance of the server.
+	 * 
+	 * The constructor is private because this class is implemented as a Singleton.
 	 *
 	 * @param port             The port number to connect on.
 	 * @param serverController the logic of the server and the connector to UI
 	 */
-	public Server(int port, ServerAndControllerConnection serverController) {
+	private Server(int port, ServerAndControllerConnection serverController) {
 		super(port);
 		this.serverController = serverController;
 	}
 
-	// Instance methods ************************************************
+	/**
+	 * Returns the single instance of the server.
+	 * 
+	 * If the instance does not exist yet, it creates it.
+	 *
+	 * @param port             The port number to connect on.
+	 * @param serverController the logic of the server and the connector to UI
+	 * @return the single Server instance
+	 */
+	public static Server getInstance(int port, ServerAndControllerConnection serverController) {
+		if (instance == null) {
+			instance = new Server(port, serverController);
+		}
+
+		return instance;
+	}
 
 	/**
 	 * This method handles any messages received from the client.
@@ -35,43 +58,52 @@ public class Server extends AbstractServer {
 	 * @param msg    The message received from the client.
 	 * @param client The connection from which the message originated.
 	 */
+	@Override
 	public void handleMessageFromClient(Object msg, ConnectionToClient client) {
 		System.out.println("Message received: " + msg + " from " + client);
-		if(msg == null)
+
+		if (msg == null) {
 			return;
+		}
+
+		Message m = (Message) msg;
+
 		// makes a user instance for a client
 		// if the id bound to the client is a duplicate it disconnects the client
 		// otherwise binds a User instance to the client
-		Message m = (Message) msg;
 		if (m.getType() == Protocol.RETURN_ORDER) {
 			User u = makeUserFromConnectionToClient(client);
 			u.setUserId((String) m.getData());
+
 			if (!serverController.addUserOnUserConnected(u)) {
 				try {
 					client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
 					client.close();
 				} catch (IOException e) {
 					e.printStackTrace();
-				} 
+				}
 				return;
-			} else
+			} else {
 				client.setInfo("User", u);
+			}
 		}
-		
+
 		// check if the user issued a disconnect
-		if(m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
+		if (m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
 			User u = (User) client.getInfo("User");
 			serverController.removeUserOnUserDisconnected(u);
 			return;
-		}	
+		}
 
 		// handling client requests
 		try {
 			Message returnMessage = serverController.handleRequest(m);
-			if(returnMessage != null)
+
+			if (returnMessage != null) {
 				client.sendToClient(returnMessage);
-			else
+			} else {
 				System.out.println("Error: request handling failure");
+			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 		}
@@ -81,29 +113,30 @@ public class Server extends AbstractServer {
 	 * This method overrides the one in the superclass. Called when the server
 	 * starts listening for connections.
 	 */
+	@Override
 	protected void serverStarted() {
 		System.out.println("Server listening for connections on port " + getPort());
+
 		try {
 			serverController.presentServerConnection(
 					InetAddress.getLocalHost().getHostName(),
 					InetAddress.getLocalHost().getHostAddress());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
 	 * This method overrides the one in the superclass. Called when the server stops
-	 * listening for connections. it calls the controller to close everything
-	 * running on the server
+	 * listening for connections.
 	 */
+	@Override
 	protected void serverStopped() {
-		serverController.closeServer();
 		System.out.println("Server has stopped listening for connections.");
 	}
 
 	/**
-	 * This method makes a User instance for a given client
+	 * This method makes a User instance for a given client.
 	 *
 	 * @param client The client whose data we save into a User instance.
 	 * @return returns said User instance
@@ -111,5 +144,13 @@ public class Server extends AbstractServer {
 	public static User makeUserFromConnectionToClient(ConnectionToClient client) {
 		return new User(client.getInetAddress().getHostName(), client.getInetAddress().getHostAddress(),
 				client.isAlive());
+	}
+
+	/**
+	 * Prevents cloning of the Singleton instance.
+	 */
+	@Override
+	protected Object clone() throws CloneNotSupportedException {
+		throw new CloneNotSupportedException();
 	}
 }
