@@ -260,12 +260,7 @@ public class OrderConnection extends AbstractDBConnection {
 	    pstmt.close();  
 	}*/
 	
-	/*public static void main(String[] args) {
-		OrderConnection oc = new OrderConnection();
-		UpdateMessage um = new UpdateMessage(LocalDate.now(), -5, 999);
-		try{oc.updateOrder(um);}
-		catch(Exception e){System.out.println(e.getMessage());};
-	}*/
+
 }
 
 
