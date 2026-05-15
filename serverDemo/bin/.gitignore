@@ -1,5 +1,4 @@
-/TDL
 /client/
 /common/
-/ocsf/
-/server/
+/databaseControllers/
+/serverGUI/
