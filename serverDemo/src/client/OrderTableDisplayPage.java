@@ -5,7 +5,6 @@ package client;
  */
 
 import java.net.URL;
-import common.UpdateMessage;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -13,6 +12,7 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 import common.OrderRow;
+import common.UpdateMessage;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -24,15 +24,18 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 /*
  * this class is the UI controller for the update page
  */
+@SuppressWarnings("deprecation")
 public class OrderTableDisplayPage implements OrderObserver, Runnable {
 	private ClientController clientController;
 	private Set<Integer> awaitingUpdate = new HashSet<>();
@@ -63,6 +66,9 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 	@FXML // fx:id="orderNumber"
 	private TableColumn<OrderRow, Integer> orderNumber; // Value injected by FXMLLoader
 	
+	@FXML // fx:id="notifLabel"
+    private Label notifLabel; // Value injected by FXMLLoader
+	
 	@FXML // fx:id="updateButton"
 	private Button updateButton; // Value injected by FXMLLoader
 	
@@ -77,7 +83,7 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 	@FXML
 	void updateButtonClick(ActionEvent event) throws Exception {
 		// launch the order update screen
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/OrderUpdatePage.fxml"));
+		FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.updatePage));
 		Pane root = loader.load();
 
 		OrderUpdatePage OrderUpdatePageController = loader.getController();
@@ -148,6 +154,7 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 		assert updateButton != null : "fx:id=\"updateButton\" was not injected: check your FXML file 'Untitled'.";
 		assert userId != null : "fx:id=\"userId\" was not injected: check your FXML file 'Untitled'.";
 		assert visitorNumber != null : "fx:id=\"visitorNumber\" was not injected: check your FXML file 'Untitled'.";
+		assert notifLabel != null : "fx:id=\"notifLabel\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		
 		// initializing the update button
 		updateButton.setDisable(true);
@@ -267,7 +274,9 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 			return;
 		}
 		if (success) {
-			System.out.println("Order updated successfully.");
+			notifLabel.setTextFill(Color.GREEN);
+			notifLabel.setText("Order update for order#:" + 
+					updateMessage.getOrderNumber() + " succeeded.");
 			
 			// updating order in tableview - update is local, as it was confirmed by server
 			OrderRow updatedRow = data.get(updateMessage.getOrderNumber() - 1);
@@ -277,7 +286,8 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 				updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
 			data.set(updateMessage.getOrderNumber() - 1, updatedRow);
 		} else {
-			System.out.println("Order update for order#: " + 
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Order update for order#:" + 
 					updateMessage.getOrderNumber() + " failed.");
 		}
 		// removing order from waiting list

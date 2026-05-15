@@ -5,10 +5,10 @@ import java.io.IOException;
 import common.Message;
 import javafx.application.Platform;
 import ocsf.client.AbstractClient;
-import serverCommon.User;
 /*
  * this class represents the networking side of the client
  */
+@SuppressWarnings("deprecation")
 public class Client extends AbstractClient {
 	ClientController clientController;
 

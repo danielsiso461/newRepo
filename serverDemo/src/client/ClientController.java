@@ -16,6 +16,7 @@ import javafx.application.Platform;
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
  */
+@SuppressWarnings("deprecation")
 public class ClientController implements ChatIF {
 	// Class variables *************************************************
 
@@ -37,33 +38,14 @@ public class ClientController implements ChatIF {
 	 * @param host The host to connect to.
 	 * @param port The port to connect on.
 	 */
-	public ClientController(String host, int port) {
+	public ClientController(String host, int port, String id) {
 		try {
 			client = new Client(host, port, this);
 		} catch (IOException exception) {
 			System.out.println("Error: Can't setup connection!" + " Terminating client.");
 			System.exit(1);
 		}
-
-		// input handling making sure the input is a valid ID
-		Scanner s = new Scanner(System.in);
-		while (true) {
-			System.out.println("Enter ID number: ");
-			id = s.nextLine();
-			// ID should have 9 characters
-			if (id.length() != 9)
-				continue;
-			// check if it's a positive integer
-			try {
-				int val = Integer.parseInt(id);
-				if (val > 0) {
-					break;
-				}
-			} catch (NumberFormatException e) {
-				continue;
-			}
-		}
-		s.close();
+		this.id = id;
 	}
 
 	/*
@@ -154,15 +136,36 @@ public class ClientController implements ChatIF {
 				break;
 
 			case RETURN_ORDER:
-				List<OrderRow> rows = (List<OrderRow>) m.getData();
+				List<OrderRow> rows = parseOrderMessage(m.getData());
+				if(rows == null)
+					break;
 				notifyOrdersReceived(rows);
 				break;
-
 			default:
 				System.out.println("Error: Server Response Unknown in "
 						+ "ClientController display");
 			}
 		});
+	}
+	/*
+	 * this function is used to check if a given object is a list of orders
+	 * and return the order list if so
+	 * 
+	 * @param o 	Object to check
+	 */
+	private List<OrderRow> parseOrderMessage(Object o) {
+		List<OrderRow> rows = new ArrayList<>();
+		if (o instanceof List<?>) {
+			List<?> rawList = (List<?>) o;
+			for(Object row : rawList) {
+				if(row instanceof OrderRow)
+					rows.add((OrderRow) row);
+				else
+					return null;
+			}
+		} else
+			return null;
+		return rows;
 	}
 	
 	/*

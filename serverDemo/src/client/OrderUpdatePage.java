@@ -17,11 +17,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.DateCell;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
+@SuppressWarnings("deprecation")
 public class OrderUpdatePage {
 
     @FXML // ResourceBundle that was given to the FXMLLoader
@@ -47,6 +50,9 @@ public class OrderUpdatePage {
 
     @FXML // fx:id="OrderUpdatePageVisitorsCheckBox"
     private CheckBox OrderUpdatePageVisitorsCheckBox; // Value injected by FXMLLoader
+    
+    @FXML // fx:id="updateLabel"
+    private Label updateLabel; // Value injected by FXMLLoader
     
     private String ordererId;
     private int orderId, orderNumber;
@@ -139,7 +145,8 @@ public class OrderUpdatePage {
 
         if (!OrderUpdatePageDateCheckBox.isSelected() &&
             !OrderUpdatePageVisitorsCheckBox.isSelected()) {
-            System.out.println("No fields were selected for update.");
+        	updateLabel.setTextFill(Color.RED);
+        	updateLabel.setText("No fields were selected for update.");
             return;
         }
         
@@ -150,7 +157,8 @@ public class OrderUpdatePage {
         	visitorsToSend = 0;
         
         if(dateToSend == null && visitorsToSend == 0) {
-        	System.out.println("No update occurred.");
+        	updateLabel.setTextFill(Color.RED);
+        	updateLabel.setText("No update occurred.");
             return;
         }
         
@@ -184,6 +192,7 @@ public class OrderUpdatePage {
         assert OrderUpdatePageUpdateButton != null : "fx:id=\"OrderUpdatePageUpdateButton\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert OrderUpdatePageDateCheckBox != null : "fx:id=\"OrderUpdatePageDateCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert OrderUpdatePageVisitorsCheckBox != null : "fx:id=\"OrderUpdatePageVisitorsCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
+        assert updateLabel != null : "fx:id=\"updateLabel\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         
         // setting up the spinner
         OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15, 1));
