@@ -1,14 +1,3 @@
-CLIENT
-	-connect UI to logic
-	-create messages from UI interactions
-	-FOR update we need to get ordernumber
-	-receive from server!!
-	-add ui page for orders
+send update to id of update requester if they are connected to server! 
 
-SERVER
-	-ui
-	-get user data
-	-add closing the DB
-
-COMMON
-	-more message types
+*implements serializable

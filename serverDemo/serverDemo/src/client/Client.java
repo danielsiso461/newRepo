@@ -90,7 +90,7 @@ public class Client extends AbstractClient {
 			closeConnection();
 		} catch (IOException e) {
 		}
-		System.exit(0);
+		Platform.exit();
 	}
 }
 //End of ChatClient class

@@ -42,6 +42,8 @@ public class Server extends AbstractServer {
 		// makes a user instance for a client
 		// if the id bound to the client is a duplicate it disconnects the client
 		// otherwise binds a User instance to the client
+		if(!(msg instanceof Message))
+			return;
 		Message m = (Message) msg;
 		if (m.getType() == Protocol.RETURN_ORDER) {
 			User u = makeUserFromConnectionToClient(client);

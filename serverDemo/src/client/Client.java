@@ -36,6 +36,8 @@ public class Client extends AbstractClient {
 	 * @param msg The message from the server.
 	 */
 	public void handleMessageFromServer(Object msg) {
+		if(!(msg instanceof Message))
+			return;
 		Message m = (Message) msg;
 		clientController.display(m);
 	}

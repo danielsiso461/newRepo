@@ -1,5 +1,6 @@
 /TDL
-/client/
-/common/
-/ocsf/
+/serverCommon/
+/serverController/
+/serverGUI/
 /server/
+/client/

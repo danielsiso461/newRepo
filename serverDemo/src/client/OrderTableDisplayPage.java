@@ -135,6 +135,7 @@ public class OrderTableDisplayPage implements OrderObserver, Runnable {
 	 * @param row 	the selected row		
 	 */
 	private void onRowSelected(OrderRow row) {
+		updateButton.setDisable(true);
 		selectedRow = row;
 		LocalDate orderDate = row.getOrderDate();
 		// making sure user is trying to update relevant order
