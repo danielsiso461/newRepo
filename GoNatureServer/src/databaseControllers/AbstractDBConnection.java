@@ -19,7 +19,7 @@ public abstract class AbstractDBConnection {
 	// Connection details - SAME for all subclasses
 	private static final String URL = "jdbc:mysql://localhost:3306/gonature?allowLoadLocalInfile=true&serverTimezone=Asia/Jerusalem&useSSL=false";
 	private static final String USER = "root";
-	private static final String PASSWORD = "Aa123456";
+	private static String password = "";
 
 	/**
 	 * Connects to the database.
@@ -27,7 +27,34 @@ public abstract class AbstractDBConnection {
 	 * @throws SQLException if the connection fails
 	 */
 	public void connect() throws SQLException {
-		conn = DriverManager.getConnection(URL, USER, PASSWORD);
+		if (password == null || password.isEmpty()) {
+			throw new SQLException("DB password was not entered.");
+		}
+
+		conn = DriverManager.getConnection(URL, USER, password);
+	}
+	
+	/*
+	 * this function saves the DB password entered by the user
+	 */
+	public static void setPassword(String dbPassword) {
+		password = dbPassword;
+	}
+
+	/*
+	 * this function checks if the entered DB password is correct
+	 * 
+	 * @param dbPassword the password entered by the user
+	 * @return true if the connection succeeds, false otherwise
+	 */
+	public static boolean testConnection(String dbPassword) {
+		try {
+			Connection testConn = DriverManager.getConnection(URL, USER, dbPassword);
+			testConn.close();
+			return true;
+		} catch (SQLException e) {
+			return false;
+		}
 	}
 
 	/**

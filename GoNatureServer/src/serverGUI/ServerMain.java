@@ -5,13 +5,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import serverController.ServerController;
 
 /*
  * this class is the main class for launching the server application
  * 
- * the class loads the server GUI and connects the GUI controller
- * with the server controller
+ * the class loads the DB password GUI first
+ * only after the password is entered, the server table GUI will be opened
  */
 @SuppressWarnings("deprecation")
 public class ServerMain extends Application {
@@ -26,33 +25,24 @@ public class ServerMain extends Application {
 	/*
 	 * this function starts the server GUI application
 	 * 
-	 * loads the FXML file
-	 * creates and connects the controllers
-	 * and displays the main server window
+	 * loads the DB password FXML file
+	 * displays the password window first
+	 * the main server window will be opened later from DBPasswordController
+	 * after the user enters the DB password
 	 * 
 	 * @param stage the primary stage of the application
 	 */
 	@Override
 	public void start(Stage stage) throws Exception {
 
-		// load the FXML file of the table of orders
-		FXMLLoader loader =
-				new FXMLLoader(getClass().getResource(ConstantsServerGUI.USER_TABLE));
-
+		// load the FXML file of the DB password screen
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("/serverGUI/DBPasswordPage.fxml"));
 		Parent root = loader.load();
-
-		// get controllers and connect them
-		ClientConnectionTableController guiController = loader.getController();
-
-		ServerController serverController =
-				new ServerController(guiController);
-
-		guiController.setServerController(serverController);
 
 		// show UI
 		Scene scene = new Scene(root);
 		stage.setScene(scene);
-		stage.setTitle("User Table");
+		stage.setTitle("DB Password");
 		stage.show();
 	}
 
