@@ -3,6 +3,11 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import common.ParkInfo;
+import serverCommon.Park;
 
 /**
  * This class is the DB connector used when working with the park table.
@@ -59,34 +64,169 @@ public class ParkConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method returns all active parks.
+	 * This method checks that the database connection is open.
 	 * 
-	 * Active parks are parks whose is_active value is 1.
-	 * 
-	 * @return a ResultSet containing all active parks
-	 * @throws SQLException if the select query fails
+	 * @throws SQLException if reconnecting to the database fails
 	 */
-	public ResultSet getAllActiveParks() throws SQLException {
-		String sql = "SELECT * FROM park WHERE is_active = 1;";
-
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
+	private void ensureConnection() throws SQLException {
+		if (conn == null || conn.isClosed()) {
+			connect();
+		}
 	}
 
 	/**
-	 * This method returns a park by its park ID.
+	 * This method converts the current row of a ResultSet into a full Park object.
 	 * 
-	 * @param parkId the park ID
-	 * @return a ResultSet containing the park data if the park exists
+	 * @param rs the ResultSet positioned on the current park row
+	 * @return a Park object that represents the current park
+	 * @throws SQLException if reading data from the ResultSet fails
+	 */
+	private Park convertResultSetToPark(ResultSet rs) throws SQLException {
+		return new Park(
+				rs.getInt("park_id"),
+				rs.getString("park_name"),
+				rs.getInt("max_capacity"),
+				rs.getInt("places_for_unplanned_visitors"),
+				rs.getDouble("estimated_visit_duration_hours"),
+				rs.getDouble("full_entry_price"),
+				rs.getInt("is_active") == 1,
+				rs.getInt("promotions") == 1
+		);
+	}
+
+	/**
+	 * This method returns all active parks as full Park objects.
+	 * 
+	 * The returned objects are intended for server-side use only, because they
+	 * include internal management data such as capacity and reserved places for
+	 * unplanned visitors.
+	 * 
+	 * @return a list of active full Park objects
 	 * @throws SQLException if the select query fails
 	 */
-	public ResultSet getParkById(int parkId) throws SQLException {
-		String sql = "SELECT * FROM park WHERE park_id = ?;";
+	public List<Park> getAllActiveParks() throws SQLException {
+		ensureConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, parkId);
+		String sql = """
+				SELECT *
+				FROM park
+				WHERE is_active = 1
+				ORDER BY park_name;
+				""";
 
-		return pstmt.executeQuery();
+		List<Park> parks = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
+
+			while (rs.next()) {
+				parks.add(convertResultSetToPark(rs));
+			}
+		}
+
+		return parks;
+	}
+
+	/**
+	 * This method returns all parks as full Park objects.
+	 * 
+	 * The returned objects are intended for server-side use, such as management
+	 * screens, capacity checks, and internal calculations.
+	 * 
+	 * @return a list of all full Park objects
+	 * @throws SQLException if the select query fails
+	 */
+	public List<Park> getAllFullParks() throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT *
+				FROM park
+				ORDER BY park_id;
+				""";
+
+		List<Park> parks = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
+
+			while (rs.next()) {
+				parks.add(convertResultSetToPark(rs));
+			}
+		}
+
+		return parks;
+	}
+
+	/**
+	 * This method returns a full park object by park ID.
+	 * 
+	 * The returned object is intended for server-side logic only, because it contains
+	 * internal management data.
+	 * 
+	 * @param parkId the park ID
+	 * @return a full Park object if the park exists, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Park getFullParkById(int parkId) throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT *
+				FROM park
+				WHERE park_id = ?;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return convertResultSetToPark(rs);
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * This method returns public information about all active parks.
+	 * 
+	 * The method returns ParkInfo objects, which contain only the data that can be
+	 * sent to the client.
+	 * 
+	 * @return a list of public park information objects
+	 * @throws SQLException if the select query fails
+	 */
+	public List<ParkInfo> getAllActiveParksInfo() throws SQLException {
+		List<ParkInfo> parkInfoList = new ArrayList<>();
+
+		for (Park park : getAllActiveParks()) {
+			parkInfoList.add(park.toParkInfo());
+		}
+
+		return parkInfoList;
+	}
+
+	/**
+	 * This method returns public park information by park ID.
+	 * 
+	 * The returned object is intended to be sent to the client, so it does not
+	 * include internal management data.
+	 * 
+	 * @param parkId the park ID
+	 * @return a ParkInfo object if the park exists, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public ParkInfo getParkInfoById(int parkId) throws SQLException {
+		Park park = getFullParkById(parkId);
+
+		if (park == null) {
+			return null;
+		}
+
+		return park.toParkInfo();
 	}
 
 	/**
@@ -101,15 +241,22 @@ public class ParkConnection extends AbstractDBConnection {
 	 * @throws SQLException if the select query fails
 	 */
 	public double getFullEntryPrice(int parkId) throws SQLException {
-		String sql = "SELECT full_entry_price FROM park WHERE park_id = ?;";
+		ensureConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, parkId);
+		String sql = """
+				SELECT full_entry_price
+				FROM park
+				WHERE park_id = ?;
+				""";
 
-		ResultSet rs = pstmt.executeQuery();
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
 
-		if (rs.next()) {
-			return rs.getDouble("full_entry_price");
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getDouble("full_entry_price");
+				}
+			}
 		}
 
 		return -1;
@@ -123,15 +270,22 @@ public class ParkConnection extends AbstractDBConnection {
 	 * @throws SQLException if the select query fails
 	 */
 	public boolean hasPromotion(int parkId) throws SQLException {
-		String sql = "SELECT promotions FROM park WHERE park_id = ?;";
+		ensureConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, parkId);
+		String sql = """
+				SELECT promotions
+				FROM park
+				WHERE park_id = ?;
+				""";
 
-		ResultSet rs = pstmt.executeQuery();
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
 
-		if (rs.next()) {
-			return rs.getInt("promotions") == 1;
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getInt("promotions") == 1;
+				}
+			}
 		}
 
 		return false;
@@ -139,11 +293,11 @@ public class ParkConnection extends AbstractDBConnection {
 
 	/**
 	 * This method checks whether a park has enough available capacity for the
-	 * requested number of visitors.
+	 * requested number of visitors at the current time.
 	 * 
-	 * The method compares the park maximum capacity with the number of visitors that
-	 * are currently inside the park, according to visits that have not been closed
-	 * yet. A visit is considered open if its exit_time is null.
+	 * This method is used for actual entrance control. It checks the number of
+	 * visitors currently inside the park, according to visits that have not been
+	 * closed yet. A visit is considered open if its exit_time is null.
 	 * 
 	 * @param parkId            the park ID
 	 * @param requestedVisitors the number of visitors that want to enter the park
@@ -151,34 +305,103 @@ public class ParkConnection extends AbstractDBConnection {
 	 * @throws SQLException if the select query fails
 	 */
 	public boolean hasAvailableCapacity(int parkId, int requestedVisitors) throws SQLException {
-		String sql = "SELECT max_capacity FROM park WHERE park_id = ?;";
+		ensureConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, parkId);
+		String sql = """
+				SELECT
+					p.max_capacity,
+					COALESCE(SUM(v.actual_number_of_visitors), 0) AS current_visitors
+				FROM park p
+				LEFT JOIN visit v
+					ON p.park_id = v.park_id
+					AND v.exit_time IS NULL
+				WHERE p.park_id = ?
+				GROUP BY p.max_capacity;
+				""";
 
-		ResultSet rs = pstmt.executeQuery();
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
 
-		if (!rs.next()) {
-			return false;
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (!rs.next()) {
+					return false;
+				}
+
+				int maxCapacity = rs.getInt("max_capacity");
+				int currentVisitors = rs.getInt("current_visitors");
+
+				return currentVisitors + requestedVisitors <= maxCapacity;
+			}
 		}
+	}
 
-		int maxCapacity = rs.getInt("max_capacity");
+	/**
+	 * This method checks whether a park has enough available places for ordered
+	 * visitors on a specific date, while keeping reserved places for unplanned
+	 * visitors.
+	 * 
+	 * This method is useful when creating an order in advance, because the system
+	 * should not use all park capacity for orders if some places are reserved for
+	 * unplanned visitors.
+	 * 
+	 * The check is done for a specific park and a specific order date, because
+	 * orders from different dates should not affect each other.
+	 * 
+	 * @param parkId            the park ID
+	 * @param orderDate         the requested order date
+	 * @param requestedVisitors the number of visitors requested in the order
+	 * @return true if there is enough order capacity for the given date, false
+	 *         otherwise
+	 * @throws SQLException if the select query fails
+	 */
+	public boolean hasAvailableOrderCapacity(int parkId, java.time.LocalDate orderDate, int requestedVisitors)
+			throws SQLException {
+		ensureConnection();
 
-		String currentSql = "SELECT COALESCE(SUM(actual_number_of_visitors), 0) AS current_visitors "
-				+ "FROM visit "
-				+ "WHERE park_id = ? AND exit_time IS NULL;";
+		String sql = """
+				SELECT
+					p.max_capacity,
+					p.places_for_unplanned_visitors,
+					COALESCE(SUM(o.number_of_visitors), 0) AS ordered_visitors
+				FROM park p
+				LEFT JOIN `order` o
+					ON p.park_id = o.park_id
+					AND o.order_status = 'approved'
+					AND o.order_date = ?
+				WHERE p.park_id = ?
+				GROUP BY p.max_capacity, p.places_for_unplanned_visitors;
+				""";
 
-		PreparedStatement currentStmt = conn.prepareStatement(currentSql);
-		currentStmt.setInt(1, parkId);
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setDate(1, java.sql.Date.valueOf(orderDate));
+			pstmt.setInt(2, parkId);
 
-		ResultSet currentRs = currentStmt.executeQuery();
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (!rs.next()) {
+					return false;
+				}
 
-		int currentVisitors = 0;
+				int maxCapacity = rs.getInt("max_capacity");
+				int reservedForUnplanned = rs.getInt("places_for_unplanned_visitors");
+				int orderedVisitors = rs.getInt("ordered_visitors");
 
-		if (currentRs.next()) {
-			currentVisitors = currentRs.getInt("current_visitors");
+				int allowedOrderedVisitors = maxCapacity - reservedForUnplanned;
+
+				return orderedVisitors + requestedVisitors <= allowedOrderedVisitors;
+			}
 		}
+	}
 
-		return currentVisitors + requestedVisitors <= maxCapacity;
+	/**
+	 * This method checks whether a park is active.
+	 * 
+	 * @param parkId the park ID
+	 * @return true if the park is active, false otherwise
+	 * @throws SQLException if the select query fails
+	 */
+	public boolean isParkActive(int parkId) throws SQLException {
+		Park park = getFullParkById(parkId);
+
+		return park != null && park.isActive();
 	}
 }

@@ -9,6 +9,8 @@ import java.util.Set;
 import common.*;
 
 import databaseControllers.OrderConnection;
+import databaseControllers.ParkConnection;
+import databaseControllers.ParkParameterChangeRequestConnection;
 import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
@@ -22,6 +24,8 @@ public class ServerController implements ServerAndControllerConnection {
 	private Server server;
 	private Set<User> users = new HashSet<>();
 	private OrderConnection oc;
+	private ParkConnection pc;
+	private ParkParameterChangeRequestConnection pcrc;
 	private int allTimeUserCount = 1;
 	private ClientConnectionTableController serverGUIController;
 
@@ -33,8 +37,20 @@ public class ServerController implements ServerAndControllerConnection {
 		server = Server.getInstance(common.CommonConstants.DEFAULT_PORT, this);
 		addLog("Server instance created on port " + common.CommonConstants.DEFAULT_PORT + ".");
 
-		oc = OrderConnection.getInstance();
-		addLog("Database connection object created.");
+		try {
+			oc = OrderConnection.getInstance();
+			pc = ParkConnection.getInstance();
+			pcrc = ParkParameterChangeRequestConnection.getInstance();
+
+			addLog("Order database connection object created.");
+			addLog("Park database connection object created.");
+			addLog("Park parameter change request database connection object created.");
+			addLog("All database connection objects were created successfully.");
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
+		}
 
 		try {
 			server.listen(); // Start listening for connections
@@ -133,6 +149,31 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * This method notifies all connected clients that the public park data was
+	 * updated.
+	 * 
+	 * The method loads the updated active parks from the database and sends them to
+	 * all clients, so screens such as order creation can refresh their park list.
+	 */
+	public void notifyParksUpdated() {
+		try {
+			addLog("Loading updated active parks before notifying clients.");
+
+			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+
+			addLog("Loaded " + parks.size() + " active parks for update notification.");
+
+			server.sendToAllClients(new Message(parks, Protocol.PARKS_UPDATED));
+
+			addLog("PARKS_UPDATED message was sent to all connected clients.");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to notify clients about parks update: " + e.getMessage());
+		}
+	}
+
 	/*
 	 * this method parses the request received by server and handles it accordingly
 	 * 
@@ -192,6 +233,95 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("No orders returned to client.");
 			break;
 
+		case GET_ACTIVE_PARKS:
+			addLog("Client requested active parks list.");
+
+			try {
+				addLog("Loading active parks from database.");
+
+				List<ParkInfo> parks = pc.getAllActiveParksInfo();
+
+				addLog("Active parks list loaded from database. Number of parks: " + parks.size());
+				addLog("Returning active parks list to client.");
+
+				return new Message(parks, Protocol.ACTIVE_PARKS_RESULT);
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to load active parks: " + e.getMessage());
+				return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+		case APPROVE_PARK_PARAMETER_CHANGE_REQUEST:
+			addLog("Client requested approval of park parameter change request.");
+
+			try {
+				Object[] data = (Object[]) m.getData();
+
+				int requestId = (int) data[0];
+				int approvedByEmployeeId = (int) data[1];
+				String reviewNote = (String) data[2];
+
+				addLog("Approving park parameter change request. Request ID: " + requestId
+						+ ", approved by employee ID: " + approvedByEmployeeId);
+
+				boolean approved = pcrc.approveRequest(requestId, approvedByEmployeeId, reviewNote);
+
+				if (approved) {
+					addLog("Park parameter change request approved successfully. Request ID: " + requestId);
+					addLog("Park data may have changed. Notifying all clients.");
+
+					notifyParksUpdated();
+
+					return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_APPROVED);
+				}
+
+				addLog("Park parameter change request approval failed. Request ID: " + requestId);
+				return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to approve park parameter change request: " + e.getMessage());
+				return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			} catch (Exception e) {
+				e.printStackTrace();
+				addLog("ERROR - Invalid approval request data: " + e.getMessage());
+				return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+		case REJECT_PARK_PARAMETER_CHANGE_REQUEST:
+			addLog("Client requested rejection of park parameter change request.");
+
+			try {
+				Object[] data = (Object[]) m.getData();
+
+				int requestId = (int) data[0];
+				int approvedByEmployeeId = (int) data[1];
+				String reviewNote = (String) data[2];
+
+				addLog("Rejecting park parameter change request. Request ID: " + requestId
+						+ ", reviewed by employee ID: " + approvedByEmployeeId);
+
+				boolean rejected = pcrc.rejectRequest(requestId, approvedByEmployeeId, reviewNote);
+
+				if (rejected) {
+					addLog("Park parameter change request rejected successfully. Request ID: " + requestId);
+					return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_REJECTED);
+				}
+
+				addLog("Park parameter change request rejection failed. Request ID: " + requestId);
+				return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to reject park parameter change request: " + e.getMessage());
+				return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			} catch (Exception e) {
+				e.printStackTrace();
+				addLog("ERROR - Invalid rejection request data: " + e.getMessage());
+				return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
@@ -205,9 +335,24 @@ public class ServerController implements ServerAndControllerConnection {
 	 */
 	private void closeDBConnection() {
 		try {
-			addLog("Closing database connection.");
-			oc.close();
-			addLog("Database connection closed successfully.");
+			addLog("Closing database connections.");
+
+			if (oc != null) {
+				oc.close();
+				addLog("Order database connection closed.");
+			}
+
+			if (pc != null) {
+				pc.close();
+				addLog("Park database connection closed.");
+			}
+
+			if (pcrc != null) {
+				pcrc.close();
+				addLog("Park parameter change request database connection closed.");
+			}
+
+			addLog("Database connections closed successfully.");
 		} catch (SQLException e) {
 			e.printStackTrace();
 			addLog("ERROR - Failed to close database connection: " + e.getMessage());
