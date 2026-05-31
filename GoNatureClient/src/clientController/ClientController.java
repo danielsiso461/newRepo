@@ -1,9 +1,10 @@
 package clientController;
 
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import common.ParkInfo;
 
 import client.Client;
 import common.ChatIF;
@@ -27,9 +28,14 @@ public class ClientController implements ChatIF {
 	private Client client;
 	private String id = null;
 	private boolean userIssuedDisconnect = false;
-
 	// Observer pattern addition
-	private List<OrderObserver> observers = new ArrayList<>();
+		private List<OrderObserver> observers = new ArrayList<>();
+	/*
+	 * Observer pattern addition for park screens
+	 */
+	private List<ParkObserver> parkObservers = new ArrayList<>();
+
+	
 
 	// Constructors ****************************************************
 
@@ -130,6 +136,7 @@ public class ClientController implements ChatIF {
 			case CLIENT_DISCONNECT_SERVER:
 				handleServerIssuedDisconnect();
 				break;
+
 			case UPDATE_ORDER_SUCCESS:
 				notifyUpdateResult(true, (UpdateMessage) m.getData());
 				break;
@@ -140,10 +147,25 @@ public class ClientController implements ChatIF {
 
 			case RETURN_ORDER:
 				List<OrderRow> rows = parseOrderMessage(m.getData());
-				if(rows == null)
+
+				if (rows == null) {
 					break;
+				}
+
 				notifyOrdersReceived(rows);
 				break;
+
+			case ACTIVE_PARKS_RESULT:
+			case PARKS_UPDATED:
+				List<ParkInfo> parks = parseParkMessage(m.getData());
+
+				if (parks == null) {
+					break;
+				}
+
+				notifyParksReceived(parks);
+				break;
+
 			default:
 				System.out.println("Error: Server Response Unknown in "
 						+ "ClientController display");
@@ -196,5 +218,81 @@ public class ClientController implements ChatIF {
 
 	public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
 		this.userIssuedDisconnect = userIssuedDisconnect;
+	}
+	
+	/*
+	 * Observer pattern addition
+	 * adding park observer to observer list
+	 * 
+	 * @param observer park observer to add
+	 */
+	public void addParkObserver(ParkObserver observer) {
+		if (observer != null && !parkObservers.contains(observer)) {
+			parkObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Observer pattern addition
+	 * removing park observer from observer list
+	 * 
+	 * @param observer park observer to remove
+	 */
+	public void removeParkObserver(ParkObserver observer) {
+		parkObservers.remove(observer);
+	}
+
+	/*
+	 * Observer pattern addition
+	 * notifies the park observers of the received parks
+	 * 
+	 * @param parks the received parks
+	 */
+	private void notifyParksReceived(List<ParkInfo> parks) {
+		for (ParkObserver observer : parkObservers) {
+			observer.onParksReceived(parks);
+		}
+	}
+	
+	/*
+	 * sends the server a request for all active parks
+	 */
+	public void requestActiveParks() {
+		client.handleMessageFromClientUI(new Message(null, Protocol.GET_ACTIVE_PARKS));
+	}
+
+	/*
+	 * sends a general message to the server
+	 * 
+	 * @param message the message to send
+	 */
+	public void sendMessageToServer(Message message) {
+		client.handleMessageFromClientUI(message);
+	}
+	
+	/*
+	 * this function is used to check if a given object is a list of parks
+	 * and return the park list if so
+	 * 
+	 * @param o Object to check
+	 */
+	private List<ParkInfo> parseParkMessage(Object o) {
+		List<ParkInfo> parks = new ArrayList<>();
+
+		if (o instanceof List<?>) {
+			List<?> rawList = (List<?>) o;
+
+			for (Object park : rawList) {
+				if (park instanceof ParkInfo) {
+					parks.add((ParkInfo) park);
+				} else {
+					return null;
+				}
+			}
+		} else {
+			return null;
+		}
+
+		return parks;
 	}
 }

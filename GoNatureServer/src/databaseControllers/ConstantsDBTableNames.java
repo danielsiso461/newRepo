@@ -92,6 +92,16 @@ public final class ConstantsDBTableNames {
 	protected static final String NOTIFICATION_REPORT = "notification_report";
 
 	/**
+	 * The name of the park usage report view.
+	 */
+	protected static final String PARK_USAGE_REPORT = "park_usage_report";
+
+	/**
+	 * The name of the revenue report by park view.
+	 */
+	protected static final String REVENUE_REPORT_BY_PARK = "revenue_report_by_park";
+
+	/**
 	 * Private constructor to prevent object creation.
 	 */
 	private ConstantsDBTableNames() {
