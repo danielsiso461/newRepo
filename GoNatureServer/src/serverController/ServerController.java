@@ -25,6 +25,8 @@ public class ServerController implements ServerAndControllerConnection {
 	private Set<User> users = new HashSet<>();
 	private OrderConnection oc;
 	private ParkConnection pc;
+	private SubscriberConnection sc;
+	private GuideConnection gc;
 	private ParkParameterChangeRequestConnection pcrc;
 	private int allTimeUserCount = 1;
 	private ClientConnectionTableController serverGUIController;
@@ -41,6 +43,9 @@ public class ServerController implements ServerAndControllerConnection {
 			oc = OrderConnection.getInstance();
 			pc = ParkConnection.getInstance();
 			pcrc = ParkParameterChangeRequestConnection.getInstance();
+			sc = SubscriberConnection.getInstance();
+			gc = GuideConnection.getInstance();
+
 
 			addLog("Order database connection object created.");
 			addLog("Park database connection object created.");
@@ -321,6 +326,11 @@ public class ServerController implements ServerAndControllerConnection {
 				addLog("ERROR - Invalid rejection request data: " + e.getMessage());
 				return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
 			}
+		case SEARCH_SUBSCRIBER_REQUEST:
+		    return handleSearchSubscriber(m);
+
+		case REGISTER_GUIDE_REQUEST:
+		    return handleRegisterGuide(m);
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -329,6 +339,90 @@ public class ServerController implements ServerAndControllerConnection {
 
 		return null;
 	}
+	/*
+	 * Handles a client request to search for a subscriber by subscriber ID.
+	 * 
+	 * @param m the message received from the client, containing the subscriber ID.
+	 */
+	private Message handleSearchSubscriber(Message m) {
+	    int subscriberId = (int) m.getData();
+
+	    try {
+	        Subscriber subscriber = sc.findSubscriberById(subscriberId);
+
+	        if (subscriber == null) {
+	            OperationResponse response =
+	                    new OperationResponse(false, "Subscriber not found", null);
+
+	            return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+	        }
+
+	        OperationResponse response =
+	                new OperationResponse(true, "Subscriber found", subscriber);
+
+	        return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+
+	        OperationResponse response =
+	                new OperationResponse(false, "Database error while searching subscriber", null);
+
+	        return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+	    }
+	}
+	
+	/*
+	 * Handles a client request to register an existing subscriber as a guide.
+	 * 
+	 * @param m the message received from the client, containing a guide registration request.
+	 */
+	private Message handleRegisterGuide(Message m) {
+	    GuideRegistrationRequest request = (GuideRegistrationRequest) m.getData();
+
+	    try {
+	        Subscriber subscriber = sc.findSubscriberById(request.getSubscriberId());
+
+	        if (subscriber == null) {
+	            OperationResponse response =
+	                    new OperationResponse(false, "Subscriber not found", null);
+
+	            return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+	        }
+
+	        boolean alreadyGuide = gc.isSubscriberAlreadyGuide(request.getSubscriberId());
+
+	        if (alreadyGuide) {
+	            OperationResponse response =
+	                    new OperationResponse(false, "Subscriber is already registered as guide", null);
+
+	            return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+	        }
+
+	        boolean registered = gc.registerGuide(request);
+
+	        if (registered) {
+	            OperationResponse response =
+	                    new OperationResponse(true, "Guide registered successfully", null);
+
+	            return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+	        }
+
+	        OperationResponse response =
+	                new OperationResponse(false, "Failed to register guide", null);
+
+	        return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+
+	        OperationResponse response =
+	                new OperationResponse(false, "Database error while registering guide", null);
+
+	        return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+	    }
+	}
+
 
 	/*
 	 * this method makes sure the connection to the DB is closed properly
