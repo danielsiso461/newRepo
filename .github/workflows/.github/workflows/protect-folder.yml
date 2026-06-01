@@ -1,0 +1,29 @@
+name: Protect assignment folders
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  check-protected-folders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check protected folders exist
+        run: |
+          if [ ! -d "Assignment1" ]; then
+            echo "ERROR: The folder Assignment1 was deleted."
+            exit 1
+          fi
+
+          if [ ! -d "G2_Assignment2" ]; then
+            echo "ERROR: The folder G2_Assignment2 was deleted."
+            exit 1
+          fi
