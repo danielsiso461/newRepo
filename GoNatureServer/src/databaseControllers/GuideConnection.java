@@ -31,8 +31,6 @@ public class GuideConnection extends AbstractDBConnection {
 
 	/**
 	 * The subscriber ID column in the guide table.
-	 * 
-	 * This connects the guide to an existing subscriber.
 	 */
 	private final String SUBSCRIBER_ID = "subscriber_id";
 

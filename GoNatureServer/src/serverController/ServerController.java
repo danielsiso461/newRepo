@@ -6,15 +6,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import common.GuideRegistrationRequest;
 import common.Message;
+import common.OperationResponse;
 import common.OrderRow;
 import common.Park;
 import common.Protocol;
+import common.Subscriber;
 import common.UpdateMessage;
 
+import databaseControllers.GuideConnection;
 import databaseControllers.OrderConnection;
 import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
+import databaseControllers.SubscriberConnection;
 import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
@@ -34,6 +39,8 @@ public class ServerController implements ServerAndControllerConnection {
 
 	private OrderConnection oc;
 	private ParkConnection pc;
+	private SubscriberConnection sc;
+	private GuideConnection gc;
 	private ParkParameterChangeRequestConnection pcrc;
 
 	private int allTimeUserCount = 1;
@@ -60,10 +67,14 @@ public class ServerController implements ServerAndControllerConnection {
 			oc = OrderConnection.getInstance();
 			pc = ParkConnection.getInstance();
 			pcrc = ParkParameterChangeRequestConnection.getInstance();
+			sc = SubscriberConnection.getInstance();
+			gc = GuideConnection.getInstance();
 
 			addLog("Order database connection object created.");
 			addLog("Park database connection object created.");
 			addLog("Park parameter change request database connection object created.");
+			addLog("Subscriber database connection object created.");
+			addLog("Guide database connection object created.");
 			addLog("All database connection objects were created successfully.");
 
 		} catch (SQLException e) {
@@ -245,6 +256,12 @@ public class ServerController implements ServerAndControllerConnection {
 		case REJECT_PARK_PARAMETER_CHANGE_REQUEST:
 			return handleRejectParkParameterChangeRequest(m);
 
+		case SEARCH_SUBSCRIBER_REQUEST:
+			return handleSearchSubscriber(m);
+
+		case REGISTER_GUIDE_REQUEST:
+			return handleRegisterGuide(m);
+
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
@@ -326,11 +343,91 @@ public class ServerController implements ServerAndControllerConnection {
 			e.printStackTrace();
 			addLog("ERROR - Failed to load active parks: " + e.getMessage());
 
-			/*
-			 * If you have ACTIVE_PARKS_FAILURE in Protocol, replace this with:
-			 * return new Message(e.getMessage(), Protocol.ACTIVE_PARKS_FAILURE);
-			 */
 			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+		}
+	}
+
+	/**
+	 * Handles a client request to search for a subscriber by subscriber ID.
+	 * 
+	 * @param m the message received from the client, containing the subscriber ID
+	 * @return a message with the search result
+	 */
+	private Message handleSearchSubscriber(Message m) {
+		try {
+			int subscriberId = (int) m.getData();
+
+			Subscriber subscriber = sc.findSubscriberById(subscriberId);
+
+			if (subscriber == null) {
+				OperationResponse response = new OperationResponse(false, "Subscriber not found", null);
+				return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+			}
+
+			OperationResponse response = new OperationResponse(true, "Subscriber found", subscriber);
+			return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Database error while searching subscriber: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(false, "Database error while searching subscriber", null);
+			return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Invalid subscriber search request: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(false, "Invalid subscriber search request", null);
+			return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
+		}
+	}
+
+	/**
+	 * Handles a client request to register an existing subscriber as a guide.
+	 * 
+	 * @param m the message received from the client, containing a guide registration
+	 *          request
+	 * @return a message with the registration result
+	 */
+	private Message handleRegisterGuide(Message m) {
+		try {
+			GuideRegistrationRequest request = (GuideRegistrationRequest) m.getData();
+
+			Subscriber subscriber = sc.findSubscriberById(request.getSubscriberId());
+
+			if (subscriber == null) {
+				OperationResponse response = new OperationResponse(false, "Subscriber not found", null);
+				return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+			}
+
+			int guideId = gc.addGuide(request.getSubscriberId(), request.getAuthorizedByEmployeeId(),
+					request.getOrganizationName());
+
+			if (guideId != -1) {
+				OperationResponse response = new OperationResponse(true, "Guide registered successfully", guideId);
+				return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+			}
+
+			OperationResponse response = new OperationResponse(false,
+					"Failed to register guide. Subscriber may already be an active guide or employee is not allowed.",
+					null);
+
+			return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Database error while registering guide: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(false, "Database error while registering guide", null);
+			return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Invalid guide registration request: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(false, "Invalid guide registration request", null);
+			return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 		}
 	}
 
@@ -440,6 +537,16 @@ public class ServerController implements ServerAndControllerConnection {
 			if (pcrc != null) {
 				pcrc.close();
 				addLog("Park parameter change request database connection closed.");
+			}
+
+			if (sc != null) {
+				sc.close();
+				addLog("Subscriber database connection closed.");
+			}
+
+			if (gc != null) {
+				gc.close();
+				addLog("Guide database connection closed.");
 			}
 
 			addLog("Database connections closed successfully.");
