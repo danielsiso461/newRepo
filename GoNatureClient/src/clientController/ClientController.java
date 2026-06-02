@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-import common.ParkInfo;
+import common.Park;
 
 import client.Client;
 import common.ChatIF;
@@ -157,7 +157,7 @@ public class ClientController implements ChatIF {
 
 			case ACTIVE_PARKS_RESULT:
 			case PARKS_UPDATED:
-				List<ParkInfo> parks = parseParkMessage(m.getData());
+				List<Park> parks = parseParkMessage(m.getData());
 
 				if (parks == null) {
 					break;
@@ -248,7 +248,7 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param parks the received parks
 	 */
-	private void notifyParksReceived(List<ParkInfo> parks) {
+	private void notifyParksReceived(List<Park> parks) {
 		for (ParkObserver observer : parkObservers) {
 			observer.onParksReceived(parks);
 		}
@@ -276,15 +276,15 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param o Object to check
 	 */
-	private List<ParkInfo> parseParkMessage(Object o) {
-		List<ParkInfo> parks = new ArrayList<>();
+	private List<Park> parseParkMessage(Object o) {
+		List<Park> parks = new ArrayList<>();
 
 		if (o instanceof List<?>) {
 			List<?> rawList = (List<?>) o;
 
 			for (Object park : rawList) {
-				if (park instanceof ParkInfo) {
-					parks.add((ParkInfo) park);
+				if (park instanceof Park) {
+					parks.add((Park) park);
 				} else {
 					return null;
 				}

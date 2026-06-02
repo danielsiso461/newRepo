@@ -117,6 +117,54 @@ public abstract class AbstractDBConnection {
 
 		pstmt.close();
 	}
+	
+	/**
+	 * This method is a general insert query.
+	 * It inserts a new record into the table using the given columns and values.
+	 * 
+	 * @param columnNames the columns that appear in the INSERT query
+	 * @param values      the values corresponding to columnNames
+	 * @throws SQLException if the insert query fails
+	 */
+	public void insertFields(String[] columnNames, List<Object> values) throws SQLException {
+
+		if (columnNames.length != values.size()) {
+			System.out.println("bad sql insert request");
+			return;
+		}
+
+		StringBuilder sql = new StringBuilder("INSERT INTO `" + getTableName() + "` (");
+
+		for (String s : columnNames) {
+			sql.append(s + ", ");
+		}
+
+		sql.setLength(sql.length() - 2);
+		sql.append(") VALUES (");
+
+		for (int i = 0; i < values.size(); i++) {
+			sql.append("?, ");
+		}
+
+		sql.setLength(sql.length() - 2);
+		sql.append(");");
+
+		PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+
+		for (int i = 0; i < values.size(); i++) {
+			pstmt.setObject(i + 1, values.get(i));
+		}
+
+		int rows = pstmt.executeUpdate();
+
+		if (rows > 0) {
+			System.out.println("Insert completed successfully!");
+		} else {
+			System.out.println("Insert failed.");
+		}
+
+		pstmt.close();
+	}
 
 	/**
 	 * This method constructs a general SELECT query into a string in the format of a
