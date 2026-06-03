@@ -1,13 +1,31 @@
 package common;
-/*
- * this enum is used to identify the message type passed between server and client
+
+/**
+ * This enum is used to identify the message type passed between server and client.
  */
 public enum Protocol {
 	CLIENT_CONNECT,
 	MAKE_ORDER,
+
 	UPDATE_ORDER,
 	UPDATE_ORDER_SUCCESS,
 	UPDATE_ORDER_FAILURE,
+
+	/**
+	 * Sent by the client when the user requests to cancel an existing order.
+	 */
+	CANCEL_ORDER,
+
+	/**
+	 * Sent by the server when the order cancellation was completed successfully.
+	 */
+	CANCEL_ORDER_SUCCESS,
+
+	/**
+	 * Sent by the server when the order cancellation failed.
+	 */
+	CANCEL_ORDER_FAILURE,
+
 	CLIENT_DISCONNECT_SERVER,
 	CLIENT_DISCONNECT_USER,
 	RETURN_ORDER,

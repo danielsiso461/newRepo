@@ -2,10 +2,12 @@ package clientCommon;
 
 import java.util.List;
 
+import common.CancelOrderMessage;
 import common.OrderRow;
 import common.UpdateMessage;
+
 /*
- * this interface represents all UI items waiting on updates from the server
+ * this interface represents all UI items waiting on order-related updates from the server
  */
 public interface OrderObserver {
 	/*
@@ -16,12 +18,20 @@ public interface OrderObserver {
     void onOrdersReceived(List<OrderRow> rows);
     
     /*
-	 * this function handles receiving an update for an order from the server
+	 * this function handles receiving an update result for an order from the server
 	 * 
 	 * @param success 			whether the update was successful
-	 * @param updateMessage 	the Data of the update
+	 * @param updateMessage 	the data of the update
 	 */
     void onUpdateResult(boolean success, UpdateMessage updateMessage);
+    
+    /*
+     * this function handles receiving a cancellation result for an order from the server
+     * 
+     * @param success				whether the cancellation was successful
+     * @param cancelOrderMessage	the data of the cancellation request
+     */
+    void onCancelResult(boolean success, CancelOrderMessage cancelOrderMessage);
     
     /*
 	 * this function handles the server shutting the client down
