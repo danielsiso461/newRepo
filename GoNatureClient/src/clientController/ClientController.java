@@ -14,7 +14,7 @@ import common.Protocol;
 import common.UpdateMessage;
 import clientCommon.*;
 import javafx.application.Platform;
-
+import common.OperationResponse;
 /*
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
@@ -28,13 +28,17 @@ public class ClientController implements ChatIF {
 	private Client client;
 	private String id = null;
 	private boolean userIssuedDisconnect = false;
+	
 	// Observer pattern addition
 		private List<OrderObserver> observers = new ArrayList<>();
 	/*
 	 * Observer pattern addition for park screens
 	 */
 	private List<ParkObserver> parkObservers = new ArrayList<>();
-
+	/*
+	 * Observer pattern addition for occasional customer access screen.
+	 */
+	private List<OccasionalCustomerAccessObserver> occasionalCustomerAccessObservers = new ArrayList<>();
 	
 
 	// Constructors ****************************************************
@@ -105,6 +109,37 @@ public class ClientController implements ChatIF {
 	}
 	
 	/*
+	 * Adds an occasional customer access observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addOccasionalCustomerAccessObserver(OccasionalCustomerAccessObserver observer) {
+		if (observer != null && !occasionalCustomerAccessObservers.contains(observer)) {
+			occasionalCustomerAccessObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes an occasional customer access observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeOccasionalCustomerAccessObserver(OccasionalCustomerAccessObserver observer) {
+		occasionalCustomerAccessObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all occasional customer access observers about the server response.
+	 * 
+	 * @param response the response received from the server
+	 */
+	private void notifyOccasionalCustomerAccessResult(OperationResponse response) {
+		for (OccasionalCustomerAccessObserver observer : occasionalCustomerAccessObservers) {
+			observer.onOccasionalCustomerAccessResult(response);
+		}
+	}
+	
+	/*
 	 * sends the server a request for all orders of the user
 	 */
 	public void requestOrders() {
@@ -165,6 +200,10 @@ public class ClientController implements ChatIF {
 
 				notifyParksReceived(parks);
 				break;
+			case OCCASIONAL_CUSTOMER_ACCESS_RESPONSE:
+				OperationResponse response = (OperationResponse) m.getData();
+				notifyOccasionalCustomerAccessResult(response);
+				break;	
 
 			default:
 				System.out.println("Error: Server Response Unknown in "
@@ -259,6 +298,17 @@ public class ClientController implements ChatIF {
 	 */
 	public void requestActiveParks() {
 		client.handleMessageFromClientUI(new Message(null, Protocol.GET_ACTIVE_PARKS));
+	}
+	
+	/*
+	 * Sends the server a request to check occasional customer access by order number.
+	 * 
+	 * @param orderNumber the order number entered by the customer
+	 */
+	public void requestOccasionalCustomerAccess(int orderNumber) {
+		client.handleMessageFromClientUI(
+				new Message(orderNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
+		);
 	}
 
 	/*

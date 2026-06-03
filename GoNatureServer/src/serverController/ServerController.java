@@ -333,6 +333,9 @@ public class ServerController implements ServerAndControllerConnection {
 
 		case REGISTER_GUIDE_REQUEST:
 		    return handleRegisterGuide(m);
+		    
+		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
+			return handleOccasionalCustomerAccess(m);    
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -423,6 +426,45 @@ public class ServerController implements ServerAndControllerConnection {
 
 	        return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 	    }
+	}
+	
+	/*
+	 * Handles a client request for occasional customer access by order number.
+	 * 
+	 * The method receives a Message that contains the order number.
+	 * It checks whether the order exists in the database.
+	 * If the order exists, it returns a successful OperationResponse.
+	 * Otherwise, it returns a failure response.
+	 * 
+	 * @param m the message received from the client, containing the order number
+	 * @return a Message with an OperationResponse containing the access result
+	 */
+	private Message handleOccasionalCustomerAccess(Message m) {
+		int orderNumber = (int) m.getData();
+
+		try {
+			boolean orderExists = oc.orderExists(orderNumber);
+
+			if (orderExists) {
+				OperationResponse response =
+						new OperationResponse(true, "Order found", orderNumber);
+
+				return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
+			}
+
+			OperationResponse response =
+					new OperationResponse(false, "Order not found", null);
+
+			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while searching order", null);
+
+			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
+		}
 	}
 
 
