@@ -12,21 +12,21 @@ import common.GuideRegistrationRequest;
  * The class is implemented as a Singleton, so the server will use only one
  * database connection object for guide-related operations during runtime
  */
-public final class GuideConnection extends AbstractDBConnection {
+public class GuideConnection extends AbstractDBConnection {
 
 	/**
      * The single instance of GuideDBController
      */
-    private static final GuideConnection INSTANCE = new GuideConnection();
+    private static GuideConnection INSTANCE = new GuideConnection();
 
     /**
      * Table column names used by this DB connector
      */
-    private final String GUIDE_ID = "guide_id";
-    private final String SUBSCRIBER_ID = "subscriber_id";
-    private final String AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id";
-    private final String ORGANIZATION_NAME = "organization_name";
-    private final String GUIDE_STATUS = "guide_status";
+    private String GUIDE_ID = "guide_id";
+    private String SUBSCRIBER_ID = "subscriber_id";
+    private String AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id";
+    private String ORGANIZATION_NAME = "organization_name";
+    private String GUIDE_STATUS = "guide_status";
 
     /**
      * Private constructor for Singleton

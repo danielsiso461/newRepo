@@ -11,6 +11,8 @@ import common.*;
 import databaseControllers.OrderConnection;
 import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
+import databaseControllers.GuideConnection;
+import databaseControllers.SubscriberConnection;
 import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
@@ -409,7 +411,7 @@ public class ServerController implements ServerAndControllerConnection {
 	        }
 
 	        OperationResponse response =
-	                new OperationResponse(false, "Failed to register guide", null);
+	                 new OperationResponse(false, "Failed to register guide", null);
 
 	        return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 
