@@ -5,6 +5,7 @@ import java.io.IOException;
 import clientCommon.OccasionalCustomerAccessObserver;
 import clientController.ClientController;
 import common.OperationResponse;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -14,6 +15,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import common.OrderRow;
 
 /*
  * This class is the controller for the occasional customer access screen.
@@ -28,6 +34,11 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 	 * The client controller used for communication with the server.
 	 */
 	private static ClientController clientController;
+	
+	/*
+	 * The current stage of the occasional customer access screen.
+	 */
+	private Stage currentStage;
 
 	/*
 	 * Text field used for entering the order number.
@@ -95,33 +106,131 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			return;
 		}
 
+		currentStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 		messageLabel.setText("Checking order number...");
-
 		clientController.requestOccasionalCustomerAccess(orderNumber);
+
 	}
 
 	/*
 	 * Receives the occasional customer access result from the ClientController.
 	 * 
+	 * If the order exists, the method opens the order table screen and displays
+	 * only the order that was found.
+	 * 
 	 * @param response the response received from the server
 	 */
 	@Override
 	public void onOccasionalCustomerAccessResult(OperationResponse response) {
-		if (response == null) {
-			messageLabel.setText("No response from server.");
-			return;
-		}
+		System.out.println("Occasional access response received in screen");
 
-		if (response.isSuccess()) {
-			messageLabel.setText("Order found. Access approved.");
+		javafx.application.Platform.runLater(() -> {
+			if (response == null) {
+				messageLabel.setText("No response from server.");
+				return;
+			}
+
+			System.out.println("Response success = " + response.isSuccess());
+			System.out.println("Response message = " + response.getMessage());
+
+			if (response.isSuccess()) {
+				OrderRow order = (OrderRow) response.getData();
+
+				messageLabel.setText("Order found. Access approved.");
+
+				openOrderTableScreen(order);
+
+			} else {
+				messageLabel.setText(response.getMessage());
+			}
+		});
+	}
+	
+	/*
+	 * Opens the order table screen after the occasional customer was identified
+	 * successfully by order number.
+	 */
+	/*
+	private void openOrderTableScreen() {
+		try {
+			if (clientController != null) {
+				clientController.removeOccasionalCustomerAccessObserver(this);
+			}
+
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource(ConstantsUI.orderTable)
+			);
+
+			Parent root = loader.load();
+
+			OrderTableDisplayController controller = loader.getController();
 
 			/*
-			 * Later:
-			 * Navigate to the occasional customer main screen.
+			 * Gives the order table screen the active ClientController.
 			 */
+	/*
+			controller.setClientController(clientController);
 
-		} else {
-			messageLabel.setText(response.getMessage());
+			Scene scene = new Scene(root);
+
+			currentStage.setScene(scene);
+			currentStage.setTitle("Order Table");
+			currentStage.show();
+
+			Platform.runLater(controller);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			messageLabel.setText("Failed to open order table screen.");
+		}
+	}*/
+	
+	/*
+	 * Opens the order table screen and displays only the order that belongs to the
+	 * occasional customer access request.
+	 * 
+	 * @param order the order that was found by order number
+	 */
+	private void openOrderTableScreen(OrderRow order) {
+		try {
+			if (clientController != null) {
+				clientController.removeOccasionalCustomerAccessObserver(this);
+			}
+
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource(ConstantsUI.orderTable)
+			);
+
+			Parent root = loader.load();
+
+			OrderTableDisplayController controller = loader.getController();
+
+			/*
+			 * Gives the order table screen the active ClientController.
+			 */
+			controller.setClientController(clientController);
+
+			List<OrderRow> orders = new ArrayList<>();
+			orders.add(order);
+
+			/*
+			 * Displays only the order that was found.
+			 * 
+			 * This assumes that OrderTableDisplayController has a public method named
+			 * onOrdersReceived(List<OrderRow> rows), as part of the existing observer logic.
+			 */
+			controller.onOrdersReceived(orders);
+
+			Scene scene = new Scene(root);
+
+			Stage stage = (Stage) orderNumberField.getScene().getWindow();
+			stage.setScene(scene);
+			stage.setTitle("Order Table");
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			messageLabel.setText("Failed to open order table screen.");
 		}
 	}
 

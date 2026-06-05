@@ -31,12 +31,12 @@ public class WelcomePageController {
 	/*
 	 * indicates whether a valid ID was already entered
 	 */
-	private boolean idEntered = false;
+	//private boolean idEntered = false;
 
 	/*
 	 * stores the user ID
 	 */
-	private String id;
+	//private String id;
 
 	/*
 	 * stores the server address
@@ -70,6 +70,7 @@ public class WelcomePageController {
      * 
      * @param event the event of pressing the confirm button
      */
+    /*
     @FXML
     void btnClick(ActionEvent event) {
     	if(!idEntered) {
@@ -101,6 +102,28 @@ public class WelcomePageController {
     		launchOrderTable();
     	}
     }
+    */
+    
+    /*
+     * This function handles pressing the confirm button.
+     * 
+     * The user enters the server address.
+     * Then the client connects to the server and opens the opening screen.
+     * 
+     * @param event the event of pressing the confirm button
+     */
+    @FXML
+    void btnClick(ActionEvent event) {
+    	address = inputField.getText();
+
+    	if (address == null || address.trim().isEmpty()) {
+    		messageLabel.setTextFill(Color.RED);
+    		messageLabel.setText("Please enter server address");
+    		return;
+    	}
+
+    	launchOpeningScreen();
+    }
 
     /*
      * this function initializes the welcome page
@@ -114,6 +137,10 @@ public class WelcomePageController {
         assert confirmButton != null : "fx:id=\"confirmButton\" was not injected: check your FXML file 'welcomePage.fxml'.";
         assert inputField != null : "fx:id=\"inputField\" was not injected: check your FXML file 'welcomePage.fxml'.";
         assert messageLabel != null : "fx:id=\"messageLabel\" was not injected: check your FXML file 'welcomePage.fxml'.";
+        
+        commandLabel.setText("Enter server address");
+        inputField.setPromptText("Server address");
+        messageLabel.setText("");
 
         // this handles closing when pressing the red X button
      	Platform.runLater(new Runnable() {
@@ -131,7 +158,53 @@ public class WelcomePageController {
      		}
      	});
     }
+    /*
+     * This function loads and opens the opening screen.
+     * 
+     * It creates the client controller, gives it to the screens that need server
+     * communication, and replaces the current scene with the opening screen.
+     */
+    private void launchOpeningScreen() {
+    	Stage stage = (Stage) inputField.getScene().getWindow();
 
+    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
+
+    	Parent root = null;
+
+    	try {
+    		root = loader.load();
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		Platform.exit();
+    		System.exit(1);
+    	}
+
+    	ClientController clientController;
+
+    	try {
+    		/*
+    		 * At this stage the user is not logged in yet, so we pass an empty id.
+    		 * The actual user identity will be handled later through the login screens.
+    		 */
+    		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, "");
+
+    		// Gives the occasional customer access screen the active ClientController,
+    		// so it can send requests to the server.
+    		OccasionalCustomerAccessController.setClientController(clientController);
+
+    	} catch (IOException e) {
+    		messageLabel.setTextFill(Color.RED);
+    		messageLabel.setText("Bad server address");
+    		inputField.clear();
+    		return;
+    	}
+
+    	Scene scene = new Scene(root);
+    	stage.setScene(scene);
+    	stage.setTitle("GoNature");
+    	stage.show();
+    }
+    
     /*
      * this function loads and opens the order table page
      * 
@@ -139,6 +212,7 @@ public class WelcomePageController {
      * requests the user's orders
      * and replaces the current scene with the order table scene
      */
+    /*
     private void launchOrderTable() {
     	Stage stage = (Stage) inputField.getScene().getWindow();
 
@@ -159,13 +233,16 @@ public class WelcomePageController {
     	ClientController clientController;
     	try {
     		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, id);
+    		
+    		//Gives the occasional customer access screen the active ClientController, so it can send requests to the server.
+    		OccasionalCustomerAccessController.setClientController(clientController);
     	} catch (IOException e) {
     		messageLabel.setTextFill(Color.RED);
     		messageLabel.setText("Bad server address");
     		inputField.clear();
 			return;
     	}
-
+    	
     	controller.setClientController(clientController);
 
     	// get the orders of the user and load them into the order table
@@ -178,4 +255,6 @@ public class WelcomePageController {
     	stage.show();
     	Platform.runLater(controller);
     }
+    */
+    
 }

@@ -432,9 +432,9 @@ public class ServerController implements ServerAndControllerConnection {
 	 * Handles a client request for occasional customer access by order number.
 	 * 
 	 * The method receives a Message that contains the order number.
-	 * It checks whether the order exists in the database.
-	 * If the order exists, it returns a successful OperationResponse.
-	 * Otherwise, it returns a failure response.
+	 * It searches for the order in the database.
+	 * If the order exists, it returns a successful OperationResponse containing
+	 * the OrderRow object. Otherwise, it returns a failure response.
 	 * 
 	 * @param m the message received from the client, containing the order number
 	 * @return a Message with an OperationResponse containing the access result
@@ -442,12 +442,16 @@ public class ServerController implements ServerAndControllerConnection {
 	private Message handleOccasionalCustomerAccess(Message m) {
 		int orderNumber = (int) m.getData();
 
-		try {
-			boolean orderExists = oc.orderExists(orderNumber);
+		addLog("Checking occasional customer order number: " + orderNumber);
 
-			if (orderExists) {
+		try {
+			OrderRow order = oc.getOrderByNumber(orderNumber);
+
+			if (order != null) {
 				OperationResponse response =
-						new OperationResponse(true, "Order found", orderNumber);
+						new OperationResponse(true, "Order found", order);
+
+				addLog("Occasional customer access approved for order number: " + orderNumber);
 
 				return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 			}
@@ -455,10 +459,14 @@ public class ServerController implements ServerAndControllerConnection {
 			OperationResponse response =
 					new OperationResponse(false, "Order not found", null);
 
+			addLog("Occasional customer access denied. Order not found: " + orderNumber);
+
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
+
+			addLog("ERROR - Database error while searching order: " + e.getMessage());
 
 			OperationResponse response =
 					new OperationResponse(false, "Database error while searching order", null);
