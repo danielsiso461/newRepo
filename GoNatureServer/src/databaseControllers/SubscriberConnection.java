@@ -3,6 +3,7 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import common.Subscriber;
 
 /**
  * This class is the DB connector used when working with the subscriber table.
@@ -31,6 +32,10 @@ public class SubscriberConnection extends AbstractDBConnection {
 	private SubscriberConnection() throws SQLException {
 		connect();
 	}
+	
+	private String SUBSCRIBER_ID = "subscriber_id";
+	private String SUBSCRIBER_NAME = "subscriber_name";
+	private String SUBSCRIBER_EMAIL = "subscriber_email";
 
 	/**
 	 * Returns the single instance of SubscriberConnection.
@@ -93,6 +98,44 @@ public class SubscriberConnection extends AbstractDBConnection {
 		ResultSet rs = pstmt.executeQuery();
 
 		return rs.next();
+	}
+	
+	/**
+	 * This method searches for a subscriber by subscriber ID and returns it as a
+	 * Subscriber object.
+	 * 
+	 * The method uses selectByFields in order to build the SELECT query according
+	 * to the shared DB connection structure.
+	 * 
+	 * @param subscriberId the subscriber ID to search for
+	 * @return a Subscriber object if found, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Subscriber findSubscriberById(int subscriberId) throws SQLException {
+		String query = selectByFields(
+				new String[] { SUBSCRIBER_ID, SUBSCRIBER_NAME, SUBSCRIBER_EMAIL },
+				new String[] { SUBSCRIBER_ID }
+		);
+
+		PreparedStatement pstmt = conn.prepareStatement(query);
+		pstmt.setInt(1, subscriberId);
+
+		ResultSet rs = pstmt.executeQuery();
+
+		Subscriber subscriber = null;
+
+		if (rs.next()) {
+			subscriber = new Subscriber(
+					rs.getInt(SUBSCRIBER_ID),
+					rs.getString(SUBSCRIBER_NAME),
+					rs.getString(SUBSCRIBER_EMAIL)
+			);
+		}
+
+		rs.close();
+		pstmt.close();
+
+		return subscriber;
 	}
 
 	/**
