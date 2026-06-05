@@ -218,7 +218,9 @@ public class ServerController implements ServerAndControllerConnection {
 			}
 
 			return new Message(m.getData(), typeRet);
-
+		case CANCEL_ORDER:
+			addLog("Client requested order cancellation.");
+			return handleCancelOrder(m);
 		case RETURN_ORDER:
 			addLog("Client requested orders list.");
 
@@ -426,6 +428,54 @@ public class ServerController implements ServerAndControllerConnection {
 
 	        return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 	    }
+	}
+	/**
+	 * Handles a client request to cancel an existing order.
+	 *
+	 * The order is not deleted from the database. Instead, its order_status is
+	 * updated to "cancelled" using OrderConnection.cancelOrder(...). This keeps the
+	 * order available for monthly reports and order status history.
+	 *
+	 * @param m the message received from the client, containing CancelOrderMessage
+	 * @return a message with CANCEL_ORDER_SUCCESS or CANCEL_ORDER_FAILURE
+	 */
+	private Message handleCancelOrder(Message m) {
+		if (!(m.getData() instanceof CancelOrderMessage)) {
+			addLog("ERROR - Invalid cancellation request data.");
+			return new Message(m.getData(), Protocol.CANCEL_ORDER_FAILURE);
+		}
+
+		CancelOrderMessage cancelOrderMessage = (CancelOrderMessage) m.getData();
+
+		/*
+		 * The current database method requires an employee ID for status history.
+		 * Since this cancellation is requested by the visitor through the client,
+		 * we use employee ID 1 as a system/default updater.
+		 * If the team has a specific system employee in the DB, replace this value.
+		 */
+		int changedByEmployeeId = 1;
+
+		try {
+			boolean cancelled = oc.cancelOrder(
+					cancelOrderMessage.getOrderId(),
+					changedByEmployeeId,
+					cancelOrderMessage.getReason()
+			);
+
+			if (cancelled) {
+				addLog("Order cancelled successfully. Order ID: " + cancelOrderMessage.getOrderId());
+				return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_SUCCESS);
+			}
+
+			addLog("Order cancellation failed. Order was not found or was not updated. Order ID: "
+					+ cancelOrderMessage.getOrderId());
+			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to cancel order: " + e.getMessage());
+			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
+		}
 	}
 	
 	/*
