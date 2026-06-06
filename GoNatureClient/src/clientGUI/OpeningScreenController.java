@@ -12,11 +12,31 @@ import javafx.stage.Stage;
 
 public class OpeningScreenController {
 
-    @FXML
-    private void handleEmployeeLogin(ActionEvent event) {
-        System.out.println("Employee Login clicked");
-        // בהמשך נעבור למסך EmployeeLogin.fxml
-    }
+	/*
+	 * Handles the click on the Employee Login button.
+	 * 
+	 * This method navigates the user to the employee login screen.
+	 * 
+	 * @param event the button click event
+	 */
+	@FXML
+	private void handleEmployeeLogin(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/EmployeeLogin.fxml")
+			);
+
+			Parent root = loader.load();
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Employee Login");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
     /*
      * Handles the click on the Customer Access button.

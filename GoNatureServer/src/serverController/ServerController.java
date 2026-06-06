@@ -13,6 +13,7 @@ import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
 import databaseControllers.GuideConnection;
 import databaseControllers.SubscriberConnection;
+import databaseControllers.EmployeeConnection;
 import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
@@ -29,6 +30,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private ParkConnection pc;
 	private SubscriberConnection sc;
 	private GuideConnection gc;
+	private EmployeeConnection ec;
 	private ParkParameterChangeRequestConnection pcrc;
 	private int allTimeUserCount = 1;
 	private ClientConnectionTableController serverGUIController;
@@ -47,6 +49,7 @@ public class ServerController implements ServerAndControllerConnection {
 			pcrc = ParkParameterChangeRequestConnection.getInstance();
 			sc = SubscriberConnection.getInstance();
 			gc = GuideConnection.getInstance();
+			ec = EmployeeConnection.getInstance();
 
 
 			addLog("Order database connection object created.");
@@ -335,7 +338,10 @@ public class ServerController implements ServerAndControllerConnection {
 		    return handleRegisterGuide(m);
 		    
 		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
-			return handleOccasionalCustomerAccess(m);    
+			return handleOccasionalCustomerAccess(m);   
+			
+		case EMPLOYEE_LOGIN_REQUEST:
+			return handleEmployeeLogin(m);	
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -474,6 +480,51 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 		}
 	}
+	
+	/*
+	 * Handles an employee login request received from the client.
+	 * 
+	 * The method receives username and password from the client, checks them
+	 * against the employee table, and returns the employee data if login succeeds.
+	 * 
+	 * @param m the message received from the client, containing EmployeeLoginRequest
+	 * @return a Message with an OperationResponse containing the login result
+	 */
+	private Message handleEmployeeLogin(Message m) {
+		EmployeeLoginRequest request = (EmployeeLoginRequest) m.getData();
+
+		try {
+			Employee employee = ec.loginEmployee(
+					request.getUsername(),
+					request.getPassword()
+			);
+
+			if (employee == null) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid username or password", null);
+
+				return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+			}
+
+			OperationResponse response =
+					new OperationResponse(true, "Employee login successful", employee);
+
+			addLog("Employee login successful: " + employee.getUsername()
+					+ ", role: " + employee.getRole());
+
+			return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while employee login: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while employee login", null);
+
+			return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+		}
+	}
 
 
 	/*
@@ -496,6 +547,11 @@ public class ServerController implements ServerAndControllerConnection {
 			if (pcrc != null) {
 				pcrc.close();
 				addLog("Park parameter change request database connection closed.");
+			}
+			
+			if (ec != null) {
+				ec.close();
+				addLog("Employee database connection closed.");
 			}
 
 			addLog("Database connections closed successfully.");

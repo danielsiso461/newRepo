@@ -12,6 +12,8 @@ import common.Message;
 import common.OrderRow;
 import common.Protocol;
 import common.UpdateMessage;
+import common.EmployeeLoginRequest;
+import common.OperationResponse;
 import clientCommon.*;
 import javafx.application.Platform;
 import common.OperationResponse;
@@ -39,6 +41,10 @@ public class ClientController implements ChatIF {
 	 * Observer pattern addition for occasional customer access screen.
 	 */
 	private List<OccasionalCustomerAccessObserver> occasionalCustomerAccessObservers = new ArrayList<>();
+	/*
+	 * Observer pattern addition for employee login screen.
+	 */
+	private List<EmployeeLoginObserver> employeeLoginObservers = new ArrayList<>();
 	
 
 	// Constructors ****************************************************
@@ -204,6 +210,10 @@ public class ClientController implements ChatIF {
 				OperationResponse response = (OperationResponse) m.getData();
 				notifyOccasionalCustomerAccessResult(response);
 				break;	
+			case EMPLOYEE_LOGIN_RESPONSE:
+				OperationResponse employeeLoginResponse = (OperationResponse) m.getData();
+				notifyEmployeeLoginResult(employeeLoginResponse);
+				break;	
 
 			default:
 				System.out.println("Error: Server Response Unknown in "
@@ -280,6 +290,37 @@ public class ClientController implements ChatIF {
 	public void removeParkObserver(ParkObserver observer) {
 		parkObservers.remove(observer);
 	}
+	
+	/*
+	 * Adds an employee login observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addEmployeeLoginObserver(EmployeeLoginObserver observer) {
+		if (observer != null && !employeeLoginObservers.contains(observer)) {
+			employeeLoginObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes an employee login observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeEmployeeLoginObserver(EmployeeLoginObserver observer) {
+		employeeLoginObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all employee login observers about the server response.
+	 * 
+	 * @param response the response received from the server
+	 */
+	private void notifyEmployeeLoginResult(OperationResponse response) {
+		for (EmployeeLoginObserver observer : employeeLoginObservers) {
+			observer.onEmployeeLoginResult(response);
+		}
+	}
 
 	/*
 	 * Observer pattern addition
@@ -308,6 +349,20 @@ public class ClientController implements ChatIF {
 	public void requestOccasionalCustomerAccess(int orderNumber) {
 		client.handleMessageFromClientUI(
 				new Message(orderNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
+		);
+	}
+	
+	/*
+	 * Sends the server an employee login request.
+	 * 
+	 * @param username the username entered by the employee
+	 * @param password the password entered by the employee
+	 */
+	public void requestEmployeeLogin(String username, String password) {
+		EmployeeLoginRequest request = new EmployeeLoginRequest(username, password);
+
+		client.handleMessageFromClientUI(
+				new Message(request, Protocol.EMPLOYEE_LOGIN_REQUEST)
 		);
 	}
 
