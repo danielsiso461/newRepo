@@ -27,7 +27,7 @@ import serverController.ServerController;
  * displays server host and IP details,
  * and shows server actions in the log area.
  */
-@SuppressWarnings("deprecation")
+
 public class ClientConnectionTableController {
 
 	/*

@@ -2,7 +2,7 @@ package clientCommon;
 
 import java.util.List;
 
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 /*
  * this interface represents all UI items waiting on updates from the server
@@ -13,7 +13,7 @@ public interface OrderObserver {
 	 * 
 	 * @param rows 	the orders
 	 */
-    void onOrdersReceived(List<OrderRow> rows);
+    void onOrdersReceived(List<Order> rows);
     
     /*
 	 * this function handles receiving an update for an order from the server

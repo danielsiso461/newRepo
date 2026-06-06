@@ -8,7 +8,12 @@ public final class ConstantsUI {
 			updatePage = "/clientGUI/OrderUpdatePage.fxml",
 			welcomePage = "/clientGUI/WelcomePage.fxml";
 			
-	
+	protected static final int
+			MIN_VISITORS = 1,
+			START_VISITORS = 1,
+			MAX_VISITORS = 15,
+			MIN_HOUR = 0,
+			MAX_HOUR = 23;
 	
 	private ConstantsUI() {}
 }

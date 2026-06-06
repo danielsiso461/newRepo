@@ -4,14 +4,10 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-import common.ParkInfo;
+import common.Park;
 
 import client.Client;
-import common.ChatIF;
-import common.Message;
-import common.OrderRow;
-import common.Protocol;
-import common.UpdateMessage;
+import common.*;
 import clientCommon.*;
 import javafx.application.Platform;
 
@@ -19,7 +15,7 @@ import javafx.application.Platform;
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
  */
-@SuppressWarnings("deprecation")
+
 public class ClientController implements ChatIF {
 	// Class variables *************************************************
 
@@ -29,13 +25,13 @@ public class ClientController implements ChatIF {
 	private String id = null;
 	private boolean userIssuedDisconnect = false;
 	// Observer pattern addition
-		private List<OrderObserver> observers = new ArrayList<>();
+	private List<OrderObserver> observers = new ArrayList<>();
 	/*
 	 * Observer pattern addition for park screens
 	 */
 	private List<ParkObserver> parkObservers = new ArrayList<>();
-
-	
+	// observer for making orders
+	private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
 
 	// Constructors ****************************************************
 
@@ -56,7 +52,13 @@ public class ClientController implements ChatIF {
 		}
 		this.id = id;
 	}
-
+	
+	// getters ***************************************************************************
+	public String getId() {
+		return id;
+	}
+	
+	// order observer ********************************************************************
 	/*
 	 * Observer pattern addition
 	 * adding observer to observer list
@@ -85,7 +87,7 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param rows the received orders
 	 */
-	private void notifyOrdersReceived(List<OrderRow> rows) {
+	private void notifyOrdersReceived(List<Order> rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
 		}
@@ -104,6 +106,22 @@ public class ClientController implements ChatIF {
 		}
 	}
 	
+	// make order observer ******************************************************************
+	public void addMakeOrderObserver(MakeOrderObserver o) {
+		if(!(o == null) && !(makeOrderObservers.contains(o)))
+			makeOrderObservers.add(o);
+	}
+	
+	public void removeMakeOrderObserver(MakeOrderObserver o) {
+		makeOrderObservers.remove(o);
+	}
+	
+	public void notifyParkNamesMakeOrderObserver(List<String> parkNames) {
+		for(MakeOrderObserver o : makeOrderObservers)
+			o.onParkNamesReceived(parkNames);
+	}
+	
+	// client interactions *****************************************************************
 	/*
 	 * sends the server a request for all orders of the user
 	 */
@@ -120,7 +138,7 @@ public class ClientController implements ChatIF {
 		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
 	}
 
-	// Instance methods ************************************************
+	// GUI methods **********************************************************************
 
 	/**
 	 * This method overrides the method in the ChatIF interface. 
@@ -146,7 +164,7 @@ public class ClientController implements ChatIF {
 				break;
 
 			case RETURN_ORDER:
-				List<OrderRow> rows = parseOrderMessage(m.getData());
+				List<Order> rows = parseOrderMessage(m.getData());
 
 				if (rows == null) {
 					break;
@@ -154,10 +172,22 @@ public class ClientController implements ChatIF {
 
 				notifyOrdersReceived(rows);
 				break;
-
+			
+			case RETURN_PARK_NAMES_SUCCESS:
+				List<String> parkNames = parseParkNamesMessage(m.getData());
+				if (parkNames == null) {
+					break;
+				}
+				notifyParkNamesMakeOrderObserver(parkNames);
+				break;
+				
+			case RETURN_PARK_NAMES_FAILURE:
+				notifyParkNamesMakeOrderObserver(null);
+				break;
+				
 			case ACTIVE_PARKS_RESULT:
 			case PARKS_UPDATED:
-				List<ParkInfo> parks = parseParkMessage(m.getData());
+				List<Park> parks = parseParkMessage(m.getData());
 
 				if (parks == null) {
 					break;
@@ -172,27 +202,15 @@ public class ClientController implements ChatIF {
 			}
 		});
 	}
+	
 	/*
 	 * this function is used to check if a given object is a list of orders
 	 * and return the order list if so
 	 * 
 	 * @param o 	Object to check
 	 */
-	private List<OrderRow> parseOrderMessage(Object o) {
-		List<OrderRow> rows = new ArrayList<>();
-		if (o instanceof List<?>) {
-			List<?> rawList = (List<?>) o;
-			for(Object row : rawList) {
-				if(row instanceof OrderRow)
-					rows.add((OrderRow) row);
-				else
-					return null;
-			}
-		} else
-			return null;
-		return rows;
-	}
 	
+	// disconnects *********************************************************************************
 	/*
 	 * this method handles clean disconnect from the server
 	 * when disconnect is issued by the user
@@ -215,11 +233,14 @@ public class ClientController implements ChatIF {
 	public boolean isUserIssuedDisconnect() {
 		return userIssuedDisconnect;
 	}
-
+	
 	public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
 		this.userIssuedDisconnect = userIssuedDisconnect;
+	
 	}
 	
+	
+	// park observers ******************************************************************
 	/*
 	 * Observer pattern addition
 	 * adding park observer to observer list
@@ -248,11 +269,13 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param parks the received parks
 	 */
-	private void notifyParksReceived(List<ParkInfo> parks) {
+	private void notifyParksReceived(List<Park> parks) {
 		for (ParkObserver observer : parkObservers) {
 			observer.onParksReceived(parks);
 		}
 	}
+	
+	
 	
 	/*
 	 * sends the server a request for all active parks
@@ -261,6 +284,8 @@ public class ClientController implements ChatIF {
 		client.handleMessageFromClientUI(new Message(null, Protocol.GET_ACTIVE_PARKS));
 	}
 
+	
+	
 	/*
 	 * sends a general message to the server
 	 * 
@@ -268,6 +293,9 @@ public class ClientController implements ChatIF {
 	 */
 	public void sendMessageToServer(Message message) {
 		client.handleMessageFromClientUI(message);
+	
+		
+	// message parsers *********************************************************************
 	}
 	
 	/*
@@ -276,15 +304,15 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param o Object to check
 	 */
-	private List<ParkInfo> parseParkMessage(Object o) {
-		List<ParkInfo> parks = new ArrayList<>();
+	private List<Park> parseParkMessage(Object o) {
+		List<Park> parks = new ArrayList<>();
 
 		if (o instanceof List<?>) {
 			List<?> rawList = (List<?>) o;
 
 			for (Object park : rawList) {
-				if (park instanceof ParkInfo) {
-					parks.add((ParkInfo) park);
+				if (park instanceof Park) {
+					parks.add((Park) park);
 				} else {
 					return null;
 				}
@@ -294,5 +322,47 @@ public class ClientController implements ChatIF {
 		}
 
 		return parks;
+	}
+	
+	/*
+	 * this function is used to check if a given object is a list of Orders
+	 * and return the order list if so
+	 * 
+	 * @param o 	Object to check
+	 */
+	private List<Order> parseOrderMessage(Object o) {
+		List<Order> rows = new ArrayList<>();
+		if (o instanceof List<?>) {
+			List<?> rawList = (List<?>) o;
+			for(Object row : rawList) {
+				if(row instanceof Order)
+					rows.add((Order) row);
+				else
+					return null;
+			}
+		} else
+			return null;
+		return rows;
+	}
+	
+	/*
+	 * this function is used to check if a given object is a list of Strings
+	 * and return the park names list if so
+	 * 
+	 * @param o 	Object to check
+	 */
+	private List<String> parseParkNamesMessage(Object o) {
+		List<String> names = new ArrayList<>();
+		if (o instanceof List<?>) {
+			List<?> rawList = (List<?>) o;
+			for(Object name : rawList) {
+				if(name instanceof String)
+					names.add((String) name);
+				else
+					return null;
+			}
+		} else
+			return null;
+		return names;
 	}
 }

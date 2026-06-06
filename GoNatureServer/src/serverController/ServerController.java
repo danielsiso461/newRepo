@@ -2,12 +2,18 @@ package serverController;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import common.*;
-
+import common.Message;
+import common.Order;
+import common.Park;
+import common.Protocol;
+import common.UpdateMessage;
 import databaseControllers.OrderConnection;
 import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
@@ -160,7 +166,7 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			addLog("Loading updated active parks before notifying clients.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Loaded " + parks.size() + " active parks for update notification.");
 
@@ -215,7 +221,7 @@ public class ServerController implements ServerAndControllerConnection {
 		case RETURN_ORDER:
 			addLog("Client requested orders list.");
 
-			List<OrderRow> req = null;
+			List<Order> req = null;
 
 			try {
 				req = oc.getUserOrders(m);
@@ -232,14 +238,42 @@ public class ServerController implements ServerAndControllerConnection {
 
 			addLog("No orders returned to client.");
 			break;
+			
+		/*@todo - this needs to be refactored to be a single request to the 
+		 * db controller of parks using a select statement
+		 */
+		case GET_PARK_NAMES:
+			addLog("Client requested active parks name list.");
 
+			try {
+				addLog("Loading active parks from database.");
+
+				List<Park> parks = pc.getAllActiveParksInfo();
+
+				addLog("Active parks list loaded from database. Number of parks: " + parks.size());
+				addLog("Returning active parks name list to client.");
+				List<String> parkNames = new ArrayList<>();
+				for(Park p : parks)
+					parkNames.add(p.getParkName());
+				return new Message(parkNames, Protocol.RETURN_PARK_NAMES_SUCCESS);
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to load active parks: " + e.getMessage());
+				return new Message(null, Protocol.RETURN_PARK_NAMES_FAILURE);
+			}
+			
+		case MAKE_ORDER:
+			
+			break;
+			
 		case GET_ACTIVE_PARKS:
 			addLog("Client requested active parks list.");
 
 			try {
 				addLog("Loading active parks from database.");
 
-				List<ParkInfo> parks = pc.getAllActiveParksInfo();
+				List<Park> parks = pc.getAllActiveParksInfo();
 
 				addLog("Active parks list loaded from database. Number of parks: " + parks.size());
 				addLog("Returning active parks list to client.");

@@ -1,13 +1,14 @@
 package clientGUI;
 
-/**
- * Sample Skeleton for 'makeOrderPage.fxml' Controller Class
- */
-
-import javafx.scene.control.TextField;
 import java.net.URL;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import clientCommon.MakeOrderObserver;
+import clientController.ClientController;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -19,9 +20,15 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
-import common.*;
 
-public class MakeOrderPageController {
+import common.*;
+/**
+ * Sample Skeleton for 'makeOrderPage.fxml' Controller Class
+ */
+
+import javafx.scene.control.TextField;
+
+public class MakeOrderPageController implements MakeOrderObserver {
 
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -48,20 +55,27 @@ public class MakeOrderPageController {
     private CheckBox guideCheckbox; // Value injected by FXMLLoader
 
     @FXML // fx:id="hourPicker"
-    private Spinner<Integer> hourPicker; // Value injected by FXMLLoader
+    private ComboBox<Integer> hourPicker; // Value injected by FXMLLoader
 
     @FXML // fx:id="makeOrderButton"
     private Button makeOrderButton; // Value injected by FXMLLoader
 
     @FXML // fx:id="parkPicker"
-    private ComboBox<Park> parkPicker; // Value injected by FXMLLoader
+    private ComboBox<String> parkPicker; // Value injected by FXMLLoader
 
     @FXML // fx:id="rescheduleButton"
     private Button rescheduleButton; // Value injected by FXMLLoader
 
     @FXML // fx:id="visitorNumberPicker"
     private Spinner<Integer> visitorNumberPicker; // Value injected by FXMLLoader
-
+    
+    // controller that handles the communication with the server
+    private ClientController clientController;
+    
+    // this is used to make sure a change happened when rescheduling
+    LocalDate date = null;
+    Integer hour = null;
+    
     @FXML
     void enterWaitingListButtonClicked(ActionEvent event) {
     	//@todo
@@ -69,17 +83,28 @@ public class MakeOrderPageController {
 
     @FXML
     void rescheduleButtonClicked(ActionEvent event) {
-    	//@todo
+    	buttonBar.setDisable(true);
+    	date = datePicker.getValue();
+    	hour = hourPicker.getValue();
+    	hourPicker.setDisable(false);
+    	datePicker.setDisable(false);
+    	makeOrderButton.setDisable(false);
     }
     
     @FXML
     void makeOrderButtonClicked(ActionEvent event) {
+    	// make sure we get the relevant data
     	if(parkPicker.getValue() == null) {
     		warningMessage("No Park Was Picked");
     		return;
     	}
     	if(datePicker.getValue() == null) {
     		warningMessage("No Date Was Picked");
+    		return;
+    	}
+    	if((date != null && date == datePicker.getValue()) ||
+    			(hour != null && hour == hourPicker.getValue())) {
+    		warningMessage("No Rescheduling happened");
     		return;
     	}
     	if(email.getText().isEmpty()) {
@@ -91,7 +116,19 @@ public class MakeOrderPageController {
     		return;
     	}
     	
-    	//@todo - depending on checkbox make the order
+    	makeOrderButton.setDisable(true);
+    	// we lock order details in
+    	toggleFields();
+    	
+    	Order o = new Order(datePicker.getValue(), visitorNumberPicker.getValue(),
+    			Integer.parseInt(clientController.getId()), parkPicker.getValue());
+    	
+    	if (guideCheckbox.isSelected())
+    		o.setOrderType(Order.ORDER_TYPE_ORGANIZED);
+    	else
+    		o.setOrderType(Order.ORDER_TYPE_PRIVATE);
+    	
+    	clientController.sendMessageToServer(new Message(o, Protocol.MAKE_ORDER));
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -110,13 +147,20 @@ public class MakeOrderPageController {
         
         //disable button bar since we don't want those buttons available from the start
         buttonBar.setDisable(true);
-        //set the hour spinner to have range 0-23, starting from 12
-        hourPicker.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, 12));
+        // make sure make order button is enabled
+        makeOrderButton.setDisable(false);
+        //set the hour comboBox to have range 0-23, starting from 12
+        hourPicker.getItems().addAll(IntStream.rangeClosed(
+        		ConstantsUI.MIN_HOUR, ConstantsUI.MAX_HOUR)
+        	             .boxed().collect(Collectors.toList()));
         //set the number of visitors picker to have range 1-15, starting from 1
-        visitorNumberPicker.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15, 1));
+        visitorNumberPicker.setValueFactory(
+        		new SpinnerValueFactory.IntegerSpinnerValueFactory(
+        				ConstantsUI.MIN_VISITORS, ConstantsUI.MAX_VISITORS, 
+        				ConstantsUI.START_VISITORS));
         
         // setting up the date picker
-        // grays out all dates before the current date, makes the unselectable
+        // grays out all dates before the current date, makes them unselectable
         datePicker.setEditable(false);
         datePicker.setDayCellFactory(picker -> new DateCell() {
             public void updateItem(LocalDate date, boolean empty) {
@@ -129,8 +173,13 @@ public class MakeOrderPageController {
             }
         });
         
+        /*request park names*/
+        requestActiveParkList();
+        
+        
+
         /*@todo
-         * load parks into combo box
+         * deal with X
          * */
     }
     
@@ -138,5 +187,57 @@ public class MakeOrderPageController {
     	errorLabel.setText(s);
     }
     
+    private void toggleFields() {
+    	parkPicker.setDisable(!parkPicker.isDisabled());
+    	datePicker.setDisable(!datePicker.isDisabled());
+    	hourPicker.setDisable(!hourPicker.isDisabled());
+    	visitorNumberPicker.setDisable(!visitorNumberPicker.isDisabled());
+    	email.setDisable(!email.isDisabled());
+    	guideCheckbox.setDisable(!guideCheckbox.isDisabled());
+    }
+    
+    public void loadParkNames(List<String> parkNames) {
+    	if(parkNames == null)
+    		return;
+    	parkPicker.getItems().addAll(parkNames);
+    }
+    
+    private void requestActiveParkList() {
+    	clientController.sendMessageToServer(new Message(null, Protocol.GET_PARK_NAMES));
+    }
+    
+
+    
+    public void setClientController(ClientController c) {
+    	if(c == null)
+    		return;
+    	clientController = c;
+    	c.addMakeOrderObserver(this);
+    }
+
+	@Override
+	public void onParkNamesReceived(List<String> parkNames) {
+		loadParkNames(parkNames);	
+	}
+
+	@Override
+	public void onMakeOrderServerResponse(Message m) {
+		if (m == null) {
+			warningMessage("An unknown error occurred.");
+			toggleFields();
+			makeOrderButton.setDisable(false);
+		} else if (m.getType() == Protocol.MAKE_ORDER_SUCCESS) {
+			warningMessage("Order made!");
+			//@todo update order table to include new order
+			// to do this we need to add to the table observer a new method that adds an order
+		} else if (m.getType() == Protocol.MAKE_ORDER_FAIL_TIME) {
+			warningMessage("Visit time is unavailable, please Enter Waiting List or Reschedule");
+			buttonBar.setDisable(false);
+		} else if (m.getType() == Protocol.MAKE_ORDER_FAIL_NOT_GUIDE) {
+			warningMessage("You are not a guide, cannot book organized visit");
+			guideCheckbox.setSelected(false);
+			makeOrderButton.setDisable(false);
+		}
+	}
 }
 
