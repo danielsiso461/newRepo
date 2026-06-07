@@ -17,7 +17,7 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
-
+import databaseControllers.WaitingListConnection;
 // this class is the controller that connects 
 // the networking part of the server and the UI part of it. 
 // It is also the logic behind it
@@ -32,6 +32,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private ParkParameterChangeRequestConnection pcrc;
 	private int allTimeUserCount = 1;
 	private ClientConnectionTableController serverGUIController;
+	private WaitingListConnection wlc;
 
 	public ServerController(ClientConnectionTableController serverGUIController) {
 		this.serverGUIController = serverGUIController;
@@ -47,11 +48,13 @@ public class ServerController implements ServerAndControllerConnection {
 			pcrc = ParkParameterChangeRequestConnection.getInstance();
 			sc = SubscriberConnection.getInstance();
 			gc = GuideConnection.getInstance();
+			wlc = WaitingListConnection.getInstance();
 
 
 			addLog("Order database connection object created.");
 			addLog("Park database connection object created.");
 			addLog("Park parameter change request database connection object created.");
+			addLog("Waiting list database connection object created.");
 			addLog("All database connection objects were created successfully.");
 
 		} catch (SQLException e) {
@@ -337,7 +340,11 @@ public class ServerController implements ServerAndControllerConnection {
 		    return handleRegisterGuide(m);
 		    
 		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
-			return handleOccasionalCustomerAccess(m);    
+			return handleOccasionalCustomerAccess(m);
+
+		case JOIN_WAITING_LIST_REQUEST:
+			addLog("Client requested to join the waiting list.");
+			return handleJoinWaitingList(m);  
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -429,6 +436,7 @@ public class ServerController implements ServerAndControllerConnection {
 	        return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 	    }
 	}
+	
 	/**
 	 * Handles a client request to cancel an existing order.
 	 *
@@ -477,7 +485,50 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
 		}
 	}
-	
+	/**
+	 * Handles a client request to join the waiting list.
+	 *
+	 * The request data is received as a WaitingListMessage.
+	 * The server inserts the request into the waiting_list table, assigns the next
+	 * queue position, and returns success or failure to the client.
+	 *
+	 * @param m the message received from the client, containing WaitingListMessage
+	 * @return a message with JOIN_WAITING_LIST_SUCCESS or JOIN_WAITING_LIST_FAILURE
+	 */
+	private Message handleJoinWaitingList(Message m) {
+		if (!(m.getData() instanceof WaitingListMessage)) {
+			addLog("ERROR - Invalid waiting list request data.");
+			return new Message(m.getData(), Protocol.JOIN_WAITING_LIST_FAILURE);
+		}
+
+		WaitingListMessage waitingListMessage = (WaitingListMessage) m.getData();
+
+		try {
+			int queuePosition = wlc.addToWaitingList(
+					waitingListMessage.getSubscriberId(),
+					waitingListMessage.getParkId(),
+					waitingListMessage.getRequestedOrderDate(),
+					waitingListMessage.getNumberOfVisitors()
+			);
+
+			// Updates the message with the queue position assigned by the database layer.
+			waitingListMessage.setQueuePosition(queuePosition);
+			waitingListMessage.setWaitingStatus("waiting");
+
+			addLog("Visitor added to waiting list successfully. Subscriber ID: "
+					+ waitingListMessage.getSubscriberId()
+					+ ", park ID: " + waitingListMessage.getParkId()
+					+ ", queue position: " + queuePosition);
+
+			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to add visitor to waiting list: " + e.getMessage());
+
+			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
+		}
+	}
 	/*
 	 * Handles a client request for occasional customer access by order number.
 	 * 
@@ -538,6 +589,10 @@ public class ServerController implements ServerAndControllerConnection {
 			if (pcrc != null) {
 				pcrc.close();
 				addLog("Park parameter change request database connection closed.");
+			}
+			if (wlc != null) {
+				wlc.close();
+				addLog("Waiting list database connection closed.");
 			}
 
 			addLog("Database connections closed successfully.");

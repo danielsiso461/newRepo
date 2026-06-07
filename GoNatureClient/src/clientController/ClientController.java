@@ -15,6 +15,7 @@ import common.ParkInfo;
 import common.Protocol;
 import common.UpdateMessage;
 import javafx.application.Platform;
+import common.WaitingListMessage;
 
 /*
  * this class is the controller that connects the client networking side to the UI side
@@ -50,7 +51,11 @@ public class ClientController implements ChatIF {
 	 * These observers are notified when access-check responses arrive from the server.
 	 */
 	private List<OccasionalCustomerAccessObserver> occasionalCustomerAccessObservers = new ArrayList<>();
-
+	/*
+	 * Observer pattern addition for waiting list screens.
+	 * These observers are notified when waiting-list responses arrive from the server.
+	 */
+	private List<WaitingListObserver> waitingListObservers = new ArrayList<>();
 	// Constructors ****************************************************
 
 	/**
@@ -160,6 +165,37 @@ public class ClientController implements ChatIF {
 			observer.onOccasionalCustomerAccessResult(response);
 		}
 	}
+	/*
+	 * Adds a waiting list observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addWaitingListObserver(WaitingListObserver observer) {
+		if (observer != null && !waitingListObservers.contains(observer)) {
+			waitingListObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes a waiting list observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeWaitingListObserver(WaitingListObserver observer) {
+		waitingListObservers.remove(observer);
+	}
+
+	/**
+	 * Notifies all waiting list observers about the result of a join waiting list request.
+	 *
+	 * @param success            true if the visitor was added to the waiting list successfully
+	 * @param waitingListMessage the waiting list data returned by the server
+	 */
+	private void notifyJoinWaitingListResult(boolean success, WaitingListMessage waitingListMessage) {
+		for (WaitingListObserver observer : waitingListObservers) {
+			observer.onJoinWaitingListResult(success, waitingListMessage);
+		}
+	}
 
 	/*
 	 * Sends the server a request for all orders of the current user.
@@ -188,6 +224,16 @@ public class ClientController implements ChatIF {
 	 */
 	public void requestCancelOrder(CancelOrderMessage cancelOrderMessage) {
 		client.handleMessageFromClientUI(new Message(cancelOrderMessage, Protocol.CANCEL_ORDER));
+	}
+	/**
+	 * Sends the server a request to add a visitor to the waiting list.
+	 *
+	 * @param waitingListMessage the data of the waiting list request
+	 */
+	public void requestJoinWaitingList(WaitingListMessage waitingListMessage) {
+		client.handleMessageFromClientUI(
+				new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_REQUEST)
+		);
 	}
 
 	/*
@@ -238,6 +284,13 @@ public class ClientController implements ChatIF {
 
 			case CANCEL_ORDER_FAILURE:
 				notifyCancelResult(false, (CancelOrderMessage) m.getData());
+				break;
+			case JOIN_WAITING_LIST_SUCCESS:
+				notifyJoinWaitingListResult(true, (WaitingListMessage) m.getData());
+				break;
+
+			case JOIN_WAITING_LIST_FAILURE:
+				notifyJoinWaitingListResult(false, (WaitingListMessage) m.getData());
 				break;
 
 			case RETURN_ORDER:
@@ -313,6 +366,10 @@ public class ClientController implements ChatIF {
 	 */
 	public void handleServerIssuedDisconnect() {
 		for (OrderObserver observer : observers) {
+			observer.handleExit();
+		}
+
+		for (WaitingListObserver observer : waitingListObservers) {
 			observer.handleExit();
 		}
 	}

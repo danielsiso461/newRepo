@@ -42,6 +42,20 @@ public enum Protocol {
 
 	OCCASIONAL_CUSTOMER_ACCESS_REQUEST,
 	OCCASIONAL_CUSTOMER_ACCESS_RESPONSE,
+	/**
+	 * Sent by the client when the visitor wants to join the waiting list.
+	 */
+	JOIN_WAITING_LIST_REQUEST,
+
+	/**
+	 * Sent by the server when the visitor was added to the waiting list successfully.
+	 */
+	JOIN_WAITING_LIST_SUCCESS,
+
+	/**
+	 * Sent by the server when adding the visitor to the waiting list failed.
+	 */
+	JOIN_WAITING_LIST_FAILURE,
 
 	SEARCH_SUBSCRIBER_REQUEST,
 	SEARCH_SUBSCRIBER_RESPONSE,
