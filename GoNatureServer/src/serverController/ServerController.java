@@ -2,11 +2,10 @@ package serverController;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import common.Message;
@@ -264,6 +263,39 @@ public class ServerController implements ServerAndControllerConnection {
 			}
 			
 		case MAKE_ORDER:
+			if(!(m.getData() instanceof Order)) {
+				return new Message(null, Protocol.MAKE_ORDER_FAIL);
+			}
+				
+			Order o = (Order) m.getData();
+			
+			o.setPlacementDate(LocalDate.now());
+			
+			int parkId = -1;
+			// @todo - this needs to have an sql query that returns the parkId when given a name
+			try {
+				addLog("Loading active parks from database.");
+				
+				List<Park> parks = pc.getAllActiveParksInfo();
+				for(Park p : parks) {
+					if(o.getParkName().equals(p.getParkName()))
+						parkId = p.getParkId();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to load active parks: " + e.getMessage());
+				return new Message(null, Protocol.MAKE_ORDER_FAIL);
+			}
+			if(parkId == -1)
+				return new Message(null, Protocol.MAKE_ORDER_FAIL);
+			o.setParkId(parkId);
+			
+			if(o.getOrderType() == Order.ORDER_TYPE_ORGANIZED) {
+				//@todo check if user is a guide
+			}
+				
+			
+			//@todo check if order is valid, book order, add parameters
 			
 			break;
 			

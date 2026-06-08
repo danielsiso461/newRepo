@@ -13,7 +13,13 @@ import java.time.LocalDate;
 public class Order implements Serializable {
 	public static final String 
 		ORDER_TYPE_ORGANIZED = "organized_group",
-		ORDER_TYPE_PRIVATE = "private";
+		ORDER_TYPE_PRIVATE = "private",
+		ORDER_STATUS_PENDING = "pending",
+		ORDER_STATUS_APPROVED = "approved",
+		ORDER_STATUS_CANCELLED = "cancelled",
+		ORDER_STATUS_EXPIRED = "expired",
+		ORDER_STATUS_COMPLETED = "completed",
+		ORDER_STATUS_NO_SHOW = "no_show";
 	/*
 	 * serial version UID for serialization
 	 */
@@ -28,6 +34,7 @@ public class Order implements Serializable {
 	 * stores the park id of the order
 	 */
 	private Integer parkId;
+	// used to get parkId on the server (park name is unique)
 	private String parkName;
 
 	/*
@@ -121,8 +128,7 @@ public class Order implements Serializable {
 		this.visitorNumber = visitorNumber;
 		this.userId = userId;
 		this.parkName = parkName;
-		this.guideId = userId;
-		orderStatus = "pending";
+		orderStatus = ORDER_STATUS_PENDING;
 	}
 	
 	/*
@@ -178,6 +184,15 @@ public class Order implements Serializable {
 	public Integer getParkId() {
 		return parkId;
 	}
+	
+	/*
+	 * getter that returns the park name
+	 * 
+	 * @return the park name
+	 */
+	public String getParkName(){
+		return parkName;
+	}
 
 	/*
 	 * getter that returns the guide ID
@@ -222,6 +237,18 @@ public class Order implements Serializable {
 	 */
 	public LocalDate getPlacementDate() {
 		return placementDate;
+	}
+	
+	/*
+	 * setter that updates the placement date
+	 * 
+	 * this function is used by the SERVER to set the date of the order placement
+	 * it is done by the server to ensure uniformity
+	 * 
+	 * @param placementDate the order placement date
+	 */
+	public void setPlacementDate(LocalDate placementDate) {
+		this.placementDate = placementDate;
 	}
 
 	/*

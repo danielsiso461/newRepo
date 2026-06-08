@@ -118,15 +118,19 @@ public class MakeOrderPageController implements MakeOrderObserver {
     	
     	makeOrderButton.setDisable(true);
     	// we lock order details in
-    	toggleFields();
+    	disableFields();
     	
     	Order o = new Order(datePicker.getValue(), visitorNumberPicker.getValue(),
     			Integer.parseInt(clientController.getId()), parkPicker.getValue());
     	
-    	if (guideCheckbox.isSelected())
+    	if (guideCheckbox.isSelected()) {
     		o.setOrderType(Order.ORDER_TYPE_ORGANIZED);
-    	else
+    		o.setGuideId(Integer.parseInt(clientController.getId()));
+    	} else {
     		o.setOrderType(Order.ORDER_TYPE_PRIVATE);
+    		o.setGuideId(null);
+    	}
+    		
     	
     	clientController.sendMessageToServer(new Message(o, Protocol.MAKE_ORDER));
     }
@@ -187,13 +191,22 @@ public class MakeOrderPageController implements MakeOrderObserver {
     	errorLabel.setText(s);
     }
     
-    private void toggleFields() {
-    	parkPicker.setDisable(!parkPicker.isDisabled());
-    	datePicker.setDisable(!datePicker.isDisabled());
-    	hourPicker.setDisable(!hourPicker.isDisabled());
-    	visitorNumberPicker.setDisable(!visitorNumberPicker.isDisabled());
-    	email.setDisable(!email.isDisabled());
-    	guideCheckbox.setDisable(!guideCheckbox.isDisabled());
+    private void disableFields() {
+    	parkPicker.setDisable(true);
+    	datePicker.setDisable(true);
+    	hourPicker.setDisable(true);
+    	visitorNumberPicker.setDisable(true);
+    	email.setDisable(true);
+    	guideCheckbox.setDisable(true);
+    }
+    
+    private void enableFields() {
+    	parkPicker.setDisable(false);
+    	datePicker.setDisable(false);
+    	hourPicker.setDisable(false);
+    	visitorNumberPicker.setDisable(false);
+    	email.setDisable(false);
+    	guideCheckbox.setDisable(false);
     }
     
     public void loadParkNames(List<String> parkNames) {
@@ -219,12 +232,12 @@ public class MakeOrderPageController implements MakeOrderObserver {
 	public void onParkNamesReceived(List<String> parkNames) {
 		loadParkNames(parkNames);	
 	}
-
+	
 	@Override
 	public void onMakeOrderServerResponse(Message m) {
 		if (m == null) {
 			warningMessage("An unknown error occurred.");
-			toggleFields();
+			enableFields();
 			makeOrderButton.setDisable(false);
 		} else if (m.getType() == Protocol.MAKE_ORDER_SUCCESS) {
 			warningMessage("Order made!");
@@ -237,7 +250,13 @@ public class MakeOrderPageController implements MakeOrderObserver {
 			warningMessage("You are not a guide, cannot book organized visit");
 			guideCheckbox.setSelected(false);
 			makeOrderButton.setDisable(false);
+		} else if (m.getType() == Protocol.MAKE_ORDER_FAIL) {
+			warningMessage("Unknown Error occurred");
+			enableFields();
+			makeOrderButton.setDisable(false);
 		}
+		
+		
 	}
 }
 
