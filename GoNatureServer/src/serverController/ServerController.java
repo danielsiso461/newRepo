@@ -5,7 +5,7 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import databaseControllers.DBConnectionPool;
 import common.GuideRegistrationRequest;
 import common.Message;
 import common.OperationResponse;
@@ -519,6 +519,10 @@ public class ServerController implements ServerAndControllerConnection {
 
 	/**
 	 * Closes all database connections safely.
+	 * 
+	 * Each database connector returns its connection to the connection pool.
+	 * After all connectors are closed, the connection pool closes all available
+	 * database connections.
 	 */
 	private void closeDBConnection() {
 		try {
@@ -526,28 +530,31 @@ public class ServerController implements ServerAndControllerConnection {
 
 			if (oc != null) {
 				oc.close();
-				addLog("Order database connection closed.");
+				addLog("Order database connection returned to pool.");
 			}
 
 			if (pc != null) {
 				pc.close();
-				addLog("Park database connection closed.");
+				addLog("Park database connection returned to pool.");
 			}
 
 			if (pcrc != null) {
 				pcrc.close();
-				addLog("Park parameter change request database connection closed.");
+				addLog("Park parameter change request database connection returned to pool.");
 			}
 
 			if (sc != null) {
 				sc.close();
-				addLog("Subscriber database connection closed.");
+				addLog("Subscriber database connection returned to pool.");
 			}
 
 			if (gc != null) {
 				gc.close();
-				addLog("Guide database connection closed.");
+				addLog("Guide database connection returned to pool.");
 			}
+
+			DBConnectionPool.getInstance().closeAllConnections();
+			addLog("All database pool connections were closed.");
 
 			addLog("Database connections closed successfully.");
 

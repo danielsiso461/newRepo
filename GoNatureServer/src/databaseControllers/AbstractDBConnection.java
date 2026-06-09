@@ -1,7 +1,6 @@
 package databaseControllers;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,45 +15,32 @@ public abstract class AbstractDBConnection {
 	 */
 	protected Connection conn;
 
-	// Connection details - SAME for all subclasses
-	private static final String URL = "jdbc:mysql://localhost:3306/gonature?allowLoadLocalInfile=true&serverTimezone=Asia/Jerusalem&useSSL=false";
-	private static final String USER = "root";
-	private static String password = "";
-
 	/**
-	 * Connects to the database.
+	 * Connects to the database by taking a connection from the connection pool.
 	 * 
-	 * @throws SQLException if the connection fails
+	 * @throws SQLException if getting a connection from the pool fails
 	 */
 	public void connect() throws SQLException {
-		if (password == null || password.isEmpty()) {
-			throw new SQLException("DB password was not entered.");
-		}
-
-		conn = DriverManager.getConnection(URL, USER, password);
+		conn = DBConnectionPool.getInstance().getConnection();
 	}
-	
-	/*
-	 * this function saves the DB password entered by the user
+
+	/**
+	 * Saves the DB password entered by the user.
+	 * 
+	 * @param dbPassword the database password entered by the user
 	 */
 	public static void setPassword(String dbPassword) {
-		password = dbPassword;
+		DBConnectionPool.getInstance().setPassword(dbPassword);
 	}
 
-	/*
-	 * this function checks if the entered DB password is correct
+	/**
+	 * Checks if the entered DB password is correct.
 	 * 
 	 * @param dbPassword the password entered by the user
 	 * @return true if the connection succeeds, false otherwise
 	 */
 	public static boolean testConnection(String dbPassword) {
-		try {
-			Connection testConn = DriverManager.getConnection(URL, USER, dbPassword);
-			testConn.close();
-			return true;
-		} catch (SQLException e) {
-			return false;
-		}
+		return DBConnectionPool.testConnection(dbPassword);
 	}
 
 	/**
@@ -117,7 +103,7 @@ public abstract class AbstractDBConnection {
 
 		pstmt.close();
 	}
-	
+
 	/**
 	 * This method is a general insert query.
 	 * It inserts a new record into the table using the given columns and values.
@@ -195,13 +181,17 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * This method closes the DB connection.
+	 * Returns the DB connection to the connection pool.
 	 * 
-	 * @throws SQLException if closing the connection fails
+	 * The connection is not closed immediately. It is returned to the pool so other
+	 * database connector classes can reuse it.
+	 * 
+	 * @throws SQLException if returning the connection fails
 	 */
 	public void close() throws SQLException {
-		if (conn != null && !conn.isClosed()) {
-			conn.close();
+		if (conn != null) {
+			DBConnectionPool.getInstance().releaseConnection(conn);
+			conn = null;
 		}
 	}
 }
