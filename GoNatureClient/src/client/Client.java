@@ -70,6 +70,24 @@ public class Client extends AbstractClient {
 	        });
 		}
 	}
+	
+	/**
+	 * This method is called when an exception occurs in the connection to the server.
+	 * 
+	 * This usually happens when the server crashes, closes unexpectedly, or the
+	 * network connection is lost.
+	 * In this case, the client exits safely from the JavaFX application thread.
+	 *
+	 * @param exception the exception that caused the connection failure
+	 */
+	@Override
+	protected void connectionException(Exception exception) {
+		Platform.runLater(() -> {
+			System.out.println("Connection to server was lost.");
+			Platform.exit();
+			System.exit(0);
+		});
+	}
 
 	/**
 	 * This method terminates the client.
