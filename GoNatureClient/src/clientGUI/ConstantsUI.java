@@ -10,9 +10,7 @@ public final class ConstantsUI {
 			
 	protected static final int
 			MIN_VISITORS = 1,
-			START_VISITORS = 1,
-			MIN_HOUR = 0,
-			MAX_HOUR = 23;
+			START_VISITORS = 1;
 	
 	private ConstantsUI() {}
 }
