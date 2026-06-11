@@ -37,7 +37,6 @@ import javafx.stage.WindowEvent;
 /*
  * this class is the UI controller for the update page
  */
-@SuppressWarnings("deprecation")
 public class OrderTableDisplayController implements OrderObserver, Runnable {
 	private ClientController clientController;
 	private Set<Integer> awaitingUpdate = new HashSet<>();
@@ -120,7 +119,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * calls the relevant handler for updating
 	 * (some parameters are here to match the javafx contract)
 	 * 
-	 * @param obs				the observable property of the tableView (OrderRow)
+	 * @param obs				the observable property of the tableView (Order)
 	 * @param oldSelection		the old row selection
 	 * @param newSelection		the newly selected row
 	 */

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.ResourceBundle;
 
 import clientController.ClientController;
+import common.CommonConstants;
 import common.UpdateMessage;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -196,7 +197,9 @@ public class OrderUpdateController {
         assert updateLabel != null : "fx:id=\"updateLabel\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         
         // setting up the spinner
-        OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 15, 1));
+        OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
+        		CommonConstants.MIN_VISITOR_COUNT, CommonConstants.MAX_VISITOR_COUNT, 
+        		ConstantsUI.START_VISITORS));
         
         // setting up the date picker
         // grays out all dates before the current date, makes the unselectable
