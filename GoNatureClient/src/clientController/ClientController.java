@@ -17,6 +17,7 @@ import common.OperationResponse;
 import clientCommon.*;
 import javafx.application.Platform;
 import common.OperationResponse;
+import common.ExistingCustomerLoginRequest;
 /*
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
@@ -45,6 +46,11 @@ public class ClientController implements ChatIF {
 	 * Observer pattern addition for employee login screen.
 	 */
 	private List<EmployeeLoginObserver> employeeLoginObservers = new ArrayList<>();
+	
+	/*
+	 * Observer pattern addition for existing customer login screen.
+	 */
+	private List<ExistingCustomerLoginObserver> existingCustomerLoginObservers = new ArrayList<>();
 	
 
 	// Constructors ****************************************************
@@ -145,6 +151,22 @@ public class ClientController implements ChatIF {
 		}
 	}
 	
+	public void addExistingCustomerLoginObserver(ExistingCustomerLoginObserver observer) {
+		if (observer != null && !existingCustomerLoginObservers.contains(observer)) {
+			existingCustomerLoginObservers.add(observer);
+		}
+	}
+
+	public void removeExistingCustomerLoginObserver(ExistingCustomerLoginObserver observer) {
+		existingCustomerLoginObservers.remove(observer);
+	}
+
+	private void notifyExistingCustomerLoginResult(OperationResponse response) {
+		for (ExistingCustomerLoginObserver observer : existingCustomerLoginObservers) {
+			observer.onExistingCustomerLoginResult(response);
+		}
+	}
+	
 	/*
 	 * sends the server a request for all orders of the user
 	 */
@@ -159,6 +181,20 @@ public class ClientController implements ChatIF {
 	 */
 	public void requestUpdate(UpdateMessage um) {
 		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
+	}
+	
+	/*
+	 * Sends the server an existing customer login request.
+	 * 
+	 * @param username the username entered by the customer
+	 * @param password the password entered by the customer
+	 */
+	public void requestExistingCustomerLogin(String username, String password) {
+		ExistingCustomerLoginRequest request = new ExistingCustomerLoginRequest(username, password);
+
+		client.handleMessageFromClientUI(
+				new Message(request, Protocol.EXISTING_CUSTOMER_LOGIN_REQUEST)
+		);
 	}
 
 	// Instance methods ************************************************
@@ -213,6 +249,11 @@ public class ClientController implements ChatIF {
 			case EMPLOYEE_LOGIN_RESPONSE:
 				OperationResponse employeeLoginResponse = (OperationResponse) m.getData();
 				notifyEmployeeLoginResult(employeeLoginResponse);
+				break;
+				
+			case EXISTING_CUSTOMER_LOGIN_RESPONSE:
+				OperationResponse existingCustomerLoginResponse = (OperationResponse) m.getData();
+				notifyExistingCustomerLoginResult(existingCustomerLoginResponse);
 				break;	
 
 			default:
@@ -342,13 +383,15 @@ public class ClientController implements ChatIF {
 	}
 	
 	/*
-	 * Sends the server a request to check occasional customer access by order number.
+	 * Sends the server an occasional customer access request.
 	 * 
-	 * @param orderNumber the order number entered by the customer
+	 * The occasional customer identifies himself by ID number.
+	 * 
+	 * @param customerIdNumber the ID number entered by the occasional customer
 	 */
-	public void requestOccasionalCustomerAccess(int orderNumber) {
+	public void requestOccasionalCustomerAccess(String customerIdNumber) {
 		client.handleMessageFromClientUI(
-				new Message(orderNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
+				new Message(customerIdNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
 		);
 	}
 	
@@ -399,5 +442,18 @@ public class ClientController implements ChatIF {
 		}
 
 		return parks;
+	}
+	
+	/*
+	 * Sends the server a request for all orders of a specific subscriber.
+	 * 
+	 * This method is used after an existing customer logs in successfully.
+	 * 
+	 * @param subscriberId the subscriber id whose orders should be loaded
+	 */
+	public void requestOrdersBySubscriberId(int subscriberId) {
+		client.handleMessageFromClientUI(
+				new Message(String.valueOf(subscriberId), Protocol.RETURN_ORDER)
+		);
 	}
 }

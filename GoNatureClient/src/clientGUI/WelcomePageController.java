@@ -61,48 +61,6 @@ public class WelcomePageController {
     @FXML // fx:id="messageLabel"
     private Label messageLabel; // Value injected by FXMLLoader
 
-    /*
-     * this function handles pressing the confirm button
-     * 
-     * first validates the user ID
-     * then receives the server address
-     * and finally launches the order table page
-     * 
-     * @param event the event of pressing the confirm button
-     */
-    /*
-    @FXML
-    void btnClick(ActionEvent event) {
-    	if(!idEntered) {
-    		id = inputField.getText();
-
-    		// ID should have 9 characters
-			if (id.length() != 9) {
-				messageLabel.setTextFill(Color.RED);
-				messageLabel.setText("id should be 9 digits long");
-			} else {
-				try {
-					int val = Integer.parseInt(id);
-
-					if (val > 0) {
-						idEntered = true;
-						messageLabel.setText("");
-						inputField.clear();
-						commandLabel.setText("Enter server address");
-					}
-				} catch (NumberFormatException e) {
-					messageLabel.setTextFill(Color.RED);
-					messageLabel.setText("id should be a number");
-				}
-			}
-    	} else {
-    		address = inputField.getText();
-
-    		// should launch the order table page
-    		launchOrderTable();
-    	}
-    }
-    */
     
     /*
      * This function handles pressing the confirm button.
@@ -193,6 +151,9 @@ public class WelcomePageController {
     		
     		// Gives the employee login screen the active ClientController, so it can send login requests to the server.
     		EmployeeLoginController.setClientController(clientController);
+    		
+    		// Gives the registered customer login screen the active ClientController, so it can send requests to the server.
+    		ExistingCustomerLoginController.setClientController(clientController);
 
     	} catch (IOException e) {
     		messageLabel.setTextFill(Color.RED);
@@ -206,57 +167,5 @@ public class WelcomePageController {
     	stage.setTitle("GoNature");
     	stage.show();
     }
-    
-    /*
-     * this function loads and opens the order table page
-     * 
-     * creates the client controller
-     * requests the user's orders
-     * and replaces the current scene with the order table scene
-     */
-    /*
-    private void launchOrderTable() {
-    	Stage stage = (Stage) inputField.getScene().getWindow();
-
-    	// load the FXML file of the table of orders
-    	FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.orderTable));
-    	Parent root = null;
-		try {
-			root = loader.load();
-		} catch (IOException e) {
-			e.printStackTrace();
-			Platform.exit();
-			System.exit(1);
-		}
-    	// get controller
-    	OrderTableDisplayController controller = loader.getController();
-
-    	// establish connection between UI controller and client controller
-    	ClientController clientController;
-    	try {
-    		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, id);
-    		
-    		//Gives the occasional customer access screen the active ClientController, so it can send requests to the server.
-    		OccasionalCustomerAccessController.setClientController(clientController);
-    	} catch (IOException e) {
-    		messageLabel.setTextFill(Color.RED);
-    		messageLabel.setText("Bad server address");
-    		inputField.clear();
-			return;
-    	}
-    	
-    	controller.setClientController(clientController);
-
-    	// get the orders of the user and load them into the order table
-    	clientController.requestOrders();
-
-    	// show UI
-    	Scene scene = new Scene(root);
-    	stage.setScene(scene);
-    	stage.setTitle("Order Table");
-    	stage.show();
-    	Platform.runLater(controller);
-    }
-    */
     
 }

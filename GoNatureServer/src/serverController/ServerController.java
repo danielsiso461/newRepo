@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import common.*;
+import java.util.ArrayList;
 
 import databaseControllers.OrderConnection;
 import databaseControllers.ParkConnection;
@@ -342,6 +343,9 @@ public class ServerController implements ServerAndControllerConnection {
 			
 		case EMPLOYEE_LOGIN_REQUEST:
 			return handleEmployeeLogin(m);	
+			
+		case EXISTING_CUSTOMER_LOGIN_REQUEST:
+			return handleExistingCustomerLogin(m);
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -435,47 +439,46 @@ public class ServerController implements ServerAndControllerConnection {
 	}
 	
 	/*
-	 * Handles a client request for occasional customer access by order number.
+	 * Handles an occasional customer access request received from the client.
 	 * 
-	 * The method receives a Message that contains the order number.
-	 * It searches for the order in the database.
-	 * If the order exists, it returns a successful OperationResponse containing
-	 * the OrderRow object. Otherwise, it returns a failure response.
+	 * The occasional customer identifies himself using an ID number.
+	 * The method searches all orders that belong to this ID number and returns
+	 * them to the client.
 	 * 
-	 * @param m the message received from the client, containing the order number
+	 * @param m the message received from the client, containing customer ID number
 	 * @return a Message with an OperationResponse containing the access result
 	 */
 	private Message handleOccasionalCustomerAccess(Message m) {
-		int orderNumber = (int) m.getData();
+		String customerIdNumber = (String) m.getData();
 
-		addLog("Checking occasional customer order number: " + orderNumber);
+		addLog("Checking occasional customer ID number: " + customerIdNumber);
 
 		try {
-			OrderRow order = oc.getOrderByNumber(orderNumber);
+			ArrayList<OrderRow> orders = oc.getOrdersByCustomerIdNumber(customerIdNumber);
 
-			if (order != null) {
+			if (orders != null && !orders.isEmpty()) {
 				OperationResponse response =
-						new OperationResponse(true, "Order found", order);
+						new OperationResponse(true, "Orders found", orders);
 
-				addLog("Occasional customer access approved for order number: " + orderNumber);
+				addLog("Occasional customer access approved for ID number: " + customerIdNumber);
 
 				return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 			}
 
 			OperationResponse response =
-					new OperationResponse(false, "Order not found", null);
+					new OperationResponse(false, "No orders found for this ID number", null);
 
-			addLog("Occasional customer access denied. Order not found: " + orderNumber);
+			addLog("Occasional customer access denied. No orders found for ID number: " + customerIdNumber);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 
-			addLog("ERROR - Database error while searching order: " + e.getMessage());
+			addLog("ERROR - Database error while searching orders by ID number: " + e.getMessage());
 
 			OperationResponse response =
-					new OperationResponse(false, "Database error while searching order", null);
+					new OperationResponse(false, "Database error while searching orders", null);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 		}
@@ -523,6 +526,50 @@ public class ServerController implements ServerAndControllerConnection {
 					new OperationResponse(false, "Database error while employee login", null);
 
 			return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+		}
+	}
+	
+	/*
+	 * Handles an existing customer login request received from the client.
+	 * 
+	 * The method receives username and password from the client, checks them
+	 * against the subscriber table, and returns the subscriber data if login succeeds.
+	 * 
+	 * @param m the message received from the client, containing ExistingCustomerLoginRequest
+	 * @return a Message with an OperationResponse containing the login result
+	 */
+	private Message handleExistingCustomerLogin(Message m) {
+		ExistingCustomerLoginRequest request = (ExistingCustomerLoginRequest) m.getData();
+
+		try {
+			Subscriber subscriber = sc.loginSubscriber(
+					request.getUsername(),
+					request.getPassword()
+			);
+
+			if (subscriber == null) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid username or password", null);
+
+				return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
+			}
+
+			OperationResponse response =
+					new OperationResponse(true, "Customer login successful", subscriber);
+
+			addLog("Existing customer login successful: " + subscriber.getSubscriberName());
+
+			return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while existing customer login: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while customer login", null);
+
+			return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
 		}
 	}
 

@@ -19,8 +19,8 @@
                   <Font name="System Bold Italic" size="28.0" />
                </font>
             </Label>
-            <Label layoutX="166.0" layoutY="127.0" text="Please enter your order number" />
-            <TextField fx:id="orderNumberField" layoutX="386.0" layoutY="123.0" promptText="Enter order number" />
+            <Label layoutX="166.0" layoutY="127.0" text="Please enter your ID number" />
+            <TextField fx:id="idNumberField" layoutX="386.0" layoutY="123.0" promptText="Enter ID number" />
             <Label fx:id="messageLabel" layoutX="203.0" layoutY="183.0" minWidth="300.0" prefHeight="17.0" prefWidth="300.0" />
             <Button layoutX="222.0" layoutY="257.0" mnemonicParsing="false" onAction="#handleContinue" text="Continue" />
             <Button layoutX="409.0" layoutY="257.0" mnemonicParsing="false" onAction="#handleBack" text="Back" />

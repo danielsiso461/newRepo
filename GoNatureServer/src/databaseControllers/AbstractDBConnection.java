@@ -137,10 +137,10 @@ public abstract class AbstractDBConnection {
 		sql.append(" FROM `" + getTableName() + "` WHERE ");
 
 		for (String s : keyColumns) {
-			sql.append(s + " = ?, ");
+			sql.append(s + " = ? AND ");
 		}
 
-		sql.setLength(sql.length() - 2);
+		sql.setLength(sql.length() - 5);
 		sql.append(";");
 
 		return sql.toString();

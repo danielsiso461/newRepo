@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import common.Subscriber;
 
+
 /**
  * This class is the DB connector used when working with the subscriber table.
  * 
@@ -36,6 +37,8 @@ public class SubscriberConnection extends AbstractDBConnection {
 	private String SUBSCRIBER_ID = "subscriber_id";
 	private String SUBSCRIBER_NAME = "subscriber_name";
 	private String SUBSCRIBER_EMAIL = "subscriber_email";
+	private final String USERNAME = "username";
+	private final String PASSWORD = "password";
 
 	/**
 	 * Returns the single instance of SubscriberConnection.
@@ -184,5 +187,48 @@ public class SubscriberConnection extends AbstractDBConnection {
 		pstmt.setString(8, creditCardLast4);
 
 		return pstmt.executeUpdate() > 0;
+	}
+	
+	/**
+	 * This method checks existing customer login details and returns the matching
+	 * subscriber.
+	 * 
+	 * The method searches for a subscriber whose username and password match the
+	 * values entered in the login screen.
+	 * 
+	 * @param username the username entered by the customer
+	 * @param password the password entered by the customer
+	 * @return a Subscriber object if login succeeds, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Subscriber loginSubscriber(String username, String password) throws SQLException {
+		String query = selectByFields(
+				new String[] {
+						SUBSCRIBER_ID,
+						SUBSCRIBER_NAME,
+						SUBSCRIBER_EMAIL
+				},
+				new String[] {
+						USERNAME,
+						PASSWORD
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			pstmt.setString(2, password);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return new Subscriber(
+							rs.getInt(SUBSCRIBER_ID),
+							rs.getString(SUBSCRIBER_NAME),
+							rs.getString(SUBSCRIBER_EMAIL)
+					);
+				}
+			}
+		}
+
+		return null;
 	}
 }
