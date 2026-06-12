@@ -23,6 +23,12 @@ public class WaitingListMessage implements Serializable {
 	 * The requested park ID.
 	 */
 	private int parkId;
+	/**
+	 * The requested park name.
+	 * 
+	 * This value is used when the client screen has the park name but not the park ID.
+	 */
+	private String parkName;
 
 	/**
 	 * The requested visit date and time.
@@ -58,6 +64,28 @@ public class WaitingListMessage implements Serializable {
 			int numberOfVisitors) {
 		this.subscriberId = subscriberId;
 		this.parkId = parkId;
+		this.parkName = null;
+		this.requestedOrderDate = requestedOrderDate;
+		this.numberOfVisitors = numberOfVisitors;
+		this.queuePosition = -1;
+		this.waitingStatus = "waiting";
+	}
+	/**
+	 * Creates a new waiting list request message using the park name.
+	 *
+	 * This constructor is used by client screens that display park names to the user
+	 * and do not hold the park ID directly.
+	 *
+	 * @param subscriberId       the subscriber ID
+	 * @param parkName           the requested park name
+	 * @param requestedOrderDate the requested visit date and time
+	 * @param numberOfVisitors   the requested number of visitors
+	 */
+	public WaitingListMessage(int subscriberId, String parkName, LocalDateTime requestedOrderDate,
+			int numberOfVisitors) {
+		this.subscriberId = subscriberId;
+		this.parkId = -1;
+		this.parkName = parkName;
 		this.requestedOrderDate = requestedOrderDate;
 		this.numberOfVisitors = numberOfVisitors;
 		this.queuePosition = -1;
@@ -71,7 +99,23 @@ public class WaitingListMessage implements Serializable {
 	public int getParkId() {
 		return parkId;
 	}
+	/**
+	 * Updates the park ID after the server resolves the park name.
+	 *
+	 * @param parkId the resolved park ID
+	 */
+	public void setParkId(int parkId) {
+		this.parkId = parkId;
+	}
 
+	/**
+	 * Returns the requested park name.
+	 *
+	 * @return the requested park name
+	 */
+	public String getParkName() {
+		return parkName;
+	}
 	public LocalDateTime getRequestedOrderDate() {
 		return requestedOrderDate;
 	}
@@ -110,6 +154,7 @@ public class WaitingListMessage implements Serializable {
 	public String toString() {
 		return "WaitingListMessage [subscriberId=" + subscriberId +
 				", parkId=" + parkId +
+				", parkName=" + parkName +
 				", requestedOrderDate=" + requestedOrderDate +
 				", numberOfVisitors=" + numberOfVisitors +
 				", queuePosition=" + queuePosition +

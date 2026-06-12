@@ -213,6 +213,38 @@ public class ParkConnection extends AbstractDBConnection {
 
 		return parkInfoList;
 	}
+	/**
+	 * This method finds the park ID by the park name.
+	 * 
+	 * This is used when the client sends only the park name, for example from a
+	 * ComboBox in the make order screen.
+	 * 
+	 * @param parkName the park name selected by the user
+	 * @return the matching park ID, or -1 if no park was found
+	 * @throws SQLException if the select query fails
+	 */
+	public int getParkIdByName(String parkName) throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT park_id
+				FROM park
+				WHERE park_name = ?
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, parkName);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getInt("park_id");
+				}
+			}
+		}
+
+		return -1;
+	}
 
 	/**
 	 * This method returns public park information by park ID.

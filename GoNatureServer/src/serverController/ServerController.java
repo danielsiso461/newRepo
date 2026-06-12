@@ -464,6 +464,13 @@ public class ServerController implements ServerAndControllerConnection {
 		int changedByEmployeeId = 1;
 
 		try {
+			/*
+			 * Loads the order details before cancelling it.
+			 * 
+			 * These details are needed after the cancellation, so the server can check if
+			 * the cancelled order freed places for a visitor in the waiting list.
+			 */
+			Order cancelledOrder = oc.getOrderByNumber(cancelOrderMessage.getOrderId());
 			boolean cancelled = oc.cancelOrder(
 					cancelOrderMessage.getOrderId(),
 					changedByEmployeeId,
@@ -472,6 +479,31 @@ public class ServerController implements ServerAndControllerConnection {
 
 			if (cancelled) {
 				addLog("Order cancelled successfully. Order ID: " + cancelOrderMessage.getOrderId());
+
+				/*
+				 * After a successful cancellation, the server checks if the cancelled order
+				 * freed enough places for the first matching visitor in the waiting list.
+				 */
+				if (cancelledOrder != null
+						&& cancelledOrder.getParkId() != null
+						&& cancelledOrder.getOrderDate() != null
+						&& cancelledOrder.getVisitorNumber() != null) {
+
+					boolean offered = wlc.offerFirstMatchingWaitingRequest(
+							cancelledOrder.getParkId(),
+							cancelledOrder.getOrderDate(),
+							cancelledOrder.getVisitorNumber()
+					);
+
+					if (offered) {
+						addLog("A waiting list request was offered after order cancellation. Order ID: "
+								+ cancelOrderMessage.getOrderId());
+					} else {
+						addLog("No matching waiting list request was found after order cancellation. Order ID: "
+								+ cancelOrderMessage.getOrderId());
+					}
+				}
+
 				return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_SUCCESS);
 			}
 
@@ -504,9 +536,31 @@ public class ServerController implements ServerAndControllerConnection {
 		WaitingListMessage waitingListMessage = (WaitingListMessage) m.getData();
 
 		try {
+			int parkId = waitingListMessage.getParkId();
+
+			/*
+			 * If the client sent only the park name, the server resolves the matching
+			 * park ID before inserting the request into the waiting_list table.
+			 */
+			if (parkId <= 0
+					&& waitingListMessage.getParkName() != null
+					&& !waitingListMessage.getParkName().trim().isEmpty()) {
+
+				parkId = pc.getParkIdByName(waitingListMessage.getParkName().trim());
+				waitingListMessage.setParkId(parkId);
+			}
+
+			/*
+			 * If the park ID is still invalid, the waiting list request cannot be saved.
+			 */
+			if (parkId <= 0) {
+				addLog("ERROR - Failed to add visitor to waiting list: invalid park ID.");
+				return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
+			}
+
 			int queuePosition = wlc.addToWaitingList(
 					waitingListMessage.getSubscriberId(),
-					waitingListMessage.getParkId(),
+					parkId,
 					waitingListMessage.getRequestedOrderDate(),
 					waitingListMessage.getNumberOfVisitors()
 			);
@@ -517,7 +571,7 @@ public class ServerController implements ServerAndControllerConnection {
 
 			addLog("Visitor added to waiting list successfully. Subscriber ID: "
 					+ waitingListMessage.getSubscriberId()
-					+ ", park ID: " + waitingListMessage.getParkId()
+					+ ", park ID: " + parkId
 					+ ", queue position: " + queuePosition);
 
 			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_SUCCESS);

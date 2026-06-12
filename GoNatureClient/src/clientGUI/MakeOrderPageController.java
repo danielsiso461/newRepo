@@ -2,12 +2,14 @@ package clientGUI;
 
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import clientCommon.MakeOrderObserver;
+import clientCommon.WaitingListObserver;
 import clientController.ClientController;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -20,6 +22,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.application.Platform;
 
 import common.*;
 /**
@@ -28,7 +31,7 @@ import common.*;
 
 import javafx.scene.control.TextField;
 
-public class MakeOrderPageController implements MakeOrderObserver {
+public class MakeOrderPageController implements MakeOrderObserver, WaitingListObserver {
 
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -78,7 +81,47 @@ public class MakeOrderPageController implements MakeOrderObserver {
     
     @FXML
     void enterWaitingListButtonClicked(ActionEvent event) {
-    	//@todo
+    	// make sure the client controller is ready before sending the request
+    	if (clientController == null) {
+    		warningMessage("Client connection is not ready.");
+    		return;
+    	}
+
+    	// make sure the user selected a park
+    	if (parkPicker.getValue() == null) {
+    		warningMessage("No Park Was Picked");
+    		return;
+    	}
+
+    	// make sure the user selected a date
+    	if (datePicker.getValue() == null) {
+    		warningMessage("No Date Was Picked");
+    		return;
+    	}
+
+    	// make sure the user selected an hour
+    	if (hourPicker.getValue() == null) {
+    		warningMessage("No Hour Was Picked");
+    		return;
+    	}
+
+    	// create the requested visit date and time from the selected date and hour
+    	LocalDateTime requestedOrderDate = datePicker.getValue().atTime(hourPicker.getValue(), 0);
+
+    	// create a waiting list request using the park name from the ComboBox
+    	WaitingListMessage waitingListMessage = new WaitingListMessage(
+    			Integer.parseInt(clientController.getId()),
+    			parkPicker.getValue(),
+    			requestedOrderDate,
+    			visitorNumberPicker.getValue()
+    	);
+
+    	// disable the action buttons while waiting for the server response
+    	buttonBar.setDisable(true);
+
+    	warningMessage("Sending waiting list request...");
+
+    	clientController.requestJoinWaitingList(waitingListMessage);
     }
 
     @FXML
@@ -134,6 +177,19 @@ public class MakeOrderPageController implements MakeOrderObserver {
     	
     	clientController.sendMessageToServer(new Message(o, Protocol.MAKE_ORDER));
     }
+    /*
+     * This method handles selecting a park from the park ComboBox.
+     * 
+     * The method currently clears the warning message when the user selects a park.
+     * The selected park value is later used when creating an order or joining the
+     * waiting list.
+     * 
+     * @param event the park ComboBox selection event
+     */
+    @FXML
+    void parkPicked(ActionEvent event) {
+    	warningMessage("");
+    }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
@@ -178,8 +234,8 @@ public class MakeOrderPageController implements MakeOrderObserver {
         });
         
         /*request park names*/
-        requestActiveParkList();
-        
+        //requestActiveParkList();
+        /* park names are requested after the client controller is set */
         
 
         /*@todo
@@ -220,12 +276,19 @@ public class MakeOrderPageController implements MakeOrderObserver {
     }
     
 
-    
     public void setClientController(ClientController c) {
     	if(c == null)
     		return;
     	clientController = c;
+
+    	// register this screen to receive make-order responses
     	c.addMakeOrderObserver(this);
+
+    	// register this screen to receive waiting-list responses
+    	c.addWaitingListObserver(this);
+
+    	// request park names only after the client controller is ready
+    	requestActiveParkList();
     }
 
 	@Override
@@ -258,5 +321,32 @@ public class MakeOrderPageController implements MakeOrderObserver {
 		
 		
 	}
+	/*
+	 * This method is called when the server returns a response for joining
+	 * the waiting list.
+	 * 
+	 * @param success true if the request was saved successfully, false otherwise
+	 * @param waitingListMessage the waiting list message returned by the server
+	 */
+	@Override
+	public void onJoinWaitingListResult(boolean success, WaitingListMessage waitingListMessage) {
+		if (success && waitingListMessage != null) {
+			warningMessage("Added to waiting list. Queue position: "
+					+ waitingListMessage.getQueuePosition());
+		} else {
+			warningMessage("Could not enter waiting list.");
+			buttonBar.setDisable(false);
+		}
+	}
+
+	/*
+	 * This method is called when the server disconnects the client.
+	 */
+	@Override
+	public void handleExit() {
+		Platform.exit();
+		System.exit(0);
+	}
+	
 }
 

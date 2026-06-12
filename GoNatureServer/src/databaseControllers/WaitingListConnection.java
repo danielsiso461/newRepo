@@ -142,7 +142,70 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return queuePosition;
 	}
+	
+	/**
+	 * Offers the newly available place to the first matching visitor in the waiting list.
+	 *
+	 * The method searches for the first visitor waiting for the same park and date.
+	 * The visitor must request a number of visitors that can fit in the available
+	 * places that were freed by a cancelled order.
+	 *
+	 * If a matching visitor is found, the waiting_status is changed from "waiting"
+	 * to "offered", and the offer time fields are updated.
+	 *
+	 * @param parkId          the park ID of the cancelled order
+	 * @param orderDate       the visit date of the cancelled order
+	 * @param availablePlaces the number of places freed by the cancellation
+	 * @return true if a waiting list request was updated to offered, false otherwise
+	 * @throws SQLException if the select or update query fails
+	 */
+	public boolean offerFirstMatchingWaitingRequest(int parkId, java.time.LocalDate orderDate,
+			int availablePlaces) throws SQLException {
+		ensureConnection();
 
+		String selectSql = """
+				SELECT waiting_id
+				FROM waiting_list
+				WHERE park_id = ?
+				  AND DATE(requested_order_date) = ?
+				  AND waiting_status = 'waiting'
+				  AND number_of_visitors <= ?
+				ORDER BY queue_position ASC, created_at ASC
+				LIMIT 1;
+				""";
+
+		Integer waitingId = null;
+
+		try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+			pstmt.setInt(1, parkId);
+			pstmt.setDate(2, java.sql.Date.valueOf(orderDate));
+			pstmt.setInt(3, availablePlaces);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					waitingId = rs.getInt("waiting_id");
+				}
+			}
+		}
+
+		if (waitingId == null) {
+			return false;
+		}
+
+		String updateSql = """
+				UPDATE waiting_list
+				SET waiting_status = 'offered',
+				    offered_at = NOW(),
+				    offer_expires_at = DATE_ADD(NOW(), INTERVAL 1 DAY)
+				WHERE waiting_id = ?;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+			pstmt.setInt(1, waitingId);
+
+			return pstmt.executeUpdate() > 0;
+		}
+	}
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */
