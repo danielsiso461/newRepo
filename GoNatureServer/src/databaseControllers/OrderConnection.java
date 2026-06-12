@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.Message;
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 
 /**
@@ -104,10 +104,10 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return an OrderRow object that represents the current order
 	 * @throws SQLException if reading data from the ResultSet fails
 	 */
-	private OrderRow convertResultSetToOrderRow(int index, ResultSet rs) throws SQLException {
+	private Order convertResultSetToOrderRow(int index, ResultSet rs) throws SQLException {
 		Integer guideId = rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID);
 
-		return new OrderRow(
+		return new Order(
 				index,
 				rs.getInt(ORDER_NUMBER),
 				rs.getDate(ORDER_DATE).toLocalDate(),
@@ -160,12 +160,12 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of the user's orders
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getUserOrders(Message m) throws SQLException {
+	public List<Order> getUserOrders(Message m) throws SQLException {
 		ensureConnection();
 
 		String sql = selectByFields(new String[] { "*" }, new String[] { USER_ID });
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, Integer.parseInt((String) m.getData()));
@@ -253,7 +253,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return an OrderRow object if the order exists, otherwise null
 	 * @throws SQLException if the select query fails
 	 */
-	public OrderRow getOrderByNumber(int orderNumber) throws SQLException {
+	public Order getOrderByNumber(int orderNumber) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -282,7 +282,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders that belong to the given park
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByPark(int parkId) throws SQLException {
+	public List<Order> getOrdersByPark(int parkId) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -292,7 +292,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -316,7 +316,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders with the given status
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByStatus(String orderStatus) throws SQLException {
+	public List<Order> getOrdersByStatus(String orderStatus) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -326,7 +326,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, orderStatus);
@@ -350,7 +350,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders with the given type
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByType(String orderType) throws SQLException {
+	public List<Order> getOrdersByType(String orderType) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -360,7 +360,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, orderType);
@@ -604,7 +604,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of approved orders for the given park and date
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
+	public List<Order> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
 			throws SQLException {
 		ensureConnection();
 
@@ -617,7 +617,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_number;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);

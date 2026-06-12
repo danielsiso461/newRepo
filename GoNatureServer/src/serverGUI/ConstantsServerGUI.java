@@ -9,9 +9,9 @@ public class ConstantsServerGUI {
 	/*
 	 * path of the client connection table FXML file
 	 */
-	protected static final String USER_TABLE =
-			"/serverGUI/ClientConnectionTable.fxml";
-
+	protected static final String 
+			USER_TABLE = "/serverGUI/ClientConnectionTable.fxml",
+			DB_PASSWORD = "/serverGUI/DBPasswordPage.fxml";
 	
 
 	/*

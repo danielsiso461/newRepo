@@ -2,6 +2,8 @@ package server;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 import common.Message;
 import common.Protocol;
@@ -21,6 +23,7 @@ public final class Server extends AbstractServer {
 	private static Server instance = null;
 
 	private ServerAndControllerConnection serverController;
+	private Map<String, ConnectionToClient> currIdConnection = new HashMap<>();
 
 	/**
 	 * Constructs an instance of the server.
@@ -76,7 +79,7 @@ public final class Server extends AbstractServer {
 		if (m.getType() == Protocol.RETURN_ORDER) {
 			User u = makeUserFromConnectionToClient(client);
 			u.setUserId((String) m.getData());
-
+			
 			if (!serverController.addUserOnUserConnected(u)) {
 				try {
 					client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
@@ -87,6 +90,8 @@ public final class Server extends AbstractServer {
 				return;
 			} else {
 				client.setInfo("User", u);
+				if(currIdConnection.containsKey(u.getUserId()) == false)
+					currIdConnection.put(u.getUserId(), client);
 			}
 		}
 
@@ -94,6 +99,7 @@ public final class Server extends AbstractServer {
 		if (m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
 			User u = (User) client.getInfo("User");
 			serverController.removeUserOnUserDisconnected(u);
+			currIdConnection.remove(u.getUserId());
 			return;
 		}
 
@@ -102,6 +108,13 @@ public final class Server extends AbstractServer {
 			Message returnMessage = serverController.handleRequest(m);
 
 			if (returnMessage != null) {
+				if(returnMessage.getType() == Protocol.UPDATE_ORDER_SUCCESS || 
+					returnMessage.getType() == Protocol.UPDATE_ORDER_FAILURE) {
+					String messageId = ((User) client.getInfo("User")).getUserId();
+					ConnectionToClient c = currIdConnection.get(messageId);
+					c.sendToClient(returnMessage);
+					return;
+				}
 				client.sendToClient(returnMessage);
 			} else {
 				System.out.println("Error: request handling failure");

@@ -6,8 +6,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import common.ParkInfo;
-import serverCommon.Park;
+import common.Park;
+import common.Park;
 
 /**
  * This class is the DB connector used when working with the park table.
@@ -193,20 +193,20 @@ public class ParkConnection extends AbstractDBConnection {
 	/**
 	 * This method returns public information about all active parks.
 	 * 
-	 * The method returns ParkInfo objects, which contain only the data that can be
+	 * The method returns Park objects, which contain only the data that can be
 	 * sent to the client.
 	 * 
 	 * @return a list of public park information objects
 	 * @throws SQLException if the select query fails
 	 */
-	public List<ParkInfo> getAllActiveParksInfo() throws SQLException {
-		List<ParkInfo> parkInfoList = new ArrayList<>();
+	public List<Park> getAllActiveParksInfo() throws SQLException {
+		List<Park> ParkList = new ArrayList<>();
 
 		for (Park park : getAllActiveParks()) {
-			parkInfoList.add(park.toParkInfo());
+			ParkList.add(park);
 		}
 
-		return parkInfoList;
+		return ParkList;
 	}
 
 	/**
@@ -216,17 +216,17 @@ public class ParkConnection extends AbstractDBConnection {
 	 * include internal management data.
 	 * 
 	 * @param parkId the park ID
-	 * @return a ParkInfo object if the park exists, otherwise null
+	 * @return a Park object if the park exists, otherwise null
 	 * @throws SQLException if the select query fails
 	 */
-	public ParkInfo getParkInfoById(int parkId) throws SQLException {
+	public Park getParkById(int parkId) throws SQLException {
 		Park park = getFullParkById(parkId);
 
 		if (park == null) {
 			return null;
 		}
 
-		return park.toParkInfo();
+		return park;
 	}
 
 	/**

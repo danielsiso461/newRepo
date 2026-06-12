@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+
+<VBox alignment="CENTER" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="serverGUI.ClientConnectionTableController">
+   <children>
+      <Label fx:id="hostNameLabel">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <Label fx:id="ipAddressLabel">
+         <font>
+            <Font size="24.0" />
+         </font>
+      </Label>
+      <TableView fx:id="userTable" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="590.0" prefWidth="1053.0">
+        <columns>
+            <TableColumn fx:id="userNumber" editable="false" prefWidth="171.0" text="User Number" />
+          <TableColumn fx:id="userId" editable="false" prefWidth="194.0" text="User ID" />
+          <TableColumn fx:id="userIp" editable="false" minWidth="0.0" prefWidth="199.0" text="User IP" />
+            <TableColumn fx:id="hostName" editable="false" prefWidth="268.0" text="Host Name" />
+            <TableColumn fx:id="status" editable="false" prefWidth="220.0" text="Status" />
+        </columns>
+      </TableView>
+   </children>
+</VBox>

@@ -12,7 +12,6 @@ import javafx.stage.Stage;
  * the class loads the DB password GUI first
  * only after the password is entered, the server table GUI will be opened
  */
-@SuppressWarnings("deprecation")
 public class ServerMain extends Application {
 
 	/*
@@ -36,7 +35,7 @@ public class ServerMain extends Application {
 	public void start(Stage stage) throws Exception {
 
 		// load the FXML file of the DB password screen
-		FXMLLoader loader = new FXMLLoader(getClass().getResource("/serverGUI/DBPasswordPage.fxml"));
+		FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsServerGUI.DB_PASSWORD));
 		Parent root = loader.load();
 
 		// show UI

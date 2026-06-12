@@ -9,7 +9,7 @@ import java.io.Serializable;
  * without exposing internal management data such as capacity limits, reserved
  * places for unplanned visitors, active status, or promotion settings.
  */
-public class ParkInfo implements Serializable {
+public class s implements Serializable {
 
 	/**
 	 * Serial version UID for serialization.
@@ -37,14 +37,14 @@ public class ParkInfo implements Serializable {
 	private double fullEntryPrice;
 
 	/**
-	 * Creates a new ParkInfo object.
+	 * Creates a new Park object.
 	 * 
 	 * @param parkId                      the park ID
 	 * @param parkName                    the park name
 	 * @param estimatedVisitDurationHours the estimated visit duration in hours
 	 * @param fullEntryPrice              the full entry price before discounts
 	 */
-	public ParkInfo(int parkId, String parkName, double estimatedVisitDurationHours, double fullEntryPrice) {
+	public Park(int parkId, String parkName, double estimatedVisitDurationHours, double fullEntryPrice) {
 		this.parkId = parkId;
 		this.parkName = parkName;
 		this.estimatedVisitDurationHours = estimatedVisitDurationHours;
@@ -90,7 +90,7 @@ public class ParkInfo implements Serializable {
 	/**
 	 * Returns the park name.
 	 * 
-	 * This is useful when displaying ParkInfo objects in ComboBox or ListView.
+	 * This is useful when displaying Park objects in ComboBox or ListView.
 	 * 
 	 * @return the park name
 	 */
