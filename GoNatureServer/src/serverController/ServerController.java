@@ -227,7 +227,7 @@ public class ServerController implements ServerAndControllerConnection {
 		case RETURN_ORDER:
 			addLog("Client requested orders list.");
 
-			List<OrderRow> req = null;
+			List<Order> req = null;
 
 			try {
 				req = oc.getUserOrders(m);

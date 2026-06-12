@@ -1,8 +1,7 @@
 package clientCommon;
 
 import java.util.List;
-
-import common.Park;
+import common.ParkInfo;
 
 /**
  * This interface is used by GUI controllers that want to receive park data
@@ -15,5 +14,5 @@ public interface ParkObserver {
 	 * 
 	 * @param parks the active parks received from the server
 	 */
-	void onParksReceived(List<Park> parks);
+	void onParksReceived(List<ParkInfo> parks);
 }

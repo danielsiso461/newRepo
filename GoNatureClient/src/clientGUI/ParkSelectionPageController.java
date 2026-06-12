@@ -3,8 +3,9 @@ package clientGUI;
 import java.util.List;
 import java.util.function.Consumer;
 
+import clientCommon.ParkObserver;
 import common.Message;
-import common.Park;
+import common.ParkInfo;
 import common.Protocol;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -15,11 +16,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import clientCommon.ParkObserver;
-import java.util.List;
-
-import clientCommon.ParkObserver;
-import common.Park;
 
 /**
  * This class is the JavaFX controller for the park selection screen.
@@ -28,7 +24,7 @@ import common.Park;
  * It is used by the client before creating an order, so the user can choose a
  * park from the list of active parks.
  * 
- * The controller works with Park objects only, meaning it receives only
+ * The controller works with ParkInfo objects only, meaning it receives only
  * public park data and not internal management data such as max capacity or
  * reserved places for unplanned visitors.
  */
@@ -38,31 +34,31 @@ public class ParkSelectionPageController implements ParkObserver {
 	 * The table that displays the parks.
 	 */
 	@FXML
-	private TableView<Park> parksTable;
+	private TableView<ParkInfo> parksTable;
 
 	/**
 	 * The column that displays the park ID.
 	 */
 	@FXML
-	private TableColumn<Park, Integer> parkIdColumn;
+	private TableColumn<ParkInfo, Integer> parkIdColumn;
 
 	/**
 	 * The column that displays the park name.
 	 */
 	@FXML
-	private TableColumn<Park, String> parkNameColumn;
+	private TableColumn<ParkInfo, String> parkNameColumn;
 
 	/**
 	 * The column that displays the estimated visit duration.
 	 */
 	@FXML
-	private TableColumn<Park, Double> estimatedDurationColumn;
+	private TableColumn<ParkInfo, Double> estimatedDurationColumn;
 
 	/**
 	 * The column that displays the full entry price.
 	 */
 	@FXML
-	private TableColumn<Park, Double> fullEntryPriceColumn;
+	private TableColumn<ParkInfo, Double> fullEntryPriceColumn;
 
 	/**
 	 * Button used to request the updated park list from the server.
@@ -91,7 +87,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	/**
 	 * The list of parks displayed in the table.
 	 */
-	private ObservableList<Park> parks = FXCollections.observableArrayList();
+	private ObservableList<ParkInfo> parks = FXCollections.observableArrayList();
 
 	/**
 	 * A handler used to send messages from this controller to the server.
@@ -103,7 +99,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	/**
 	 * The park selected by the user.
 	 */
-	private Park selectedPark;
+	private ParkInfo selectedPark;
 
 	/**
 	 * Initializes the park selection screen.
@@ -206,7 +202,7 @@ public class ParkSelectionPageController implements ParkObserver {
 		}
 
 		if (message.getType() == Protocol.ACTIVE_PARKS_RESULT || message.getType() == Protocol.PARKS_UPDATED) {
-			List<Park> updatedParks = (List<Park>) message.getData();
+			List<ParkInfo> updatedParks = (List<ParkInfo>) message.getData();
 
 			Platform.runLater(() -> setParks(updatedParks));
 		}
@@ -217,7 +213,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	 * 
 	 * @param updatedParks the updated list of public park information
 	 */
-	public void setParks(List<Park> updatedParks) {
+	public void setParks(List<ParkInfo> updatedParks) {
 		parks.clear();
 
 		if (updatedParks != null) {
@@ -230,18 +226,19 @@ public class ParkSelectionPageController implements ParkObserver {
 	/**
 	 * Returns the park selected by the user.
 	 * 
-	 * @return the selected Park object, or null if no park was selected
+	 * @return the selected ParkInfo object, or null if no park was selected
 	 */
-	public Park getSelectedPark() {
+	public ParkInfo getSelectedPark() {
 		return selectedPark;
 	}
-	
+
 	/**
 	 * This method is called when park data is received from the server.
 	 * 
 	 * @param parks the active parks received from the server
 	 */
-	public void onParksReceived(List<Park> parks) {
+	@Override
+	public void onParksReceived(List<ParkInfo> parks) {
 		setParks(parks);
 	}
 }

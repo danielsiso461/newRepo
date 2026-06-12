@@ -10,7 +10,7 @@ import common.CancelOrderMessage;
 import common.ChatIF;
 import common.Message;
 import common.OperationResponse;
-import common.OrderRow;
+import common.Order;
 import common.ParkInfo;
 import common.Protocol;
 import common.UpdateMessage;
@@ -56,6 +56,13 @@ public class ClientController implements ChatIF {
 	 * These observers are notified when waiting-list responses arrive from the server.
 	 */
 	private List<WaitingListObserver> waitingListObservers = new ArrayList<>();
+	/*
+	 * Observer pattern addition for make order screens.
+	 * These observers are notified when park names or make-order responses arrive from the server.
+	 */
+	private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
+	
+	
 	// Constructors ****************************************************
 
 	/**
@@ -75,7 +82,16 @@ public class ClientController implements ChatIF {
 
 		this.id = id;
 	}
-
+	
+	/*
+	 * Returns the ID of the currently connected user.
+	 * 
+	 * @return the current user's ID
+	 */
+	public String getId() {
+		return id;
+	}
+	
 	/*
 	 * Observer pattern addition.
 	 * Adds an order observer to the observer list.
@@ -104,7 +120,7 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param rows the received orders
 	 */
-	private void notifyOrdersReceived(List<OrderRow> rows) {
+	private void notifyOrdersReceived(List<Order> rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
 		}
@@ -196,7 +212,47 @@ public class ClientController implements ChatIF {
 			observer.onJoinWaitingListResult(success, waitingListMessage);
 		}
 	}
+	/*
+	 * Adds a make order observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addMakeOrderObserver(MakeOrderObserver observer) {
+		if (observer != null && !makeOrderObservers.contains(observer)) {
+			makeOrderObservers.add(observer);
+		}
+	}
 
+	/*
+	 * Removes a make order observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeMakeOrderObserver(MakeOrderObserver observer) {
+		makeOrderObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all make order observers about the park names received from the server.
+	 * 
+	 * @param parkNames the park names received from the server
+	 */
+	private void notifyParkNamesReceivedForMakeOrder(List<String> parkNames) {
+		for (MakeOrderObserver observer : makeOrderObservers) {
+			observer.onParkNamesReceived(parkNames);
+		}
+	}
+
+	/*
+	 * Notifies all make order observers about the make-order response received from the server.
+	 * 
+	 * @param message the message received from the server
+	 */
+	private void notifyMakeOrderServerResponse(Message message) {
+		for (MakeOrderObserver observer : makeOrderObservers) {
+			observer.onMakeOrderServerResponse(message);
+		}
+	}
 	/*
 	 * Sends the server a request for all orders of the current user.
 	 */
@@ -294,7 +350,7 @@ public class ClientController implements ChatIF {
 				break;
 
 			case RETURN_ORDER:
-				List<OrderRow> rows = parseOrderMessage(m.getData());
+				List<Order> rows = parseOrderMessage(m.getData());
 
 				if (rows == null) {
 					break;
@@ -318,7 +374,22 @@ public class ClientController implements ChatIF {
 				OperationResponse response = (OperationResponse) m.getData();
 				notifyOccasionalCustomerAccessResult(response);
 				break;
+			case GET_PARK_NAMES:
+				List<String> parkNames = parseStringList(m.getData());
 
+				if (parkNames == null) {
+					break;
+				}
+
+				notifyParkNamesReceivedForMakeOrder(parkNames);
+				break;
+
+			case MAKE_ORDER_SUCCESS:
+			case MAKE_ORDER_FAIL:
+			case MAKE_ORDER_FAIL_TIME:
+			case MAKE_ORDER_FAIL_NOT_GUIDE:
+				notifyMakeOrderServerResponse(m);
+				break;
 			default:
 				System.out.println("Error: Server Response Unknown in ClientController display");
 			}
@@ -331,15 +402,15 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param o object to check
 	 */
-	private List<OrderRow> parseOrderMessage(Object o) {
-		List<OrderRow> rows = new ArrayList<>();
+	private List<Order> parseOrderMessage(Object o){
+		List<Order> rows = new ArrayList<>();
 
 		if (o instanceof List<?>) {
 			List<?> rawList = (List<?>) o;
 
 			for (Object row : rawList) {
-				if (row instanceof OrderRow) {
-					rows.add((OrderRow) row);
+				if (row instanceof Order) {
+					rows.add((Order) row);
 				} else {
 					return null;
 				}
@@ -449,5 +520,30 @@ public class ClientController implements ChatIF {
 		}
 
 		return parks;
+	}
+	/*
+	 * This function is used to check if a given object is a list of strings
+	 * and return the string list if so.
+	 * 
+	 * @param o object to check
+	 */
+	private List<String> parseStringList(Object o) {
+		List<String> values = new ArrayList<>();
+
+		if (o instanceof List<?>) {
+			List<?> rawList = (List<?>) o;
+
+			for (Object value : rawList) {
+				if (value instanceof String) {
+					values.add((String) value);
+				} else {
+					return null;
+				}
+			}
+		} else {
+			return null;
+		}
+
+		return values;
 	}
 }

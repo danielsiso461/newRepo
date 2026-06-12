@@ -13,7 +13,7 @@ import java.util.Set;
 
 import clientCommon.OrderObserver;
 import clientController.ClientController;
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 import common.CancelOrderMessage;
 import javafx.application.Platform;
@@ -52,26 +52,26 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	private URL location;
 
 	@FXML // fx:id="orderTable"
-	private TableView<OrderRow> orderTable; // Value injected by FXMLLoader
-	private ObservableList<OrderRow> data = FXCollections.observableArrayList();
-	private OrderRow selectedRow = null;
+	private TableView<Order> orderTable; // Value injected by FXMLLoader
+	private ObservableList<Order> data = FXCollections.observableArrayList();
+	private Order selectedRow = null;
 
 	@FXML // fx:id="confCode"
-	private TableColumn<OrderRow, Integer> confCode; // Value injected by FXMLLoader
+	private TableColumn<Order, Integer> confCode; // Value injected by FXMLLoader
 	@FXML // fx:id="orderDate"
-	private TableColumn<OrderRow, LocalDate> orderDate; // Value injected by FXMLLoader
+	private TableColumn<Order, LocalDate> orderDate; // Value injected by FXMLLoader
 	@FXML // fx:id="orderId"
-	private TableColumn<OrderRow, Integer> orderId; // Value injected by FXMLLoader
+	private TableColumn<Order, Integer> orderId; // Value injected by FXMLLoader
 	@FXML // fx:id="placementDate"
-	private TableColumn<OrderRow, LocalDate> placementDate; // Value injected by FXMLLoader
+	private TableColumn<Order, LocalDate> placementDate; // Value injected by FXMLLoader
 	@FXML // fx:id="userId"
-	private TableColumn<OrderRow, Integer> userId; // Value injected by FXMLLoader
+	private TableColumn<Order, Integer> userId; // Value injected by FXMLLoader
 	@FXML // fx:id="visitorNumber"
-	private TableColumn<OrderRow, Integer> visitorNumber; // Value injected by FXMLLoader
+	private TableColumn<Order, Integer> visitorNumber; // Value injected by FXMLLoader
 	@FXML // fx:id="orderNumber"
-	private TableColumn<OrderRow, Integer> orderNumber; // Value injected by FXMLLoader
+	private TableColumn<Order, Integer> orderNumber; // Value injected by FXMLLoader
 	@FXML // fx:id="orderStatus"
-	private TableColumn<OrderRow, String> orderStatus; // Value injected by FXMLLoader
+	private TableColumn<Order, String> orderStatus; // Value injected by FXMLLoader
 	@FXML // fx:id="notifLabel"
     private Label notifLabel; // Value injected by FXMLLoader
 	
@@ -171,8 +171,8 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		notifLabel.setTextFill(Color.BLUE);
 		notifLabel.setText("Cancellation request was sent for order ID: " + orderId);
 	}
-	private void handleRowSelection(ObservableValue<? extends OrderRow> obs, 
-			OrderRow oldSelection, OrderRow newSelection) {
+	private void handleRowSelection(ObservableValue<? extends Order> obs, 
+			Order oldSelection, Order newSelection) {
 		if (newSelection != null) {
 			onRowSelected(newSelection);
 		}
@@ -183,7 +183,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * 
 	 * @param row 	the selected row		
 	 */
-	private void onRowSelected(OrderRow row) {
+	private void onRowSelected(Order row) {
 		// Disable action buttons by default until we verify that the selected order can be changed.
 		updateButton.setDisable(true);
 		cancelButton.setDisable(true);
@@ -289,7 +289,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * 
 	 * @param rows		the order data
 	 */
-	public void setData(List<OrderRow> rows) {
+	public void setData(List<Order> rows) {
 		Platform.runLater(() -> {
 			data.setAll(rows);
 		});
@@ -329,7 +329,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * @param rows 	the order list
 	 */
 	@Override
-	public void onOrdersReceived(List<OrderRow> rows) {
+	public void onOrdersReceived(List<Order> rows) {
 		setData(rows);
 	}
 	
@@ -352,7 +352,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 					updateMessage.getOrderNumber() + " succeeded.");
 			
 			// updating order in tableview - update is local, as it was confirmed by server
-			OrderRow updatedRow = data.get(updateMessage.getOrderNumber() - 1);
+			Order updatedRow = data.get(updateMessage.getOrderNumber() - 1);
 			if(updateMessage.getUpdateDate() != null)
 				updatedRow.setOrderDate(updateMessage.getUpdateDate());
 			if(updateMessage.getNumberOfVisitors() > 0)
@@ -392,7 +392,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			// Update the matching row locally after the server confirms the cancellation.
 			// The order stays in the table, but its status changes to "cancelled".
 			for (int i = 0; i < data.size(); i++) {
-				OrderRow row = data.get(i);
+				Order row = data.get(i);
 
 				if (row.getOrderId() == cancelledOrderId) {
 					row.setOrderStatus("cancelled");

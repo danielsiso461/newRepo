@@ -3,7 +3,7 @@ package clientCommon;
 import java.util.List;
 
 import common.CancelOrderMessage;
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 
 /*
@@ -15,7 +15,7 @@ public interface OrderObserver {
 	 * 
 	 * @param rows 	the orders
 	 */
-    void onOrdersReceived(List<OrderRow> rows);
+	void onOrdersReceived(List<Order> rows);
     
     /*
 	 * this function handles receiving an update result for an order from the server
