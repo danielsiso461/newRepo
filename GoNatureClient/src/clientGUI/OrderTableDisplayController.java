@@ -1,5 +1,7 @@
 package clientGUI;
 
+import java.io.IOException;
+
 /**
  * Sample Skeleton for 'Untitled' Controller Class
  */
@@ -24,6 +26,7 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -35,21 +38,28 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 /*
- * this class is the UI controller for the update page
+ * this class is the UI controller for the order table page
  */
 public class OrderTableDisplayController implements OrderObserver, Runnable {
+	/* the client controller */
 	private ClientController clientController;
+	/* a set that keeps track of which orders have requested an update */
 	private Set<Integer> awaitingUpdate = new HashSet<>();
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
 	private ResourceBundle resources;
+	
+	@FXML // fx:id="makeOrderButton"
+    private Button makeOrderButton; // Value injected by FXMLLoader
 
 	@FXML // URL location of the FXML file that was given to the FXMLLoader
 	private URL location;
 
 	@FXML // fx:id="orderTable"
 	private TableView<Order> orderTable; // Value injected by FXMLLoader
+	/* the table data */
 	private ObservableList<Order> data = FXCollections.observableArrayList();
+	/* the currently selected row in the table */
 	private Order selectedRow = null;
 
 	@FXML // fx:id="confCode"
@@ -115,6 +125,41 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	}
 	
 	/*
+	 * this method handles clicking the make order button
+	 * it loads the make order page,
+	 * and hides current screen
+	 * 
+	 * @param event 	the update button click
+	 */
+	@FXML
+    void makeOrderButtonClick(ActionEvent event) {
+		Stage stage = (Stage) makeOrderButton.getScene().getWindow();
+
+    	// load the FXML file of the table of orders
+    	FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.makeOrderPage));
+    	Parent root = null;
+		try {
+			root = loader.load();
+		} catch (IOException e) {
+			e.printStackTrace();
+			Platform.exit();
+			System.exit(1);
+		}
+    	// get controller
+    	MakeOrderPageController controller = loader.getController();
+    	controller.setClientController(clientController);
+    	controller.requestActiveParkList();
+    	controller.setPrevScene(stage.getScene());
+    	controller.setPrevController(this);
+
+    	// show UI
+    	Scene scene = new Scene(root);
+    	stage.setScene(scene);
+    	stage.setTitle("Make Order Page");
+    	stage.show();
+    }
+	
+	/*
 	 * this method recognizes a change in selected row and 
 	 * calls the relevant handler for updating
 	 * (some parameters are here to match the javafx contract)
@@ -174,7 +219,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		orderTable.setItems(data);
 		// adds listener to row selection
 		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);		
-		
 	}
 	
 	/* 
@@ -292,5 +336,17 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 		// removing order from waiting list
 		removeOrderFromUpdateWaitingList(updateMessage.getOrderId());
+	}
+	
+	/* this method fulfills the OrderObserver contract
+	 * it is used to add a new order to the order table
+	 * @param o the order to add to the table
+	 * */
+	@Override
+	public void addOrder(Order o) {
+		Platform.runLater(() -> {
+			o.setOrderNumber(data.size() + 1);
+			data.add(o);
+		});
 	}
 }
