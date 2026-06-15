@@ -23,7 +23,14 @@ public interface OrderObserver {
 	 */
     void onUpdateResult(boolean success, UpdateMessage updateMessage);
     
-    /*
+   /*
+    * this function adds an order to the order table
+    * 
+    * @param o the order to add to the order table
+    */
+	void addOrder(Order o);
+	
+	/* 
 	 * this function handles the server shutting the client down
 	 */
     void handleExit();
