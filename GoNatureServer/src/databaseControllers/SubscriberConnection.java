@@ -20,7 +20,12 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * The single instance of SubscriberConnection.
 	 */
 	private static SubscriberConnection instance;
-
+	
+	/* the subscriber id column */
+	private final String SUBSCRIBER_ID = "subscriber_id";
+	/* the subscriber phone column */
+	private final String PHONE_NUMBER = "subscriber_phone";
+	
 	/**
 	 * Private constructor for Singleton.
 	 * 
@@ -141,5 +146,24 @@ public class SubscriberConnection extends AbstractDBConnection {
 		pstmt.setString(8, creditCardLast4);
 
 		return pstmt.executeUpdate() > 0;
+	}
+	
+	/*
+	 * this method gets the subscriber's phone by their ID
+	 * @param id the user's id
+	 * @return the phone number
+	 * @throws SQLException if the query failed
+	 */
+	public String getPhoneNumberById(int id) throws SQLException {
+		String sql = selectByFields(new String[] {PHONE_NUMBER}, new String[] {SUBSCRIBER_ID});
+		
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, id);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if(rs.next())
+					return rs.getString(PHONE_NUMBER);
+			}
+		}
+		return null;
 	}
 }

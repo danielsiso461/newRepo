@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import common.Order;
 import common.Park;
 import common.Park;
 
@@ -20,7 +21,15 @@ import common.Park;
  * full entry price, active status, and promotions.
  */
 public class ParkConnection extends AbstractDBConnection {
-
+	/* park table columns */
+	private final String
+					PARK_NAME_COLUMN = "park_name",
+					PARK_ID_COLUMN = "park_id",
+					PARK_IS_ACTIVE_COLUMN = "is_active";
+	/* indicator that a park is active */
+	private final int
+					PARK_IS_ACTIVE_TRUE = 1;
+	
 	/**
 	 * The single instance of ParkConnection.
 	 */
@@ -403,5 +412,57 @@ public class ParkConnection extends AbstractDBConnection {
 		Park park = getFullParkById(parkId);
 
 		return park != null && park.isActive();
+	}
+	
+	/*
+	 * this method returns a list of names of all active parks
+	 * 
+	 * @return list of names of all active parks
+	 * @throws SQLException if the query failed
+	 */
+	public List<String> getActiveParksNames() throws SQLException {
+		ensureConnection();
+		
+		String sql = selectByFields(new String[] {PARK_NAME_COLUMN}, new String[] {PARK_IS_ACTIVE_COLUMN});
+		
+		List<String> activeParkNames = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, PARK_IS_ACTIVE_TRUE);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					activeParkNames.add(rs.getString(PARK_NAME_COLUMN));
+				}
+			}
+		}
+
+		return activeParkNames;
+	}
+	
+	/*
+	 * this method returns the id of the park corresponding to the given name
+	 * 
+	 * @param name of relevant park
+	 * @return id of relevant park
+	 * @throws SQLException if the query failed
+	 */
+	public int getParkIdByName(String parkName) throws SQLException {
+		ensureConnection();
+		
+		String sql = selectByFields(new String[] {PARK_ID_COLUMN}, new String[] {PARK_NAME_COLUMN});
+		int parkId = -1;
+		
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, parkName);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					parkId = rs.getInt(PARK_ID_COLUMN);
+				}
+			}
+		}
+		
+		return parkId;
 	}
 }
