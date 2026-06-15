@@ -3,15 +3,25 @@ package serverController;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import common.*;
-import databaseControllers.*;
+import common.CommonConstants;
+import common.Message;
+import common.Order;
+import common.Park;
+import common.Protocol;
+import common.UpdateMessage;
+import databaseControllers.GuideConnection;
+import databaseControllers.OrderConnection;
+import databaseControllers.OrderExceedsParkCapacityCheck;
+import databaseControllers.ParkConnection;
+import databaseControllers.ParkParameterChangeRequestConnection;
+import databaseControllers.SubscriberConnection;
 import server.Server;
-import serverCommon.*;
+import serverCommon.ServerAndControllerConnection;
+import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
 
 /**
@@ -31,6 +41,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private SubscriberConnection sc;
 	private GuideConnection gc;
 	private ParkParameterChangeRequestConnection pcrc;
+	private OrderExceedsParkCapacityCheck orderChecker;
 
 	private int allTimeUserCount = 1;
 
@@ -58,12 +69,15 @@ public class ServerController implements ServerAndControllerConnection {
 			pcrc = ParkParameterChangeRequestConnection.getInstance();
 			sc = SubscriberConnection.getInstance();
 			gc = GuideConnection.getInstance();
+			
+			orderChecker = OrderExceedsParkCapacityCheck.getInstance(pc, oc);
 
 			addLog("Order database connection object created.");
 			addLog("Park database connection object created.");
 			addLog("Park parameter change request database connection object created.");
 			addLog("Subscriber database connection object created.");
 			addLog("Guide database connection object created.");
+			addLog("Order checker object created.");
 			addLog("All database connection objects were created successfully.");
 
 		} catch (SQLException e) {
@@ -221,66 +235,11 @@ public class ServerController implements ServerAndControllerConnection {
 		case RETURN_ORDER:
 			return handleReturnOrder(m);
 			
-		/*@todo - this needs to be refactored to be a single request to the 
-		 * db controller of parks using a select statement
-		 */
 		case GET_PARK_NAMES:
-			addLog("Client requested active parks name list.");
-
-			try {
-				addLog("Loading active parks from database.");
-
-				List<Park> parks = pc.getAllActiveParksInfo();
-
-				addLog("Active parks list loaded from database. Number of parks: " + parks.size());
-				addLog("Returning active parks name list to client.");
-				List<String> parkNames = new ArrayList<>();
-				for(Park p : parks)
-					parkNames.add(p.getParkName());
-				return new Message(parkNames, Protocol.RETURN_PARK_NAMES_SUCCESS);
-
-			} catch (SQLException e) {
-				e.printStackTrace();
-				addLog("ERROR - Failed to load active parks: " + e.getMessage());
-				return new Message(null, Protocol.RETURN_PARK_NAMES_FAILURE);
-			}
+			return handleGetParkNames(m);
 			
 		case MAKE_ORDER:
-			if(!(m.getData() instanceof Order)) {
-				return new Message(null, Protocol.MAKE_ORDER_FAIL);
-			}
-				
-			Order o = (Order) m.getData();
-			
-			o.setPlacementDate(LocalDate.now());
-			
-			int parkId = -1;
-			// @todo - this needs to have an sql query that returns the parkId when given a name
-			try {
-				addLog("Loading active parks from database.");
-				
-				List<Park> parks = pc.getAllActiveParksInfo();
-				for(Park p : parks) {
-					if(o.getParkName().equals(p.getParkName()))
-						parkId = p.getParkId();
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-				addLog("ERROR - Failed to load active parks: " + e.getMessage());
-				return new Message(null, Protocol.MAKE_ORDER_FAIL);
-			}
-			if(parkId == -1)
-				return new Message(null, Protocol.MAKE_ORDER_FAIL);
-			o.setParkId(parkId);
-			
-			if(o.getOrderType() == Order.ORDER_TYPE_ORGANIZED) {
-				//@todo check if user is a guide
-			}
-				
-			
-			//@todo check if order is valid, book order, add parameters
-			
-			break;
+			return handleMakeOrder(m);
 			
 		case GET_ACTIVE_PARKS:
 			return handleGetActiveParks();
@@ -337,7 +296,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private Message handleReturnOrder(Message m) {
 		addLog("Client requested orders list.");
 
-		List<OrderRow> orders = null;
+		List<Order> orders = null;
 
 		try {
 			orders = oc.getUserOrders(m);
@@ -355,6 +314,175 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("No orders returned to client.");
 		return null;
 	}
+	
+	/**
+	 * Handles a request for getting park names.
+	 * 
+	 * @param m the client message
+	 * @return a message containing a list of park names
+	 */
+	private Message handleGetParkNames(Message m) {
+		addLog("Client requested active parks name list.");
+
+		try {
+			addLog("Loading names of active parks from database.");
+			addLog("Returning active parks name list to client.");
+			List<String> parkNames = pc.getActiveParksNames();
+			if(parkNames.isEmpty()) {
+				addLog("Error - no park names fetched.");
+				return new Message(null, Protocol.RETURN_PARK_NAMES_FAILURE);
+			}
+				
+			addLog("Active parks name list loaded from database.");
+			return new Message(parkNames, Protocol.RETURN_PARK_NAMES_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to load active parks: " + e.getMessage());
+			return new Message(null, Protocol.RETURN_PARK_NAMES_FAILURE);
+		}
+	}
+	
+	 /* Handles a request for making order.
+	 * 
+	 * @param m the client message
+	 * @return a message containing the user order on success, or a fail message
+	 */
+	private Message handleMakeOrder(Message m) {
+		// make sure nothing went wrong with data transfer
+		if(!(m.getData() instanceof Order)) {
+			addLog("Make Order Request Unapproved - unknown error.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}
+						
+		Order o = (Order) m.getData();
+					
+		// update certain parameter relevant for order booking
+		o.setPlacementDate(LocalDate.now());
+					
+		int parkId = -1;
+		try {
+			addLog("Getting parkId from the park name from the DB.");
+			parkId = pc.getParkIdByName(o.getParkName());
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to execute query to get parkId from park name.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}
+		if(parkId == -1) {
+			addLog("Make Order Request Unapproved - park name unknown.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}
+		addLog("Successfully fetched parkId from the DB.");			
+		o.setParkId(parkId);
+					
+		// checking that the order is valid
+		if(o.getOrderType().equals(Order.ORDER_TYPE_ORGANIZED)) {
+			Integer guideId = null;
+			try {
+				guideId = gc.isActiveGuide(o.getUserId());
+			} catch (SQLException e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to execute query to check if user is a guide.");
+				return new Message(null, Protocol.MAKE_ORDER_FAIL);
+			}
+						
+			if(guideId == null) {
+				addLog("Make Order Request Unapproved - user is not a guide.");
+				return new Message(null, Protocol.MAKE_ORDER_FAIL_NOT_GUIDE);
+			}
+			
+			o.setGuideId(guideId);
+		} else if(o.getGuideId() != null)
+			o.setGuideId(null);
+		
+		addLog("Successfully handled guide checking.");
+		
+		boolean isSubscribed = false;		
+					
+		try {
+			isSubscribed = sc.subscriberExists(o.getUserId());
+			if(isSubscribed) {
+				o.setIsSubscribedToTrue();
+			}	
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to execute query to check if user is subscribed.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}
+					
+		if(o.getVisitorNumber() > 1) {
+			if(!isSubscribed) {
+				addLog("Make Order Request Unapproved - user is not subscribed.");
+				return new Message(null, Protocol.MAKE_ORDER_FAIL_NOT_SUBSCRIBED);
+			}
+		}
+		
+		addLog("Successfully handled subscriber checking.");
+		
+		if(!checkOrderDetailsAreValid(o)) {
+			addLog("Make Order Request Unapproved - order details are invalid.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}	
+					
+		// check if order can be booked
+		int check = -1;
+		try {
+			check = orderChecker.check(o);
+		} catch(Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to execute query to check if order can be booked.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}
+					
+		if(check == -1) {
+			addLog("Make Order Request Unapproved - bad order.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		} else if (check == 1) {
+			addLog("Make Order Request Unapproved - bad order time.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL_TIME);
+		}
+				
+		addLog("Successfully handled all checks.");
+		
+		// book order
+		o.setOrderStatus("approved");
+
+		try {
+			oc.bookOrder(o);
+		} catch (SQLException e) {
+			o.setOrderStatus("pending");
+			addLog("Make Order Request Failed - SQL error.");
+			e.printStackTrace();
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		} catch (Exception e) {
+			o.setOrderStatus("pending");
+			addLog("Make Order Request Failed - resource allocation error.");
+			return new Message(null, Protocol.MAKE_ORDER_FAIL);
+		}
+		
+		// add phone number to the order if user is subscribed
+		String pn = null;
+		if(isSubscribed) {
+			try {
+				pn = sc.getPhoneNumberById(o.getUserId());
+			} catch(Exception e) {
+				e.printStackTrace();
+				addLog("ERROR - Failed to execute query to get order phone number.");
+				return new Message(null, Protocol.MAKE_ORDER_FAIL);
+			}
+			if(pn == null) {
+				addLog("ERROR - phone number doesn't exist for existing subscriber.");
+				return new Message(null, Protocol.MAKE_ORDER_FAIL);
+			}
+		}
+		
+		o.setPhoneNumber(pn);
+		addLog("Make Order request successful - " + o.getOrderId());
+		
+		return new Message(o, Protocol.MAKE_ORDER_SUCCESS);
+	}
+	
 
 	/**
 	 * Handles a request for all active parks.
@@ -381,7 +509,8 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
 		}
 	}
-
+	
+	//@todo this needs to be fixed
 	/**
 	 * Handles a client request to search for a subscriber by subscriber ID.
 	 * 
@@ -389,7 +518,7 @@ public class ServerController implements ServerAndControllerConnection {
 	 * @return a message with the search result
 	 */
 	private Message handleSearchSubscriber(Message m) {
-		try {
+		/*try {
 			int subscriberId = (int) m.getData();
 
 			Subscriber subscriber = sc.findSubscriberById(subscriberId);
@@ -415,9 +544,12 @@ public class ServerController implements ServerAndControllerConnection {
 
 			OperationResponse response = new OperationResponse(false, "Invalid subscriber search request", null);
 			return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
-		}
+		}*/
+		return null;
 	}
-
+	
+	
+	//@todo this needs to be fixed
 	/**
 	 * Handles a client request to register an existing subscriber as a guide.
 	 * 
@@ -426,7 +558,7 @@ public class ServerController implements ServerAndControllerConnection {
 	 * @return a message with the registration result
 	 */
 	private Message handleRegisterGuide(Message m) {
-		try {
+		/*try {
 			GuideRegistrationRequest request = (GuideRegistrationRequest) m.getData();
 
 			Subscriber subscriber = sc.findSubscriberById(request.getSubscriberId());
@@ -463,7 +595,8 @@ public class ServerController implements ServerAndControllerConnection {
 
 			OperationResponse response = new OperationResponse(false, "Invalid guide registration request", null);
 			return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
-		}
+		}*/
+		return null;
 	}
 
 	/**
@@ -551,7 +684,27 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
 		}
 	}
-
+	
+	/* this method check if the details of a given order are valid
+	 * 
+	 * @param o the order to check
+	 * @returns true if valid and false otherwise
+	 * */
+	private boolean checkOrderDetailsAreValid(Order o) {
+		if(o.getOrderDate().isBefore(LocalDate.now()))
+			return false;
+		if(o.getVisitorNumber() > CommonConstants.MAX_VISITOR_COUNT ||
+				o.getVisitorNumber() < CommonConstants.MIN_VISITOR_COUNT)
+			return false;
+		if(o.getOrderHour() > CommonConstants.MAX_HOUR || 
+				o.getOrderHour() < CommonConstants.MIN_HOUR)
+			return false;
+		if(!(o.getOrderStatus().equals(Order.ORDER_STATUS_PENDING)))
+			return false;
+		
+		return true;
+	}
+			
 	/**
 	 * Closes all database connections safely.
 	 */
