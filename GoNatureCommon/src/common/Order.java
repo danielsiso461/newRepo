@@ -29,6 +29,11 @@ public class Order implements Serializable {
 	 * stores the order information
 	 */
 	private Integer orderNumber, orderId, visitorNumber, confCode, userId;
+	
+	/*
+	 * stores the phone number of the user 
+	 */
+	private String phoneNumber = "";
 
 	/*
 	 * stores the park id of the order
@@ -62,7 +67,21 @@ public class Order implements Serializable {
 	 * possible values are: private, organized_group
 	 */
 	private String orderType;
-
+	
+	/*
+	 * stores the booked hour of the given order
+	 * */
+	private int orderHour;
+	
+	/*
+	 * this field holds the email of the booking user
+	*/
+	private String email;
+	/*
+	 * true if the user is subscribed and false otherwise
+	 */
+	private boolean isSubscribed = false;
+	
 	/*
 	 * constructor that creates a new order row
 	 * 
@@ -119,16 +138,25 @@ public class Order implements Serializable {
 	}
 	
 	/*
-	 * used for making new orders
+	 * constructor used for making new orders
+	 * 
+	 * @param orderDate			the requested order date
+	 * @param visitorNumber		the requested number of visitors
+	 * @param userId			the Id of the booking user
+	 * @param parkName			the name of the park to visit
+	 * @param orderHour			the hour at which the user wishes to visit
+	 * @param email 			holds the email of the booking user
 	 * */	
 	public Order(LocalDate orderDate, int visitorNumber,int userId, 
-			String parkName) {
+			String parkName, int orderHour, String email) {
 
 		this.orderDate = orderDate;
 		this.visitorNumber = visitorNumber;
 		this.userId = userId;
 		this.parkName = parkName;
 		orderStatus = ORDER_STATUS_PENDING;
+		this.orderHour = orderHour;
+		this.email = email;
 	}
 	
 	/*
@@ -240,6 +268,32 @@ public class Order implements Serializable {
 	}
 	
 	/*
+	 * getter that returns the order hour
+	 * 
+	 * @return the hour of the order
+	 * */
+	public int getOrderHour() {
+		return orderHour;
+	}
+	
+	/*
+	 * getter that returns the order email
+	 * 
+	 * @return the email of the order
+	 * */
+	public String getEmail() {
+		return email;
+	}
+	
+	/*
+	 * sets the order number field
+	 * @param orderNumber the number to set order number to
+	 */
+	public void setOrderNumber(Integer orderNumber) {
+		this.orderNumber = orderNumber;
+	}
+	
+	/*
 	 * setter that updates the placement date
 	 * 
 	 * this function is used by the SERVER to set the date of the order placement
@@ -316,7 +370,66 @@ public class Order implements Serializable {
 	public void setOrderType(String orderType) {
 		this.orderType = orderType;
 	}
-
+	
+	/*
+	 * setter that updates the order ID
+	 * 
+	 * this function is used only when adding a new update to the DB
+	 * 
+	 * @param orderId the new order ID
+	 */
+	public void setOrderId(Integer orderId) {
+		this.orderId = orderId;
+	}
+	
+	/*
+	 * setter that updates the order confirmation code
+	 * 
+	 * this function is used only when adding a new update to the DB
+	 * 
+	 * @param confCode the new confirmation code
+	 */
+	public void setConfirmationCode(Integer confCode) {
+		this.confCode = confCode;
+	}
+	
+	/* 
+	 * function that sets the isSubscribed flag to true
+	 */
+	public void setIsSubscribedToTrue() {
+		this.isSubscribed = true;
+	}
+	
+	/*
+	 * getter that returns if the user is subscribed
+	 * 
+	 * @return true if the user is subscribed
+	 * */
+	public boolean getIsSubscribed() {
+		return isSubscribed;
+	}
+	
+	/* 
+	 * setter that sets the phone number corresponding to the order
+	 * 
+	 * this function is used only after adding a new update to the DB
+	 * if the user is subscribed
+	 * 
+	 * @param phoneNumber the phone number
+	 */
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+	
+	/* 
+	 * getter that return the phone number corresponding to the order
+	 * 
+	 * @return the phone number
+	 */
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+	
 	/*
 	 * returns the order information as a string
 	 * 
