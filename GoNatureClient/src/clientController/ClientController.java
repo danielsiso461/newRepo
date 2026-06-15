@@ -20,11 +20,13 @@ public class ClientController implements ChatIF {
 	// Class variables *************************************************
 
 	// Instance variables **********************************************
-	// The instance of the client that created this ConsoleChat.
+	/* The instance of the client that created this ConsoleChat.*/
 	private Client client;
+	/* the user id*/
 	private String id = null;
+	/* true if the user issues a disconnect */
 	private boolean userIssuedDisconnect = false;
-	// Observer pattern addition
+	/* Observer pattern addition*/
 	private List<OrderObserver> observers = new ArrayList<>();
 	/*
 	 * Observer pattern addition for park screens
@@ -54,6 +56,10 @@ public class ClientController implements ChatIF {
 	}
 	
 	// getters ***************************************************************************
+	/*
+	 * getter that return the user's id
+	 * @return the user ID
+	 * */
 	public String getId() {
 		return id;
 	}
@@ -85,11 +91,23 @@ public class ClientController implements ChatIF {
 	 * Observer pattern addition
 	 * notifies the observers of the received orders and sent them said orders
 	 * 
-	 * @param rows the received orders
+	 * @param rows of the received orders
 	 */
 	private void notifyOrdersReceived(List<Order> rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
+		}
+	}
+	
+	/*
+	 * Observer pattern addition
+	 * notifies the observers of the new order and sends it to them
+	 * 
+	 * @param o the new order
+	 */
+	private void notifyOrderMade(Order o) {
+		for (OrderObserver observer : observers) {
+			observer.addOrder(o);
 		}
 	}
 
@@ -107,18 +125,39 @@ public class ClientController implements ChatIF {
 	}
 	
 	// make order observer ******************************************************************
+	/*
+	 * adds observer for making orders
+	 * @param o the observer to add to the observer list
+	 * */
 	public void addMakeOrderObserver(MakeOrderObserver o) {
 		if(!(o == null) && !(makeOrderObservers.contains(o)))
 			makeOrderObservers.add(o);
 	}
 	
+	/*
+	 * removes observer from make order observer list
+	 * @param o the observer to remove from the observer list
+	 * */
 	public void removeMakeOrderObserver(MakeOrderObserver o) {
 		makeOrderObservers.remove(o);
 	}
 	
-	public void notifyParkNamesMakeOrderObserver(List<String> parkNames) {
+	/*
+	 * notifies the make order observer about the received list of park Names
+	 * @param parkNames the list of the park names
+	 * */
+	private void notifyParkNamesMakeOrderObserver(List<String> parkNames) {
 		for(MakeOrderObserver o : makeOrderObservers)
 			o.onParkNamesReceived(parkNames);
+	}
+	
+	/*
+	 * notifies the make order observer that a response from the server was received
+	 * @param m the message from the server
+	 */
+	private void notifyServerResponseMakeOrderObserver(Message m) {
+		for(MakeOrderObserver o : new ArrayList<>(makeOrderObservers))
+			o.onMakeOrderServerResponse(m);
 	}
 	
 	// client interactions *****************************************************************
@@ -184,6 +223,16 @@ public class ClientController implements ChatIF {
 			case RETURN_PARK_NAMES_FAILURE:
 				notifyParkNamesMakeOrderObserver(null);
 				break;
+			
+			case MAKE_ORDER_SUCCESS:
+				notifyOrderMade((Order) m.getData());
+				notifyServerResponseMakeOrderObserver(m);
+				break;
+				
+			case MAKE_ORDER_FAIL_NOT_GUIDE, MAKE_ORDER_FAIL_TIME,
+					MAKE_ORDER_FAIL_NOT_SUBSCRIBED, MAKE_ORDER_FAIL:
+					notifyServerResponseMakeOrderObserver(m);
+					break;	
 				
 			case ACTIVE_PARKS_RESULT:
 			case PARKS_UPDATED:
@@ -198,7 +247,7 @@ public class ClientController implements ChatIF {
 
 			default:
 				System.out.println("Error: Server Response Unknown in "
-						+ "ClientController display");
+						+ "ClientController display" + m.getType());
 			}
 		});
 	}
@@ -230,10 +279,18 @@ public class ClientController implements ChatIF {
 		}
 	}
 	
+	/*
+	 * this method returns true if the user initiated a disconnect
+	 * @return true if the user initiated a disconnect
+	 * */
 	public boolean isUserIssuedDisconnect() {
 		return userIssuedDisconnect;
 	}
 	
+	/*
+	 * this method updates whether the user initiated a disconnect
+	 * @param userIssuedDisconnect the value to set to userIssuedDisconnect
+	 * */
 	public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
 		this.userIssuedDisconnect = userIssuedDisconnect;
 	
