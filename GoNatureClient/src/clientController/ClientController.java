@@ -65,7 +65,7 @@ public class ClientController implements ChatIF {
 	
 	// Constructors ****************************************************
 
-	/**
+	/*
 	 * Constructs an instance of the ClientController and connects to the server.
 	 *
 	 * @param host the host to connect to
@@ -139,7 +139,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/**
+	/*
 	 * Notifies all order observers about the result of an order cancellation request.
 	 *
 	 * @param success            true if the cancellation succeeded, false otherwise
@@ -201,7 +201,7 @@ public class ClientController implements ChatIF {
 		waitingListObservers.remove(observer);
 	}
 
-	/**
+	/*
 	 * Notifies all waiting list observers about the result of a join waiting list request.
 	 *
 	 * @param success            true if the visitor was added to the waiting list successfully
@@ -210,6 +210,28 @@ public class ClientController implements ChatIF {
 	private void notifyJoinWaitingListResult(boolean success, WaitingListMessage waitingListMessage) {
 		for (WaitingListObserver observer : waitingListObservers) {
 			observer.onJoinWaitingListResult(success, waitingListMessage);
+		}
+	}
+	/*
+	 * Notifies all waiting list observers about the reject waiting offer result.
+	 *
+	 * @param success            true if the waiting list offer was rejected successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	private void notifyRejectWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
+		for (WaitingListObserver observer : waitingListObservers) {
+			observer.onRejectWaitingOfferResult(success, waitingListMessage);
+		}
+	}
+	/*
+	 * Notifies all waiting list observers about the accept waiting offer result.
+	 *
+	 * @param success            true if the waiting list offer was accepted successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	private void notifyAcceptWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
+		for (WaitingListObserver observer : waitingListObservers) {
+			observer.onAcceptWaitingOfferResult(success, waitingListMessage);
 		}
 	}
 	/*
@@ -291,6 +313,31 @@ public class ClientController implements ChatIF {
 				new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_REQUEST)
 		);
 	}
+	/**
+	 * Sends a request to reject an offered waiting list request.
+	 *
+	 * @param waitingId the waiting list request ID that should be rejected
+	 */
+	public void requestRejectWaitingOffer(int waitingId) {
+		WaitingListMessage waitingListMessage = new WaitingListMessage(waitingId);
+
+		client.handleMessageFromClientUI(
+				new Message(waitingListMessage, Protocol.REJECT_WAITING_OFFER_REQUEST)
+		);
+	}
+	
+	/*
+	 * Sends a request to accept an offered waiting list request.
+	 *
+	 * @param waitingId the waiting list request ID that should be accepted
+	 */
+	public void requestAcceptWaitingOffer(int waitingId) {
+		WaitingListMessage waitingListMessage = new WaitingListMessage(waitingId);
+
+		client.handleMessageFromClientUI(
+				new Message(waitingListMessage, Protocol.ACCEPT_WAITING_OFFER_REQUEST)
+		);
+	}
 
 	/*
 	 * Sends the server a request for all active parks.
@@ -310,7 +357,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/**
+	/*
 	 * This method overrides the method in the ChatIF interface.
 	 * It handles updating the UI according to the message received from the server.
 	 *
@@ -348,7 +395,20 @@ public class ClientController implements ChatIF {
 			case JOIN_WAITING_LIST_FAILURE:
 				notifyJoinWaitingListResult(false, (WaitingListMessage) m.getData());
 				break;
+			case REJECT_WAITING_OFFER_SUCCESS:
+				notifyRejectWaitingOfferResult(true, (WaitingListMessage) m.getData());
+				break;
 
+			case REJECT_WAITING_OFFER_FAILURE:
+				notifyRejectWaitingOfferResult(false, (WaitingListMessage) m.getData());
+				break;
+			case ACCEPT_WAITING_OFFER_SUCCESS:
+				notifyAcceptWaitingOfferResult(true, (WaitingListMessage) m.getData());
+				break;
+
+			case ACCEPT_WAITING_OFFER_FAILURE:
+				notifyAcceptWaitingOfferResult(false, (WaitingListMessage) m.getData());
+				break;
 			case RETURN_ORDER:
 				List<Order> rows = parseOrderMessage(m.getData());
 

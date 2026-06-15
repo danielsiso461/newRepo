@@ -338,6 +338,42 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			buttonBar.setDisable(false);
 		}
 	}
+	/*
+	 * Handles the result of rejecting a waiting list offer.
+	 *
+	 * This screen currently does not display waiting list offers, so the method only
+	 * clears the warning message when the request succeeds or shows a failure message
+	 * when the request fails.
+	 *
+	 * @param success            true if the waiting list offer was rejected successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	@Override
+	public void onRejectWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
+		if (success) {
+			warningMessage("");
+		} else {
+			warningMessage("Failed to reject waiting list offer.");
+		}
+	}
+	/*
+	 * Handles the result of accepting a waiting list offer.
+	 *
+	 * This screen currently does not display waiting list offers, so the method only
+	 * clears the warning message when the request succeeds or shows a failure message
+	 * when the request fails.
+	 *
+	 * @param success            true if the waiting list offer was accepted successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	@Override
+	public void onAcceptWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
+		if (success) {
+			warningMessage("");
+		} else {
+			warningMessage("Failed to accept waiting list offer.");
+		}
+	}
 
 	/*
 	 * This method is called when the server disconnects the client.

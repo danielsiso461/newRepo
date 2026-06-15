@@ -10,8 +10,27 @@ import common.WaitingListMessage;
  * interface so ClientController can notify it when the server returns success
  * or failure.
  */
-public interface WaitingListObserver {
 
+
+public interface WaitingListObserver {
+	/**
+	 * Handles the result of rejecting a waiting list offer.
+	 *
+	 * @param success            true if the waiting list offer was rejected successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	void onRejectWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage);
+	
+	
+	/**
+	 * Handles the result of accepting a waiting list offer.
+	 *
+	 * @param success            true if the waiting list offer was accepted successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	void onAcceptWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage);
+	
+	
 	/**
 	 * Handles the server response after a visitor requests to join the waiting list.
 	 *
@@ -21,6 +40,7 @@ public interface WaitingListObserver {
 	 */
 	void onJoinWaitingListResult(boolean success, WaitingListMessage waitingListMessage);
 
+	
 	/**
 	 * Handles a server shutdown/disconnect event.
 	 */

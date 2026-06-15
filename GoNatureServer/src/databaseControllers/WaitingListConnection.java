@@ -207,6 +207,168 @@ public class WaitingListConnection extends AbstractDBConnection {
 		}
 	}
 	/**
+	 * Rejects an offered waiting list request and offers the available place to the
+	 * next matching visitor in the waiting list.
+	 *
+	 * The method first loads the offered waiting list request, because its park,
+	 * requested date and number of visitors are needed in order to continue to the
+	 * next visitor in the same waiting list.
+	 *
+	 * After the current request is changed to "rejected", the method searches for
+	 * the next matching request and changes it to "offered".
+	 *
+	 * @param waitingId the waiting list request ID that should be rejected
+	 * @return true if the offered request was rejected, false otherwise
+	 * @throws SQLException if the select or update query fails
+	 */
+	public boolean rejectWaitingOfferAndOfferNext(int waitingId) throws SQLException {
+		ensureConnection();
+
+		Integer parkId = null;
+		java.time.LocalDate orderDate = null;
+		Integer availablePlaces = null;
+
+		String selectSql = """
+				SELECT
+				    park_id,
+				    DATE(requested_order_date) AS order_date,
+				    number_of_visitors
+				FROM waiting_list
+				WHERE waiting_id = ?
+				  AND waiting_status = 'offered';
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+			pstmt.setInt(1, waitingId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					parkId = rs.getInt("park_id");
+					orderDate = rs.getDate("order_date").toLocalDate();
+					availablePlaces = rs.getInt("number_of_visitors");
+				}
+			}
+		}
+
+		if (parkId == null || orderDate == null || availablePlaces == null) {
+			return false;
+		}
+
+		String updateSql = """
+				UPDATE waiting_list
+				SET waiting_status = 'rejected'
+				WHERE waiting_id = ?
+				  AND waiting_status = 'offered';
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
+			pstmt.setInt(1, waitingId);
+
+			if (pstmt.executeUpdate() == 0) {
+				return false;
+			}
+		}
+
+		/*
+		 * After the current offer is rejected, the same available place can be offered
+		 * to the next matching visitor in the waiting list.
+		 */
+		offerFirstMatchingWaitingRequest(parkId, orderDate, availablePlaces);
+
+		return true;
+	}
+	/**
+	 * Expires all waiting list offers whose expiration time has passed and offers
+	 * the available places to the next matching visitors in the waiting list.
+	 *
+	 * The method finds every request with waiting_status = "offered" and
+	 * offer_expires_at that is earlier than the current time.
+	 *
+	 * Each expired request is changed to "expired", and then the same available
+	 * place is offered to the next matching visitor in the waiting list.
+	 *
+	 * @return the number of offers that were changed to expired
+	 * @throws SQLException if the select or update query fails
+	 */
+	public int expireOldOffersAndOfferNext() throws SQLException {
+		ensureConnection();
+
+		int expiredCount = 0;
+
+		String selectSql = """
+				SELECT
+				    waiting_id,
+				    park_id,
+				    DATE(requested_order_date) AS order_date,
+				    number_of_visitors
+				FROM waiting_list
+				WHERE waiting_status = 'offered'
+				  AND offer_expires_at IS NOT NULL
+				  AND offer_expires_at < NOW();
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(selectSql);
+				ResultSet rs = pstmt.executeQuery()) {
+
+			while (rs.next()) {
+				int waitingId = rs.getInt("waiting_id");
+				int parkId = rs.getInt("park_id");
+				java.time.LocalDate orderDate = rs.getDate("order_date").toLocalDate();
+				int availablePlaces = rs.getInt("number_of_visitors");
+
+				String updateSql = """
+						UPDATE waiting_list
+						SET waiting_status = 'expired'
+						WHERE waiting_id = ?
+						  AND waiting_status = 'offered';
+						""";
+
+				try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+					updateStmt.setInt(1, waitingId);
+
+					if (updateStmt.executeUpdate() > 0) {
+						expiredCount++;
+
+						/*
+						 * After the current offer expires, the same available place can be offered to
+						 * the next matching visitor in the waiting list.
+						 */
+						offerFirstMatchingWaitingRequest(parkId, orderDate, availablePlaces);
+					}
+				}
+			}
+		}
+
+		return expiredCount;
+	}
+	/**
+	 * Accepts an offered waiting list request.
+	 *
+	 * The method changes the waiting_status from "offered" to "accepted".
+	 * It only updates requests that are currently offered, so an already rejected,
+	 * expired or accepted request cannot be accepted again.
+	 *
+	 * @param waitingId the waiting list request ID that should be accepted
+	 * @return true if the offered request was accepted, false otherwise
+	 * @throws SQLException if the update query fails
+	 */
+	public boolean acceptWaitingOffer(int waitingId) throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				UPDATE waiting_list
+				SET waiting_status = 'accepted'
+				WHERE waiting_id = ?
+				  AND waiting_status = 'offered';
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, waitingId);
+
+			return pstmt.executeUpdate() > 0;
+		}
+	}
+	/**
 	 * Prevents cloning of the Singleton instance.
 	 */
 	@Override

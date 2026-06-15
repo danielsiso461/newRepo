@@ -13,14 +13,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 
-/**
+/*
  * This controller handles the waiting list page.
  *
  * The page allows a visitor to enter the requested visit details and send a
  * request to join the waiting list.
  */
 public class WaitingListController implements WaitingListObserver {
-
 	/**
 	 * The client controller used to send requests to the server.
 	 */
@@ -44,7 +43,7 @@ public class WaitingListController implements WaitingListObserver {
 	@FXML // fx:id="messageLabel"
 	private Label messageLabel; // Value injected by FXMLLoader
 
-	/**
+	/*
 	 * Sets the ClientController for this page and registers this controller as a
 	 * waiting list observer.
 	 *
@@ -58,7 +57,7 @@ public class WaitingListController implements WaitingListObserver {
 		}
 	}
 
-	/**
+	/*
 	 * Initializes the waiting list page.
 	 *
 	 * This method checks that all FXML fields were injected correctly and writes a
@@ -77,7 +76,7 @@ public class WaitingListController implements WaitingListObserver {
 		messageLabel.setText("Date format: yyyy-MM-ddTHH:mm, for example 2026-06-15T10:00");
 	}
 
-	/**
+	/*
 	 * Handles clicking the Join Waiting List button.
 	 *
 	 * The method validates the input fields, creates a WaitingListMessage, and sends
@@ -121,8 +120,22 @@ public class WaitingListController implements WaitingListObserver {
 			messageLabel.setText("Invalid date format. Use yyyy-MM-ddTHH:mm, for example 2026-06-15T10:00.");
 		}
 	}
+	
+	/*
+	 * Handles the result of rejecting a waiting list offer.
+	 *
+	 * This screen currently does not perform a specific action after rejecting an
+	 * offer, so the method is kept empty.
+	 *
+	 * @param success            true if the waiting list offer was rejected successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	@Override
+	public void onRejectWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
+		// No action is needed here at this stage.
+	}
 
-	/**
+	/*
 	 * Handles the server response after requesting to join the waiting list.
 	 *
 	 * @param success            true if the visitor was added successfully
@@ -149,8 +162,22 @@ public class WaitingListController implements WaitingListObserver {
 			}
 		});
 	}
+	
+	/*
+	 * Handles the result of accepting a waiting list offer.
+	 *
+	 * This screen currently does not perform a specific action after accepting an
+	 * offer, so the method is kept empty.
+	 *
+	 * @param success            true if the waiting list offer was accepted successfully
+	 * @param waitingListMessage the waiting list message returned from the server
+	 */
+	@Override
+	public void onAcceptWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
+		// No action is needed here at this stage.
+	}
 
-	/**
+	/*
 	 * Handles server shutdown/disconnect.
 	 */
 	@Override

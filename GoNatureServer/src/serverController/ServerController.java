@@ -345,7 +345,14 @@ public class ServerController implements ServerAndControllerConnection {
 		case JOIN_WAITING_LIST_REQUEST:
 			addLog("Client requested to join the waiting list.");
 			return handleJoinWaitingList(m);  
-
+			
+		case REJECT_WAITING_OFFER_REQUEST:
+			addLog("Client requested to reject a waiting list offer.");
+			return handleRejectWaitingOffer(m);
+			
+		case ACCEPT_WAITING_OFFER_REQUEST:
+			addLog("Client requested to accept a waiting list offer.");
+			return handleAcceptWaitingOffer(m);
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
@@ -437,7 +444,7 @@ public class ServerController implements ServerAndControllerConnection {
 	    }
 	}
 	
-	/**
+	/*
 	 * Handles a client request to cancel an existing order.
 	 *
 	 * The order is not deleted from the database. Instead, its order_status is
@@ -464,6 +471,7 @@ public class ServerController implements ServerAndControllerConnection {
 		int changedByEmployeeId = 1;
 
 		try {
+			expireOldWaitingOffers();
 			/*
 			 * Loads the order details before cancelling it.
 			 * 
@@ -517,7 +525,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
 		}
 	}
-	/**
+	/*
 	 * Handles a client request to join the waiting list.
 	 *
 	 * The request data is received as a WaitingListMessage.
@@ -536,6 +544,7 @@ public class ServerController implements ServerAndControllerConnection {
 		WaitingListMessage waitingListMessage = (WaitingListMessage) m.getData();
 
 		try {
+			expireOldWaitingOffers();
 			int parkId = waitingListMessage.getParkId();
 
 			/*
@@ -581,6 +590,110 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("ERROR - Failed to add visitor to waiting list: " + e.getMessage());
 
 			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
+		}
+	}
+	/*
+	 * Handles a client request to reject an offered waiting list request.
+	 *
+	 * The request data is received as a WaitingListMessage that contains the waiting
+	 * list request ID. If the request is rejected successfully, the server also tries
+	 * to offer the available place to the next matching visitor in the waiting list.
+	 *
+	 * @param m the message received from the client, containing WaitingListMessage
+	 * @return a message with REJECT_WAITING_OFFER_SUCCESS or REJECT_WAITING_OFFER_FAILURE
+	 */
+	private Message handleRejectWaitingOffer(Message m) {
+		if (!(m.getData() instanceof WaitingListMessage)) {
+			addLog("ERROR - Invalid reject waiting offer request data.");
+			return new Message(m.getData(), Protocol.REJECT_WAITING_OFFER_FAILURE);
+		}
+
+		WaitingListMessage waitingListMessage = (WaitingListMessage) m.getData();
+
+		try {
+			expireOldWaitingOffers();
+			boolean rejected = wlc.rejectWaitingOfferAndOfferNext(waitingListMessage.getWaitingId());
+
+			if (rejected) {
+				waitingListMessage.setWaitingStatus("rejected");
+
+				addLog("Waiting list offer rejected successfully. Waiting ID: "
+						+ waitingListMessage.getWaitingId());
+
+				return new Message(waitingListMessage, Protocol.REJECT_WAITING_OFFER_SUCCESS);
+			}
+
+			addLog("Reject waiting list offer failed. Waiting ID was not found or was not offered. Waiting ID: "
+					+ waitingListMessage.getWaitingId());
+
+			return new Message(waitingListMessage, Protocol.REJECT_WAITING_OFFER_FAILURE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to reject waiting list offer: " + e.getMessage());
+
+			return new Message(waitingListMessage, Protocol.REJECT_WAITING_OFFER_FAILURE);
+		}
+	}
+	/*
+	 * Handles a client request to accept an offered waiting list request.
+	 *
+	 * The request data is received as a WaitingListMessage that contains the waiting
+	 * list request ID. If the request is accepted successfully, the waiting list row
+	 * is changed from "offered" to "accepted".
+	 *
+	 * @param m the message received from the client, containing WaitingListMessage
+	 * @return a message with ACCEPT_WAITING_OFFER_SUCCESS or ACCEPT_WAITING_OFFER_FAILURE
+	 */
+	private Message handleAcceptWaitingOffer(Message m) {
+		if (!(m.getData() instanceof WaitingListMessage)) {
+			addLog("ERROR - Invalid accept waiting offer request data.");
+			return new Message(m.getData(), Protocol.ACCEPT_WAITING_OFFER_FAILURE);
+		}
+
+		WaitingListMessage waitingListMessage = (WaitingListMessage) m.getData();
+
+		try {
+			expireOldWaitingOffers();
+			boolean accepted = wlc.acceptWaitingOffer(waitingListMessage.getWaitingId());
+
+			if (accepted) {
+				waitingListMessage.setWaitingStatus("accepted");
+
+				addLog("Waiting list offer accepted successfully. Waiting ID: "
+						+ waitingListMessage.getWaitingId());
+
+				return new Message(waitingListMessage, Protocol.ACCEPT_WAITING_OFFER_SUCCESS);
+			}
+
+			addLog("Accept waiting list offer failed. Waiting ID was not found or was not offered. Waiting ID: "
+					+ waitingListMessage.getWaitingId());
+
+			return new Message(waitingListMessage, Protocol.ACCEPT_WAITING_OFFER_FAILURE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to accept waiting list offer: " + e.getMessage());
+
+			return new Message(waitingListMessage, Protocol.ACCEPT_WAITING_OFFER_FAILURE);
+		}
+	}
+	/*
+	 * Expires old waiting list offers before handling waiting list actions.
+	 *
+	 * This keeps the waiting list updated by moving expired offers to "expired" and
+	 * offering the available places to the next matching visitors.
+	 */
+	private void expireOldWaitingOffers() {
+		try {
+			int expiredCount = wlc.expireOldOffersAndOfferNext();
+
+			if (expiredCount > 0) {
+				addLog("Expired old waiting list offers. Count: " + expiredCount);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to expire old waiting list offers: " + e.getMessage());
 		}
 	}
 	/*

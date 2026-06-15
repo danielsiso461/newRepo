@@ -51,6 +51,13 @@ public class WaitingListMessage implements Serializable {
 	 * Possible values include: waiting, offered, confirmed, expired, cancelled.
 	 */
 	private String waitingStatus;
+	/**
+	 * The waiting list request ID.
+	 * 
+	 * This value is used when the client wants to perform an action on an existing
+	 * waiting list request, for example rejecting an offered request.
+	 */
+	private int waitingId;
 
 	/**
 	 * Creates a new waiting list request message.
@@ -69,6 +76,7 @@ public class WaitingListMessage implements Serializable {
 		this.numberOfVisitors = numberOfVisitors;
 		this.queuePosition = -1;
 		this.waitingStatus = "waiting";
+		this.waitingId = -1;
 	}
 	/**
 	 * Creates a new waiting list request message using the park name.
@@ -90,8 +98,47 @@ public class WaitingListMessage implements Serializable {
 		this.numberOfVisitors = numberOfVisitors;
 		this.queuePosition = -1;
 		this.waitingStatus = "waiting";
+		this.waitingId = -1;
+	}
+	
+	/**
+	 * Creates a waiting list message for actions that use an existing waiting list
+	 * request.
+	 *
+	 * This constructor is used when the client wants to perform an action on an
+	 * existing waiting list row, for example rejecting an offered request.
+	 *
+	 * @param waitingId the waiting list request ID
+	 */
+	public WaitingListMessage(int waitingId) {
+		this.waitingId = waitingId;
+		this.subscriberId = -1;
+		this.parkId = -1;
+		this.parkName = null;
+		this.requestedOrderDate = null;
+		this.numberOfVisitors = -1;
+		this.queuePosition = -1;
+		this.waitingStatus = null;
+	}
+	
+	/**
+	 * Returns the waiting list request ID.
+	 *
+	 * @return the waiting list request ID
+	 */
+	public int getWaitingId() {
+		return waitingId;
 	}
 
+	/**
+	 * Updates the waiting list request ID.
+	 *
+	 * @param waitingId the waiting list request ID
+	 */
+	public void setWaitingId(int waitingId) {
+		this.waitingId = waitingId;
+	}
+	
 	public int getSubscriberId() {
 		return subscriberId;
 	}
