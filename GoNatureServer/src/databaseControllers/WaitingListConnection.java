@@ -436,18 +436,22 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		String sql = """
 				SELECT
-				    waiting_id,
-				    subscriber_id,
-				    park_id,
-				    requested_order_date,
-				    number_of_visitors,
-				    queue_position,
-				    waiting_status
-				FROM waiting_list
-				WHERE subscriber_id = ?
-				  AND waiting_status IN ('waiting', 'offered')
-				  AND (offer_expires_at IS NULL OR offer_expires_at >= NOW())
-				ORDER BY requested_order_date ASC, queue_position ASC;
+				    wl.waiting_id,
+				    wl.subscriber_id,
+				    wl.park_id,
+				    wl.requested_order_date,
+				    wl.number_of_visitors,
+				    wl.queue_position,
+				    wl.waiting_status,
+				    s.subscriber_email,
+				    s.subscriber_phone
+				FROM waiting_list wl
+				LEFT JOIN subscriber s
+				    ON wl.subscriber_id = s.subscriber_id
+				WHERE wl.subscriber_id = ?
+				  AND wl.waiting_status IN ('waiting', 'offered')
+				  AND (wl.offer_expires_at IS NULL OR wl.offer_expires_at >= NOW())
+				ORDER BY wl.requested_order_date ASC, wl.queue_position ASC;
 				""";
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -465,7 +469,8 @@ public class WaitingListConnection extends AbstractDBConnection {
 					waitingListMessage.setWaitingId(rs.getInt("waiting_id"));
 					waitingListMessage.setQueuePosition(rs.getInt("queue_position"));
 					waitingListMessage.setWaitingStatus(rs.getString("waiting_status"));
-
+					waitingListMessage.setSubscriberEmail(rs.getString("subscriber_email"));
+					waitingListMessage.setSubscriberPhone(rs.getString("subscriber_phone"));
 					offers.add(waitingListMessage);
 				}
 			}

@@ -58,6 +58,9 @@ public class WaitingListMessage implements Serializable {
 	 * waiting list request, for example rejecting an offered request.
 	 */
 	private int waitingId;
+	
+	private String subscriberEmail;
+	private String subscriberPhone;
 
 	/**
 	 * Creates a new waiting list request message.
@@ -206,5 +209,40 @@ public class WaitingListMessage implements Serializable {
 				", numberOfVisitors=" + numberOfVisitors +
 				", queuePosition=" + queuePosition +
 				", waitingStatus=" + waitingStatus + "]";
+	}
+	/*
+	 * Returns the subscriber email used for notification simulation.
+	 *
+	 * @return the subscriber email
+	 */
+	public String getSubscriberEmail() {
+		return subscriberEmail;
+	}
+
+	/*
+	 * Sets the subscriber email used for notification simulation.
+	 *
+	 * @param subscriberEmail the subscriber email
+	 */
+	public void setSubscriberEmail(String subscriberEmail) {
+		this.subscriberEmail = subscriberEmail;
+	}
+
+	/*
+	 * Returns the subscriber phone used for notification simulation.
+	 *
+	 * @return the subscriber phone
+	 */
+	public String getSubscriberPhone() {
+		return subscriberPhone;
+	}
+
+	/*
+	 * Sets the subscriber phone used for notification simulation.
+	 *
+	 * @param subscriberPhone the subscriber phone
+	 */
+	public void setSubscriberPhone(String subscriberPhone) {
+		this.subscriberPhone = subscriberPhone;
 	}
 }

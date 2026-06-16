@@ -15,6 +15,10 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import java.util.HashSet;
+import java.util.Set;
+
+import javafx.scene.control.Alert;
 
 /*
  * This controller handles the waiting list page.
@@ -33,7 +37,13 @@ public class WaitingListController implements WaitingListObserver {
 	 * The previous scene, used when returning to the order table page.
 	 */
 	private Scene prevScene;
-
+	
+	/*
+	 * Keeps track of offered waiting list requests that already triggered
+	 * notification simulation popups in this screen session.
+	 */
+	private Set<Integer> simulatedOfferIds = new HashSet<>();
+	
 	@FXML // fx:id="offersTable"
 	private TableView<WaitingListMessage> offersTable; // Value injected by FXMLLoader
 
@@ -242,6 +252,75 @@ public class WaitingListController implements WaitingListObserver {
 		stage.setTitle("Order Table");
 		stage.show();
 	}
+	/*
+	 * Shows notification simulation popups for offered waiting list requests.
+	 *
+	 * The popups simulate SMS and email messages that would be sent to the visitor
+	 * when a place becomes available.
+	 *
+	 * @param offers the waiting list requests returned from the server
+	 */
+	private void showOfferSimulationMessages(List<WaitingListMessage> offers) {
+		for (WaitingListMessage offer : offers) {
+			if (offer == null) {
+				continue;
+			}
+
+			boolean shouldSimulate =
+					"offered".equalsIgnoreCase(offer.getWaitingStatus()) &&
+					simulatedOfferIds.add(offer.getWaitingId());
+
+			if (shouldSimulate) {
+				showSimulationAlert(
+						"PHONE SIMULATION",
+						"SMS would be sent to: " + getDisplayValue(offer.getSubscriberPhone())
+								+ "\n\nA place is available for your waiting list request."
+								+ "\nPark ID: " + offer.getParkId()
+								+ "\nDate: " + offer.getRequestedOrderDate()
+								+ "\nVisitors: " + offer.getNumberOfVisitors()
+								+ "\n\nPlease accept the offer within one hour."
+				);
+
+				showSimulationAlert(
+						"EMAIL SIMULATION",
+						"Email would be sent to: " + getDisplayValue(offer.getSubscriberEmail())
+								+ "\n\nA place is available for your waiting list request."
+								+ "\nPark ID: " + offer.getParkId()
+								+ "\nDate: " + offer.getRequestedOrderDate()
+								+ "\nVisitors: " + offer.getNumberOfVisitors()
+								+ "\n\nPlease accept the offer within one hour."
+				);
+			}
+		}
+	}
+
+	/*
+	 * Shows a notification simulation popup.
+	 *
+	 * @param title   the popup title
+	 * @param message the popup message
+	 */
+	private void showSimulationAlert(String title, String message) {
+		Alert alert = new Alert(Alert.AlertType.INFORMATION);
+		alert.setTitle(title);
+		alert.setHeaderText(null);
+		alert.setContentText(message);
+		alert.showAndWait();
+	}
+
+	/*
+	 * Returns a readable value for notification simulation.
+	 *
+	 * @param value the value to display
+	 * @return the original value, or "Not available" if it is missing
+	 */
+	private String getDisplayValue(String value) {
+		if (value == null || value.isBlank()) {
+			return "Not available";
+		}
+
+		return value;
+	}
 
 	/*
 	 * Handles the result of loading waiting list requests for the current subscriber.
@@ -260,7 +339,9 @@ public class WaitingListController implements WaitingListObserver {
 
 			offersTable.getItems().setAll(offers);
 			offersTable.getSelectionModel().clearSelection();
-
+			
+			showOfferSimulationMessages(offers);
+			
 			acceptButton.setDisable(true);
 			rejectButton.setDisable(true);
 
