@@ -8,7 +8,6 @@ import clientController.ClientController;
 import common.CommonConstants;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -18,164 +17,149 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
-/*
- * this class controls the welcome page of the client application
+/**
+ * Controls the welcome page.
  * 
- * the page asks the user to enter an ID and a server address
- * and then opens the order table page
+ * The user enters an ID and a server address.
+ * After a successful connection, the order table page is opened.
  */
 public class WelcomePageController {
 
-	/*
-	 * indicates whether a valid ID was already entered
-	 */
-	private boolean idEntered = false;
+    private boolean idEntered = false;
+    private String id;
+    private String address;
 
-	/*
-	 * stores the user ID
-	 */
-	private String id;
-
-	/*
-	 * stores the server address
-	 */
-	private String address;
-
-    @FXML // ResourceBundle that was given to the FXMLLoader
+    @FXML
     private ResourceBundle resources;
 
-    @FXML // URL location of the FXML file that was given to the FXMLLoader
+    @FXML
     private URL location;
 
-    @FXML // fx:id="commandLabel"
-    private Label commandLabel; // Value injected by FXMLLoader
+    @FXML
+    private Label commandLabel;
 
-    @FXML // fx:id="confirmButton"
-    private Button confirmButton; // Value injected by FXMLLoader
+    @FXML
+    private Button confirmButton;
 
-    @FXML // fx:id="inputField"
-    private TextField inputField; // Value injected by FXMLLoader
+    @FXML
+    private TextField inputField;
 
-    @FXML // fx:id="messageLabel"
-    private Label messageLabel; // Value injected by FXMLLoader
+    @FXML
+    private Label messageLabel;
 
-    /*
-     * this function handles pressing the confirm button
-     * 
-     * first validates the user ID
-     * then receives the server address
-     * and finally launches the order table page
-     * 
-     * @param event the event of pressing the confirm button
-     */
     @FXML
     void btnClick(ActionEvent event) {
-    	if(!idEntered) {
-    		id = inputField.getText();
-
-    		// ID should have 9 characters
-			if (id.length() != 9) {
-				messageLabel.setTextFill(Color.RED);
-				messageLabel.setText("id should be 9 digits long");
-			} else {
-				try {
-					int val = Integer.parseInt(id);
-
-					if (val > 0) {
-						idEntered = true;
-						messageLabel.setText("");
-						inputField.clear();
-						commandLabel.setText("Enter server address");
-					}
-				} catch (NumberFormatException e) {
-					messageLabel.setTextFill(Color.RED);
-					messageLabel.setText("id should be a number");
-				}
-			}
-    	} else {
-    		address = inputField.getText();
-
-    		// should launch the order table page
-    		launchOrderTable();
-    	}
+        if (!idEntered) {
+            handleIdInput();
+        } else {
+            handleAddressInput();
+        }
     }
 
-    /*
-     * this function initializes the welcome page
-     * 
-     * checks that all FXML components were injected correctly
-     * and handles closing the application when pressing the red X button
-     */
     @FXML
     void initialize() {
-        assert commandLabel != null : "fx:id=\"commandLabel\" was not injected: check your FXML file 'welcomePage.fxml'.";
-        assert confirmButton != null : "fx:id=\"confirmButton\" was not injected: check your FXML file 'welcomePage.fxml'.";
-        assert inputField != null : "fx:id=\"inputField\" was not injected: check your FXML file 'welcomePage.fxml'.";
-        assert messageLabel != null : "fx:id=\"messageLabel\" was not injected: check your FXML file 'welcomePage.fxml'.";
+        assert commandLabel != null : "commandLabel was not injected";
+        assert confirmButton != null : "confirmButton was not injected";
+        assert inputField != null : "inputField was not injected";
+        assert messageLabel != null : "messageLabel was not injected";
 
-        // this handles closing when pressing the red X button
-     	Platform.runLater(new Runnable() {
-     		@Override
-     		public void run() {
-     			Stage stage = (Stage) inputField.getScene().getWindow();
+        Platform.runLater(() -> {
+            Stage stage = (Stage) inputField.getScene().getWindow();
 
-     			stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-     				@Override
-     				public void handle(WindowEvent event) {
-     					Platform.exit();
-     					System.exit(0);
-     				}
-     			});
-     		}
-     	});
+            stage.setOnCloseRequest(event -> {
+                Platform.exit();
+                System.exit(0);
+            });
+        });
     }
 
-    /*
-     * this function loads and opens the order table page
-     * 
-     * creates the client controller
-     * requests the user's orders
-     * and replaces the current scene with the order table scene
-     */
+    private void handleIdInput() {
+        id = inputField.getText().trim();
+
+        if (id.length() != 9) {
+            showError("id should be 9 digits long");
+            return;
+        }
+
+        try {
+            int value = Integer.parseInt(id);
+
+            if (value <= 0) {
+                showError("id should be positive");
+                return;
+            }
+
+            idEntered = true;
+            messageLabel.setText("");
+            inputField.clear();
+            commandLabel.setText("Enter server address");
+
+        } catch (NumberFormatException e) {
+            showError("id should be a number");
+        }
+    }
+
+    private void handleAddressInput() {
+        address = inputField.getText().trim();
+
+        if (address.isEmpty()) {
+            showError("server address cannot be empty");
+            return;
+        }
+
+        launchOrderTable();
+    }
+
     private void launchOrderTable() {
-    	Stage stage = (Stage) inputField.getScene().getWindow();
+        Stage stage = (Stage) inputField.getScene().getWindow();
 
-    	// load the FXML file of the table of orders
-    	FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.orderTable));
-    	Parent root = null;
-		try {
-			root = loader.load();
-		} catch (IOException e) {
-			e.printStackTrace();
-			Platform.exit();
-			System.exit(1);
-		}
-    	// get controller
-    	OrderTableDisplayController controller = loader.getController();
+        FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.orderTable));
+        Parent root;
 
-    	// establish connection between UI controller and client controller
-    	ClientController clientController;
-    	try {
-    		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, id);
-    	} catch (IOException e) {
-    		messageLabel.setTextFill(Color.RED);
-    		messageLabel.setText("Bad server address");
-    		inputField.clear();
-			return;
-    	}
+        try {
+            root = loader.load();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Platform.exit();
+            System.exit(1);
+            return;
+        }
 
-    	controller.setClientController(clientController);
+        OrderTableDisplayController controller = loader.getController();
 
-    	// get the orders of the user and load them into the order table
-    	clientController.requestOrders();
+        ClientController clientController;
 
-    	// show UI
-    	Scene scene = new Scene(root);
-    	stage.setScene(scene);
-    	stage.setTitle("Order Table");
-    	stage.show();
-    	Platform.runLater(controller);
+        try {
+            clientController = new ClientController(address, CommonConstants.DEFAULT_PORT, id);
+
+            /*
+             * These two lines allow other screens, such as ReportsPageController,
+             * to use the same client connection.
+             */
+            ClientScreenManager.setPrimaryStage(stage);
+            ClientScreenManager.setClientController(clientController);
+
+        } catch (IOException e) {
+            showError("Bad server address");
+            inputField.clear();
+            return;
+        }
+
+        controller.setClientController(clientController);
+
+        clientController.requestOrders();
+
+        Scene scene = new Scene(root);
+        stage.setScene(scene);
+        stage.setTitle("Order Table");
+        stage.show();
+
+        Platform.runLater(controller);
+    }
+
+    private void showError(String message) {
+        messageLabel.setTextFill(Color.RED);
+        messageLabel.setText(message);
     }
 }

@@ -2,192 +2,164 @@ package databaseControllers;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * This class is the DB connector used when working with the
- * park_parameter_change_request table.
- * 
- * The class is implemented as a Singleton, so the server will use only one
- * database connection object for park parameter change requests during runtime.
- * 
- * The park_parameter_change_request table stores requests made by park managers
- * to change park parameters such as maximum capacity, places for unplanned
- * visitors, estimated visit duration, and promotions.
- * 
- * According to the system logic, a park manager creates a request and a
- * department manager approves or rejects it.
+ * DB connector for the park_parameter_change_request table.
  */
 public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 
-	/**
-	 * The single instance of ParkParameterChangeRequestConnection.
-	 */
-	private static ParkParameterChangeRequestConnection instance;
+    private static ParkParameterChangeRequestConnection instance;
 
-	/**
-	 * Private constructor for Singleton.
-	 * 
-	 * It creates the database connection once.
-	 * 
-	 * @throws SQLException if the connection to the database fails
-	 */
-	private ParkParameterChangeRequestConnection() throws SQLException {
-		connect();
-	}
+    private final String REQUEST_ID = "request_id";
+    private final String PARK_ID = "park_id";
+    private final String REQUESTED_BY_EMPLOYEE_ID = "requested_by_employee_id";
+    private final String PARAMETER_NAME = "parameter_name";
+    private final String OLD_VALUE = "old_value";
+    private final String NEW_VALUE = "new_value";
+    private final String REQUEST_STATUS = "request_status";
+    private final String APPROVED_BY_EMPLOYEE_ID = "approved_by_employee_id";
+    private final String REVIEW_NOTE = "review_note";
 
-	/**
-	 * Returns the single instance of ParkParameterChangeRequestConnection.
-	 * 
-	 * If no instance exists, or if the existing database connection is closed, a new
-	 * instance is created.
-	 * 
-	 * @return the only ParkParameterChangeRequestConnection instance
-	 * @throws SQLException if creating the database connection fails
-	 */
-	public static ParkParameterChangeRequestConnection getInstance() throws SQLException {
-		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
-			instance = new ParkParameterChangeRequestConnection();
-		}
-		return instance;
-	}
+    private final String STATUS_PENDING = "pending";
+    private final String STATUS_APPROVED = "approved";
+    private final String STATUS_REJECTED = "rejected";
 
-	/**
-	 * Returns the table name used by this DB connector.
-	 * 
-	 * @return the park_parameter_change_request table name
-	 */
-	@Override
-	protected String getTableName() {
-		return ConstantsDBTableNames.PARK_PARAMETER_CHANGE_REQUEST;
-	}
+    private ParkParameterChangeRequestConnection() throws SQLException {
+        connect();
+    }
 
-	/**
-	 * This method creates a new park parameter change request.
-	 * 
-	 * The request is created by a park manager and remains pending until a
-	 * department manager approves or rejects it.
-	 * 
-	 * The actual permission checks are handled by the database trigger and should
-	 * also be validated in the server logic before calling this method.
-	 * 
-	 * @param parkId                the park ID whose parameter should be changed
-	 * @param requestedByEmployeeId the employee ID of the park manager who created
-	 *                              the request
-	 * @param parameterName         the name of the parameter to change, such as
-	 *                              max_capacity, places_for_unplanned_visitors,
-	 *                              estimated_visit_duration_hours, or promotions
-	 * @param oldValue              the current value of the parameter before the
-	 *                              requested change
-	 * @param newValue              the requested new value of the parameter
-	 * @return true if the request was created successfully, false otherwise
-	 * @throws SQLException if the insert query fails
-	 */
-	public boolean createChangeRequest(
-			int parkId,
-			int requestedByEmployeeId,
-			String parameterName,
-			String oldValue,
-			String newValue) throws SQLException {
+    public static ParkParameterChangeRequestConnection getInstance() throws SQLException {
+        if (instance == null || instance.conn == null || instance.conn.isClosed()) {
+            instance = new ParkParameterChangeRequestConnection();
+        }
 
-		String sql = "INSERT INTO park_parameter_change_request "
-				+ "(park_id, requested_by_employee_id, parameter_name, old_value, new_value) "
-				+ "VALUES (?, ?, ?, ?, ?);";
+        return instance;
+    }
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
+    @Override
+    protected String getTableName() {
+        return ConstantsDBTableNames.PARK_PARAMETER_CHANGE_REQUEST;
+    }
 
-		pstmt.setInt(1, parkId);
-		pstmt.setInt(2, requestedByEmployeeId);
-		pstmt.setString(3, parameterName);
-		pstmt.setString(4, oldValue);
-		pstmt.setString(5, newValue);
+    /**
+     * Creates a new park parameter change request.
+     */
+    public boolean createChangeRequest(int parkId, int requestedByEmployeeId,
+            String parameterName, String oldValue, String newValue) throws SQLException {
 
-		return pstmt.executeUpdate() > 0;
-	}
+        ensureConnection();
 
-	/**
-	 * This method approves a pending park parameter change request.
-	 * 
-	 * When the request is approved, the database trigger updates the matching value
-	 * in the park table according to the requested parameter and new value.
-	 * 
-	 * Only a department manager should approve a request. This rule is enforced by a
-	 * database trigger and should also be checked in the server logic.
-	 * 
-	 * @param requestId            the ID of the request to approve
-	 * @param approvedByEmployeeId the employee ID of the department manager who
-	 *                             approved the request
-	 * @param reviewNote           a note explaining the approval decision
-	 * @return true if the request was approved successfully, false otherwise
-	 * @throws SQLException if the update query fails
-	 */
-	public boolean approveRequest(
-			int requestId,
-			int approvedByEmployeeId,
-			String reviewNote) throws SQLException {
+        List<Object> values = new ArrayList<>();
 
-		String sql = "UPDATE park_parameter_change_request "
-				+ "SET request_status = 'approved', approved_by_employee_id = ?, review_note = ? "
-				+ "WHERE request_id = ? AND request_status = 'pending';";
+        values.add(parkId);
+        values.add(requestedByEmployeeId);
+        values.add(parameterName);
+        values.add(oldValue);
+        values.add(newValue);
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
+        insertFields(
+                new String[] {
+                        PARK_ID,
+                        REQUESTED_BY_EMPLOYEE_ID,
+                        PARAMETER_NAME,
+                        OLD_VALUE,
+                        NEW_VALUE
+                },
+                values
+        );
 
-		pstmt.setInt(1, approvedByEmployeeId);
-		pstmt.setString(2, reviewNote);
-		pstmt.setInt(3, requestId);
+        return true;
+    }
 
-		return pstmt.executeUpdate() > 0;
-	}
+    /**
+     * Approves a pending request.
+     */
+    public boolean approveRequest(int requestId, int approvedByEmployeeId,
+            String reviewNote) throws SQLException {
 
-	/**
-	 * This method rejects a pending park parameter change request.
-	 * 
-	 * Rejecting a request does not update the park table. It only changes the
-	 * request status to rejected and stores the department manager that reviewed it.
-	 * 
-	 * Only a department manager should reject a request. This rule is enforced by a
-	 * database trigger and should also be checked in the server logic.
-	 * 
-	 * @param requestId            the ID of the request to reject
-	 * @param approvedByEmployeeId the employee ID of the department manager who
-	 *                             rejected the request
-	 * @param reviewNote           a note explaining the rejection decision
-	 * @return true if the request was rejected successfully, false otherwise
-	 * @throws SQLException if the update query fails
-	 */
-	public boolean rejectRequest(
-			int requestId,
-			int approvedByEmployeeId,
-			String reviewNote) throws SQLException {
+        return updateRequestStatus(
+                requestId,
+                approvedByEmployeeId,
+                reviewNote,
+                STATUS_APPROVED
+        );
+    }
 
-		String sql = "UPDATE park_parameter_change_request "
-				+ "SET request_status = 'rejected', approved_by_employee_id = ?, review_note = ? "
-				+ "WHERE request_id = ? AND request_status = 'pending';";
+    /**
+     * Rejects a pending request.
+     */
+    public boolean rejectRequest(int requestId, int approvedByEmployeeId,
+            String reviewNote) throws SQLException {
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
+        return updateRequestStatus(
+                requestId,
+                approvedByEmployeeId,
+                reviewNote,
+                STATUS_REJECTED
+        );
+    }
 
-		pstmt.setInt(1, approvedByEmployeeId);
-		pstmt.setString(2, reviewNote);
-		pstmt.setInt(3, requestId);
+    /**
+     * Updates a pending request to approved or rejected.
+     */
+    private boolean updateRequestStatus(int requestId, int approvedByEmployeeId,
+            String reviewNote, String newStatus) throws SQLException {
 
-		return pstmt.executeUpdate() > 0;
-	}
+        ensureConnection();
 
-	/**
-	 * This method returns all pending park parameter change requests.
-	 * 
-	 * Pending requests are requests that have not yet been approved or rejected by a
-	 * department manager.
-	 * 
-	 * @return a ResultSet containing all pending requests ordered by request date
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getPendingRequests() throws SQLException {
-		String sql = "SELECT * FROM park_parameter_change_request "
-				+ "WHERE request_status = 'pending' "
-				+ "ORDER BY requested_at;";
+        String sql = "UPDATE `" + getTableName() + "` "
+                + "SET " + REQUEST_STATUS + " = ?, "
+                + APPROVED_BY_EMPLOYEE_ID + " = ?, "
+                + REVIEW_NOTE + " = ? "
+                + "WHERE " + REQUEST_ID + " = ? "
+                + "AND " + REQUEST_STATUS + " = ?;";
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
-	}
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, newStatus);
+            pstmt.setInt(2, approvedByEmployeeId);
+            pstmt.setString(3, reviewNote);
+            pstmt.setInt(4, requestId);
+            pstmt.setString(5, STATUS_PENDING);
+
+            return pstmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Returns all pending requests.
+     */
+    public List<Object[]> getPendingRequests() throws SQLException {
+        ensureConnection();
+
+        String sql = "SELECT * FROM `" + getTableName() + "` "
+                + "WHERE " + REQUEST_STATUS + " = ? "
+                + "ORDER BY requested_at;";
+
+        List<Object[]> pendingRequests = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, STATUS_PENDING);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+
+                while (rs.next()) {
+                    Object[] row = new Object[columnCount];
+
+                    for (int i = 1; i <= columnCount; i++) {
+                        row[i - 1] = rs.getObject(i);
+                    }
+
+                    pendingRequests.add(row);
+                }
+            }
+        }
+
+        return pendingRequests;
+    }
 }

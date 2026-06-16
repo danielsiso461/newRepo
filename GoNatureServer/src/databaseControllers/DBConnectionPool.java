@@ -47,7 +47,7 @@ public class DBConnectionPool {
 	 * @return the single DBConnectionPool instance
 	 */
 	public static DBConnectionPool getInstance() {
-		if (instance == null) {
+		if (instance == null) { 
 			instance = new DBConnectionPool();
 		}
 

@@ -3,174 +3,187 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import common.Visit;
 
 /**
- * This class is the DB connector used when working with the visit table.
- * 
- * The class is implemented as a Singleton, so the server will use only one
- * database connection object for visits during runtime.
- * 
- * The visit table stores actual park visits after visitors enter the park. It
- * includes the related order, park, subscriber, visit type, actual number of
- * visitors, entry time, exit time, and the employees who handled the entry and
- * exit.
+ * DB connector for the visit table.
  */
 public class VisitConnection extends AbstractDBConnection {
 
-	/**
-	 * The single instance of VisitConnection.
-	 */
-	private static VisitConnection instance;
+    private static VisitConnection instance;
 
-	/**
-	 * Private constructor for Singleton.
-	 * 
-	 * It creates the database connection once.
-	 * 
-	 * @throws SQLException if the connection to the database fails
-	 */
-	private VisitConnection() throws SQLException {
-		connect();
-	}
+    private final String VISIT_ID = "visit_id";
+    private final String ORDER_NUMBER = "order_number";
+    private final String PARK_ID = "park_id";
+    private final String SUBSCRIBER_ID = "subscriber_id";
+    private final String VISIT_TYPE = "visit_type";
+    private final String ACTUAL_NUMBER_OF_VISITORS = "actual_number_of_visitors";
+    private final String ENTRY_TIME = "entry_time";
+    private final String EXIT_TIME = "exit_time";
+    private final String HANDLED_BY_EMPLOYEE_ID = "handled_by_employee_id";
+    private final String EXIT_HANDLED_BY_EMPLOYEE_ID = "exit_handled_by_employee_id";
+    private final String IDENTIFICATION_METHOD = "identification_method";
 
-	/**
-	 * Returns the single instance of VisitConnection.
-	 * 
-	 * If no instance exists, or if the existing database connection is closed, a new
-	 * instance is created.
-	 * 
-	 * @return the only VisitConnection instance
-	 * @throws SQLException if creating the database connection fails
-	 */
-	public static VisitConnection getInstance() throws SQLException {
-		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
-			instance = new VisitConnection();
-		}
-		return instance;
-	}
+    private final String ORDER_STATUS_APPROVED = "approved";
+    private final String VISIT_TYPE_ORDERED = "ordered";
 
-	/**
-	 * Returns the table name used by this DB connector.
-	 * 
-	 * @return the visit table name
-	 */
-	@Override
-	protected String getTableName() {
-		return ConstantsDBTableNames.VISIT;
-	}
+    private VisitConnection() throws SQLException {
+        connect();
+    }
 
-	/**
-	 * This method creates a new visit from an approved order.
-	 * 
-	 * First, the method checks that the given order exists and that its status is
-	 * approved. Then, it takes the park ID and subscriber ID from the order and
-	 * inserts a new visit record into the visit table.
-	 * 
-	 * The visit is created with visit_type ordered, the current time as entry_time,
-	 * the actual number of visitors that entered the park, the employee who handled
-	 * the entrance, and the identification method used at the entrance.
-	 * 
-	 * @param orderNumber            the order number used to create the visit
-	 * @param actualNumberOfVisitors the actual number of visitors that entered the
-	 *                               park
-	 * @param handledByEmployeeId    the employee ID of the worker who handled the
-	 *                               entrance
-	 * @param identificationMethod    the identification method used, such as
-	 *                               confirmation_code or id_number
-	 * @return the generated visit ID if the visit was created successfully, or -1
-	 *         if the order was not found, was not approved, or the insert failed
-	 * @throws SQLException if the select or insert query fails
-	 */
-	public int createVisitFromOrder(
-			int orderNumber,
-			int actualNumberOfVisitors,
-			int handledByEmployeeId,
-			String identificationMethod) throws SQLException {
+    public static VisitConnection getInstance() throws SQLException {
+        if (instance == null || instance.conn == null || instance.conn.isClosed()) {
+            instance = new VisitConnection();
+        }
 
-		String orderSql = "SELECT order_number, park_id, subscriber_id "
-				+ "FROM `order` "
-				+ "WHERE order_number = ? AND order_status = 'approved';";
+        return instance;
+    }
 
-		PreparedStatement orderStmt = conn.prepareStatement(orderSql);
-		orderStmt.setInt(1, orderNumber);
+    @Override
+    protected String getTableName() {
+        return ConstantsDBTableNames.VISIT;
+    }
 
-		ResultSet orderRs = orderStmt.executeQuery();
+    private Integer getNullableInt(ResultSet rs, String columnName) throws SQLException {
+        Object value = rs.getObject(columnName);
 
-		if (!orderRs.next()) {
-			return -1;
-		}
+        if (value == null) {
+            return null;
+        }
 
-		int parkId = orderRs.getInt("park_id");
-		int subscriberId = orderRs.getInt("subscriber_id");
+        return rs.getInt(columnName);
+    }
 
-		String insertSql = "INSERT INTO visit "
-				+ "(order_number, park_id, subscriber_id, visit_type, actual_number_of_visitors, "
-				+ "entry_time, handled_by_employee_id, identification_method) "
-				+ "VALUES (?, ?, ?, 'ordered', ?, NOW(), ?, ?);";
+    private LocalDateTime getNullableDateTime(ResultSet rs, String columnName) throws SQLException {
+        Timestamp timestamp = rs.getTimestamp(columnName);
 
-		PreparedStatement pstmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+        if (timestamp == null) {
+            return null;
+        }
 
-		pstmt.setInt(1, orderNumber);
-		pstmt.setInt(2, parkId);
-		pstmt.setInt(3, subscriberId);
-		pstmt.setInt(4, actualNumberOfVisitors);
-		pstmt.setInt(5, handledByEmployeeId);
-		pstmt.setString(6, identificationMethod);
+        return timestamp.toLocalDateTime();
+    }
 
-		int rows = pstmt.executeUpdate();
+    private Visit convertResultSetToVisit(ResultSet rs) throws SQLException {
+        return new Visit(
+                rs.getInt(VISIT_ID),
+                getNullableInt(rs, ORDER_NUMBER),
+                rs.getInt(PARK_ID),
+                getNullableInt(rs, SUBSCRIBER_ID),
+                rs.getString(VISIT_TYPE),
+                rs.getInt(ACTUAL_NUMBER_OF_VISITORS),
+                getNullableDateTime(rs, ENTRY_TIME),
+                getNullableDateTime(rs, EXIT_TIME),
+                getNullableInt(rs, HANDLED_BY_EMPLOYEE_ID),
+                getNullableInt(rs, EXIT_HANDLED_BY_EMPLOYEE_ID),
+                rs.getString(IDENTIFICATION_METHOD)
+        );
+    }
 
-		if (rows == 0) {
-			return -1;
-		}
+    /**
+     * Creates a visit from an approved order.
+     */
+    public int createVisitFromOrder(int orderNumber, int actualNumberOfVisitors,
+            int handledByEmployeeId, String identificationMethod) throws SQLException {
 
-		ResultSet keys = pstmt.getGeneratedKeys();
+        ensureConnection();
 
-		if (keys.next()) {
-			return keys.getInt(1);
-		}
+        String orderSql = """
+                SELECT order_number, park_id, subscriber_id
+                FROM `order`
+                WHERE order_number = ?
+                  AND order_status = ?;
+                """;
 
-		return -1;
-	}
+        int parkId;
+        int subscriberId;
 
-	/**
-	 * This method closes an existing visit.
-	 * 
-	 * Closing a visit means updating its exit_time to the current time and saving the
-	 * employee who handled the exit. This allows the system to know that the visitors
-	 * are no longer inside the park.
-	 * 
-	 * @param visitId                 the ID of the visit to close
-	 * @param exitHandledByEmployeeId the employee ID of the worker who handled the
-	 *                                exit
-	 * @return true if the visit was closed successfully, false otherwise
-	 * @throws SQLException if the update query fails
-	 */
-	public boolean closeVisit(int visitId, int exitHandledByEmployeeId) throws SQLException {
-		String sql = "UPDATE visit "
-				+ "SET exit_time = NOW(), exit_handled_by_employee_id = ? "
-				+ "WHERE visit_id = ?;";
+        try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
+            orderStmt.setInt(1, orderNumber);
+            orderStmt.setString(2, ORDER_STATUS_APPROVED);
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, exitHandledByEmployeeId);
-		pstmt.setInt(2, visitId);
+            try (ResultSet orderRs = orderStmt.executeQuery()) {
+                if (!orderRs.next()) {
+                    return -1;
+                }
 
-		return pstmt.executeUpdate() > 0;
-	}
+                parkId = orderRs.getInt(PARK_ID);
+                subscriberId = orderRs.getInt(SUBSCRIBER_ID);
+            }
+        }
 
-	/**
-	 * This method returns a visit by its visit ID.
-	 * 
-	 * @param visitId the visit ID
-	 * @return a ResultSet containing the visit data if the visit exists
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getVisitById(int visitId) throws SQLException {
-		String sql = "SELECT * FROM visit WHERE visit_id = ?;";
+        List<Object> values = new ArrayList<>();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, visitId);
+        values.add(orderNumber);
+        values.add(parkId);
+        values.add(subscriberId);
+        values.add(VISIT_TYPE_ORDERED);
+        values.add(actualNumberOfVisitors);
+        values.add(Timestamp.valueOf(LocalDateTime.now()));
+        values.add(handledByEmployeeId);
+        values.add(identificationMethod);
 
-		return pstmt.executeQuery();
-	}
+        return insertFieldsAndReturnGeneratedKey(
+                new String[] {
+                        ORDER_NUMBER,
+                        PARK_ID,
+                        SUBSCRIBER_ID,
+                        VISIT_TYPE,
+                        ACTUAL_NUMBER_OF_VISITORS,
+                        ENTRY_TIME,
+                        HANDLED_BY_EMPLOYEE_ID,
+                        IDENTIFICATION_METHOD
+                },
+                values
+        );
+    }
+
+    /**
+     * Closes an existing visit.
+     */
+    public boolean closeVisit(int visitId, int exitHandledByEmployeeId) throws SQLException {
+        ensureConnection();
+
+        String sql = "UPDATE `" + getTableName() + "` "
+                + "SET " + EXIT_TIME + " = ?, "
+                + EXIT_HANDLED_BY_EMPLOYEE_ID + " = ? "
+                + "WHERE " + VISIT_ID + " = ?;";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+            pstmt.setInt(2, exitHandledByEmployeeId);
+            pstmt.setInt(3, visitId);
+
+            return pstmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Returns a visit by id.
+     */
+    public Visit getVisitById(int visitId) throws SQLException {
+        ensureConnection();
+
+        String sql = selectByFields(
+                new String[] { "*" },
+                new String[] { VISIT_ID }
+        );
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, visitId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return convertResultSetToVisit(rs);
+                }
+            }
+        }
+
+        return null;
+    }
 }

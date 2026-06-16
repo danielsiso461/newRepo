@@ -1,246 +1,119 @@
 package common;
 
+import java.io.Serializable;
+
 /**
- * This class represents a full park entity in the server side.
+ * Represents a park in the system.
  * 
- * The class stores all park data that is needed by the server for management,
- * capacity checks, pricing, promotions, and internal park logic.
- * 
- * This class is not meant to be sent directly to the client, because it contains
- * internal management data such as maximum capacity and reserved places for
- * unplanned visitors.
+ * The same class is used both for server-side park logic and for sending park
+ * data to the client.
  */
-public class Park {
+public class Park implements Serializable {
 
-	/**
-	 * The park ID.
-	 */
-	private int parkId;
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * The park name.
-	 */
-	private String parkName;
+    private int parkId;
+    private String parkName;
+    private Integer maxCapacity;
+    private Integer placesForUnplannedVisitors;
+    private Double estimatedVisitDurationHours;
+    private Double fullEntryPrice;
+    private Boolean active;
+    private boolean promotions;
 
-	/**
-	 * The maximum number of visitors allowed in the park.
-	 */
-	private Integer maxCapacity;
+    /**
+     * Creates a full Park object.
+     */
+    public Park(int parkId, String parkName, int maxCapacity, int placesForUnplannedVisitors,
+                double estimatedVisitDurationHours, double fullEntryPrice,
+                boolean active, boolean promotions) {
 
-	/**
-	 * The number of places reserved for unplanned visitors.
-	 */
-	private Integer placesForUnplannedVisitors;
+        this.parkId = parkId;
+        this.parkName = parkName;
+        this.maxCapacity = maxCapacity;
+        this.placesForUnplannedVisitors = placesForUnplannedVisitors;
+        this.estimatedVisitDurationHours = estimatedVisitDurationHours;
+        this.fullEntryPrice = fullEntryPrice;
+        this.active = active;
+        this.promotions = promotions;
+    }
 
-	/**
-	 * The estimated visit duration in hours.
-	 */
-	private Double estimatedVisitDurationHours;
+    /**
+     * Creates a Park object with public display data only.
+     */
+    public Park(int parkId, String parkName,
+                double estimatedVisitDurationHours, double fullEntryPrice) {
 
-	/**
-	 * The full entry price before discounts.
-	 */
-	private Double fullEntryPrice;
+        this(parkId, parkName, 0, 0,
+                estimatedVisitDurationHours, fullEntryPrice,
+                true, false);
+    }
 
-	/**
-	 * Indicates whether the park is active.
-	 */
-	private Boolean active;
+    public int getParkId() {
+        return parkId;
+    }
 
-	/**
-	 * Indicates whether the park currently has a promotion.
-	 */
-	private boolean promotions;
+    public String getParkName() {
+        return parkName;
+    }
 
-	/**
-	 * Creates a full Park object.
-	 * 
-	 * @param parkId                      the park ID
-	 * @param parkName                    the park name
-	 * @param maxCapacity                 the maximum capacity of the park
-	 * @param placesForUnplannedVisitors  the number of places reserved for
-	 *                                    unplanned visitors
-	 * @param estimatedVisitDurationHours the estimated visit duration in hours
-	 * @param fullEntryPrice              the full entry price before discounts
-	 * @param active                      true if the park is active, false otherwise
-	 * @param promotions                  true if the park has an active promotion,
-	 *                                    false otherwise
-	 */
-	public Park(int parkId, String parkName, int maxCapacity, int placesForUnplannedVisitors,
-			double estimatedVisitDurationHours, double fullEntryPrice, boolean active, boolean promotions) {
+    public int getMaxCapacity() {
+        return maxCapacity;
+    }
 
-		this.parkId = parkId;
-		this.parkName = parkName;
-		this.maxCapacity = maxCapacity;
-		this.placesForUnplannedVisitors = placesForUnplannedVisitors;
-		this.estimatedVisitDurationHours = estimatedVisitDurationHours;
-		this.fullEntryPrice = fullEntryPrice;
-		this.active = active;
-		this.promotions = promotions;
-	}
+    public int getPlacesForUnplannedVisitors() {
+        return placesForUnplannedVisitors;
+    }
 
-	/**
-	 * Returns the park ID.
-	 * 
-	 * @return the park ID
-	 */
-	public int getParkId() {
-		return parkId;
-	}
+    public double getEstimatedVisitDurationHours() {
+        return estimatedVisitDurationHours;
+    }
 
-	/**
-	 * Returns the park name.
-	 * 
-	 * @return the park name
-	 */
-	public String getParkName() {
-		return parkName;
-	}
+    public double getFullEntryPrice() {
+        return fullEntryPrice;
+    }
 
-	/**
-	 * Returns the maximum capacity of the park.
-	 * 
-	 * @return the maximum capacity
-	 */
-	public int getMaxCapacity() {
-		return maxCapacity;
-	}
+    public boolean isActive() {
+        return active;
+    }
 
-	/**
-	 * Returns the number of places reserved for unplanned visitors.
-	 * 
-	 * @return the number of places reserved for unplanned visitors
-	 */
-	public int getPlacesForUnplannedVisitors() {
-		return placesForUnplannedVisitors;
-	}
+    public boolean hasPromotions() {
+        return promotions;
+    }
 
-	/**
-	 * Returns the estimated visit duration in hours.
-	 * 
-	 * @return the estimated visit duration in hours
-	 */
-	public double getEstimatedVisitDurationHours() {
-		return estimatedVisitDurationHours;
-	}
+    public void setParkName(String parkName) {
+        this.parkName = parkName;
+    }
 
-	/**
-	 * Returns the full entry price before discounts.
-	 * 
-	 * @return the full entry price
-	 */
-	public double getFullEntryPrice() {
-		return fullEntryPrice;
-	}
+    public void setMaxCapacity(int maxCapacity) {
+        this.maxCapacity = maxCapacity;
+    }
 
-	/**
-	 * Returns whether the park is active.
-	 * 
-	 * @return true if the park is active, false otherwise
-	 */
-	public boolean isActive() {
-		return active;
-	}
+    public void setPlacesForUnplannedVisitors(int placesForUnplannedVisitors) {
+        this.placesForUnplannedVisitors = placesForUnplannedVisitors;
+    }
 
-	/**
-	 * Returns whether the park has an active promotion.
-	 * 
-	 * @return true if the park has a promotion, false otherwise
-	 */
-	public boolean hasPromotions() {
-		return promotions;
-	}
+    public void setEstimatedVisitDurationHours(double estimatedVisitDurationHours) {
+        this.estimatedVisitDurationHours = estimatedVisitDurationHours;
+    }
 
-	/**
-	 * Updates the park name.
-	 * 
-	 * @param parkName the new park name
-	 */
-	public void setParkName(String parkName) {
-		this.parkName = parkName;
-	}
+    public void setFullEntryPrice(double fullEntryPrice) {
+        this.fullEntryPrice = fullEntryPrice;
+    }
 
-	/**
-	 * Updates the maximum capacity.
-	 * 
-	 * @param maxCapacity the new maximum capacity
-	 */
-	public void setMaxCapacity(int maxCapacity) {
-		this.maxCapacity = maxCapacity;
-	}
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
-	/**
-	 * Updates the number of places reserved for unplanned visitors.
-	 * 
-	 * @param placesForUnplannedVisitors the new number of reserved places
-	 */
-	public void setPlacesForUnplannedVisitors(int placesForUnplannedVisitors) {
-		this.placesForUnplannedVisitors = placesForUnplannedVisitors;
-	}
+    public void setPromotions(boolean promotions) {
+        this.promotions = promotions;
+    }
 
-	/**
-	 * Updates the estimated visit duration in hours.
-	 * 
-	 * @param estimatedVisitDurationHours the new estimated visit duration
-	 */
-	public void setEstimatedVisitDurationHours(double estimatedVisitDurationHours) {
-		this.estimatedVisitDurationHours = estimatedVisitDurationHours;
-	}
-
-	/**
-	 * Updates the full entry price.
-	 * 
-	 * @param fullEntryPrice the new full entry price
-	 */
-	public void setFullEntryPrice(double fullEntryPrice) {
-		this.fullEntryPrice = fullEntryPrice;
-	}
-
-	/**
-	 * Updates the active status.
-	 * 
-	 * @param active true if the park is active, false otherwise
-	 */
-	public void setActive(boolean active) {
-		this.active = active;
-	}
-
-	/**
-	 * Updates the promotion status.
-	 * 
-	 * @param promotions true if the park has a promotion, false otherwise
-	 */
-	public void setPromotions(boolean promotions) {
-		this.promotions = promotions;
-	}
-	
-	//@todo doesn't seem like it's needed
-	/**
-	 * Returns the park data as public information that can be sent to the client.
-	 * 
-	 * This method hides internal management data and returns only the fields that
-	 * the client needs for display and order creation.
-	 * 
-	 * @return a Park object with public park data
-	 */
-	/*public Park toPark() {
-		return new Park(parkId, parkName, estimatedVisitDurationHours, fullEntryPrice);
-	}*/
-
-	/**
-	 * Returns the park information as a string.
-	 * 
-	 * @return a string representation of the park
-	 */
-	@Override
-	public String toString() {
-		return "Park ID: " + parkId + " " +
-				"Name: " + parkName + " " +
-				"Max Capacity: " + maxCapacity + " " +
-				"Unplanned Places: " + placesForUnplannedVisitors + " " +
-				"Estimated Duration: " + estimatedVisitDurationHours + " " +
-				"Full Entry Price: " + fullEntryPrice + " " +
-				"Active: " + active + " " +
-				"Promotions: " + promotions;
-	}
+    /**
+     * Used by ComboBox and ListView to display only the park name.
+     */
+    @Override
+    public String toString() {
+        return parkName;
+    }
 }

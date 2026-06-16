@@ -2,225 +2,230 @@ package databaseControllers;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 /**
- * This class sets up methods for general use by different SQL table connectors.
+ * Base class for database connector classes.
  */
 public abstract class AbstractDBConnection {
 
-	/**
-	 * The database connection used by the subclasses.
-	 */
-	protected Connection conn;
+    protected Connection conn;
 
-	/**
-	 * Connects to the database by taking a connection from the connection pool.
-	 * 
-	 * @throws SQLException if getting a connection from the pool fails
-	 */
-	public void connect() throws SQLException {
-		conn = DBConnectionPool.getInstance().getConnection();
-	}
+    /**
+     * Connects to the database by taking a connection from the connection pool.
+     */
+    public void connect() throws SQLException {
+        conn = DBConnectionPool.getInstance().getConnection();
+    }
 
-	/**
-	 * Saves the DB password entered by the user.
-	 * 
-	 * @param dbPassword the database password entered by the user
-	 */
-	public static void setPassword(String dbPassword) {
-		DBConnectionPool.getInstance().setPassword(dbPassword);
-	}
+    /**
+     * Makes sure the database connection is open.
+     */
+    protected void ensureConnection() throws SQLException {
+        if (conn == null || conn.isClosed()) {
+            connect();
+        }
+    }
 
-	/**
-	 * Checks if the entered DB password is correct.
-	 * 
-	 * @param dbPassword the password entered by the user
-	 * @return true if the connection succeeds, false otherwise
-	 */
-	public static boolean testConnection(String dbPassword) {
-		return DBConnectionPool.testConnection(dbPassword);
-	}
+    /**
+     * Saves the DB password entered by the user.
+     */
+    public static void setPassword(String dbPassword) {
+        DBConnectionPool.getInstance().setPassword(dbPassword);
+    }
 
-	/**
-	 * Returns the table name used by the specific subclass.
-	 * 
-	 * @return the table name
-	 */
-	protected abstract String getTableName();
+    /**
+     * Checks if the entered DB password is correct.
+     */
+    public static boolean testConnection(String dbPassword) {
+        return DBConnectionPool.testConnection(dbPassword);
+    }
 
-	/**
-	 * This method is a general update query.
-	 * 
-	 * @param columnNames the columns that appear after SET in an update query
-	 * @param newValues   the values corresponding to columnNames
-	 * @param keyColumns  the columns that appear after WHERE in an update query
-	 * @param keyValues   the values corresponding to keyColumns
-	 * @throws SQLException if the update query fails
-	 */
-	public void updateFields(String[] columnNames, List<Object> newValues, String[] keyColumns, List<Object> keyValues)
-			throws SQLException {
+    /**
+     * Returns the table name used by the specific subclass.
+     */
+    protected abstract String getTableName();
 
-		if (columnNames.length != newValues.size() || keyColumns.length != keyValues.size()) {
-			System.out.println("bad sql update request");
-			return;
-		}
+    /**
+     * General UPDATE query.
+     */
+    public void updateFields(String[] columnNames, List<Object> newValues,
+            String[] keyColumns, List<Object> keyValues) throws SQLException {
 
-		StringBuilder sql = new StringBuilder("UPDATE `" + getTableName() + "` SET ");
+        ensureConnection();
 
-		for (String s : columnNames) {
-			sql.append(s + " = ?, ");
-		}
+        if (columnNames.length != newValues.size() || keyColumns.length != keyValues.size()) {
+            System.out.println("bad sql update request");
+            return;
+        }
 
-		sql.setLength(sql.length() - 2);
-		sql.append(" WHERE ");
+        StringBuilder sql = new StringBuilder("UPDATE `" + getTableName() + "` SET ");
 
-		for (String s : keyColumns) {
-			sql.append(s + " = ?, ");
-		}
+        for (String column : columnNames) {
+            sql.append(column).append(" = ?, ");
+        }
 
-		sql.setLength(sql.length() - 2);
-		sql.append(";");
+        sql.setLength(sql.length() - 2);
+        sql.append(" WHERE ");
 
-		PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+        for (String key : keyColumns) {
+            sql.append(key).append(" = ? AND ");
+        }
 
-		for (int i = 0; i < newValues.size(); i++) {
-			pstmt.setObject(i + 1, newValues.get(i));
-		}
+        sql.setLength(sql.length() - 5);
+        sql.append(";");
 
-		for (int i = newValues.size(); i < newValues.size() + keyValues.size(); i++) {
-			pstmt.setObject(i + 1, keyValues.get(i - newValues.size()));
-		}
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < newValues.size(); i++) {
+                pstmt.setObject(i + 1, newValues.get(i));
+            }
 
-		int rows = pstmt.executeUpdate();
+            for (int i = 0; i < keyValues.size(); i++) {
+                pstmt.setObject(newValues.size() + i + 1, keyValues.get(i));
+            }
 
-		if (rows > 0) {
-			System.out.println("Update completed successfully!");
-		} else {
-			System.out.println("Update failed: record not found.");
-		}
+            int rows = pstmt.executeUpdate();
 
-		pstmt.close();
-	}
+            if (rows > 0) {
+                System.out.println("Update completed successfully!");
+            } else {
+                System.out.println("Update failed: record not found.");
+            }
+        }
+    }
 
-	/**
-	 * This method is a general insert query.
-	 * It inserts a new record into the table using the given columns and values.
-	 * 
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values      the values corresponding to columnNames
-	 * @throws SQLException if the insert query fails
-	 */
-	public void insertFields(String[] columnNames, List<Object> values) throws SQLException {
+    /**
+     * General INSERT query.
+     */
+    public void insertFields(String[] columnNames, List<Object> values) throws SQLException {
+        ensureConnection();
 
-		if (columnNames.length != values.size()) {
-			System.out.println("bad sql insert request");
-			return;
-		}
+        if (columnNames.length != values.size()) {
+            System.out.println("bad sql insert request");
+            return;
+        }
 
-		StringBuilder sql = new StringBuilder("INSERT INTO `" + getTableName() + "` (");
+        StringBuilder sql = new StringBuilder("INSERT INTO `" + getTableName() + "` (");
 
-		for (String s : columnNames) {
-			sql.append(s + ", ");
-		}
+        for (String column : columnNames) {
+            sql.append(column).append(", ");
+        }
 
-		sql.setLength(sql.length() - 2);
-		sql.append(") VALUES (");
+        sql.setLength(sql.length() - 2);
+        sql.append(") VALUES (");
 
-		for (int i = 0; i < values.size(); i++) {
-			sql.append("?, ");
-		}
+        for (int i = 0; i < values.size(); i++) {
+            sql.append("?, ");
+        }
 
-		sql.setLength(sql.length() - 2);
-		sql.append(");");
+        sql.setLength(sql.length() - 2);
+        sql.append(");");
 
-		PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < values.size(); i++) {
+                pstmt.setObject(i + 1, values.get(i));
+            }
 
-		for (int i = 0; i < values.size(); i++) {
-			pstmt.setObject(i + 1, values.get(i));
-		}
+            int rows = pstmt.executeUpdate();
 
-		int rows = pstmt.executeUpdate();
+            if (rows > 0) {
+                System.out.println("Insert completed successfully!");
+            } else {
+                System.out.println("Insert failed.");
+            }
+        }
+    }
 
-		if (rows > 0) {
-			System.out.println("Insert completed successfully!");
-		} else {
-			System.out.println("Insert failed.");
-		}
+    /**
+     * General INSERT query that returns the generated primary key.
+     */
+    public int insertFieldsAndReturnGeneratedKey(String[] columnNames, List<Object> values)
+            throws SQLException {
 
-		pstmt.close();
-	}
+        ensureConnection();
 
-	/**
-	 * This method constructs a general SELECT query into a string in the format of a
-	 * PreparedStatement and returns it.
-	 * 
-	 * @param columnNames the columns that appear after SELECT in a SELECT query
-	 * @param keyColumns  the columns that appear after WHERE in a SELECT query
-	 * @return the SELECT query as a String
-	 */
-	public String selectByFields(String[] columnNames, String[] keyColumns) {
-		StringBuilder sql = new StringBuilder("SELECT ");
+        if (columnNames.length != values.size()) {
+            System.out.println("bad sql insert request");
+            return -1;
+        }
 
-		for (String s : columnNames) {
-			sql.append(s + ", ");
-		}
+        StringBuilder sql = new StringBuilder("INSERT INTO `" + getTableName() + "` (");
 
-		sql.setLength(sql.length() - 2);
-		sql.append(" FROM `" + getTableName() + "` WHERE ");
+        for (String column : columnNames) {
+            sql.append(column).append(", ");
+        }
 
-		for (String s : keyColumns) {
-			sql.append(s + " = ?, ");
-		}
+        sql.setLength(sql.length() - 2);
+        sql.append(") VALUES (");
 
-		sql.setLength(sql.length() - 2);
-		sql.append(";");
+        for (int i = 0; i < values.size(); i++) {
+            sql.append("?, ");
+        }
 
-		return sql.toString();
-	}
-	
-	/**
-	 * This method constructs a general SELECT query where the conditions are connected by a logical AND
-	 * into a string in the format of a
-	 * PreparedStatement and returns it.
-	 * 
-	 * @param columnNames the columns that appear after SELECT in a SELECT query
-	 * @param keyColumns  the columns that appear after WHERE in a SELECT query
-	 * @return the SELECT query as a String
-	 */
-	public String selectByFieldsAND(String[] columnNames, String[] keyColumns) {
-		StringBuilder sql = new StringBuilder("SELECT ");
+        sql.setLength(sql.length() - 2);
+        sql.append(");");
 
-		for (String s : columnNames) {
-			sql.append(s + ", ");
-		}
+        try (PreparedStatement pstmt = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+            for (int i = 0; i < values.size(); i++) {
+                pstmt.setObject(i + 1, values.get(i));
+            }
 
-		sql.setLength(sql.length() - 2);
-		sql.append(" FROM `" + getTableName() + "` WHERE ");
+            int rows = pstmt.executeUpdate();
 
-		for (String s : keyColumns) {
-			sql.append(s + " = ? AND ");
-		}
+            if (rows == 0) {
+                return -1;
+            }
 
-		sql.setLength(sql.length() - 5);
-		sql.append(";");
+            try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+        }
 
-		return sql.toString();
-	}
-	
-	/**
-	 * Returns the DB connection to the connection pool.
-	 * 
-	 * The connection is not closed immediately. It is returned to the pool so other
-	 * database connector classes can reuse it.
-	 * 
-	 * @throws SQLException if returning the connection fails
-	 */
-	public void close() throws SQLException {
-		if (conn != null) {
-			DBConnectionPool.getInstance().releaseConnection(conn);
-			conn = null;
-		}
-	}
+        return -1;
+    }
+
+    /**
+     * Builds a SELECT query with WHERE conditions.
+     */
+    public String selectByFields(String[] columnNames, String[] keyColumns) {
+        StringBuilder sql = new StringBuilder("SELECT ");
+
+        for (String column : columnNames) {
+            sql.append(column).append(", ");
+        }
+
+        sql.setLength(sql.length() - 2);
+        sql.append(" FROM `" + getTableName() + "` WHERE ");
+
+        for (String key : keyColumns) {
+            sql.append(key).append(" = ? AND ");
+        }
+
+        sql.setLength(sql.length() - 5);
+        sql.append(";");
+
+        return sql.toString();
+    }
+
+    /**
+     * Builds a SELECT query with WHERE conditions connected by AND.
+     */
+    public String selectByFieldsAND(String[] columnNames, String[] keyColumns) {
+        return selectByFields(columnNames, keyColumns);
+    }
+
+    /**
+     * Returns the DB connection to the connection pool.
+     */
+    public void close() throws SQLException {
+        if (conn != null) {
+            DBConnectionPool.getInstance().releaseConnection(conn);
+            conn = null;
+        }
+    }
 }

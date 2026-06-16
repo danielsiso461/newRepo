@@ -1,425 +1,346 @@
 package clientController;
 
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
-import common.Park;
 
 import client.Client;
-import common.*;
-import clientCommon.*;
+import clientCommon.ChatIF;
+import clientCommon.MakeOrderObserver;
+import clientCommon.OrderObserver;
+import clientCommon.ParkObserver;
+import clientCommon.ReportObserver;
+import common.Message;
+import common.OperationResponse;
+import common.Order;
+import common.Park;
+import common.Protocol;
+import common.ReportRequest;
+import common.UpdateMessage;
 import javafx.application.Platform;
 
-/*
- * this class is the controller that connects the client networking side to the UI side
- * it is also taking care of the logic between the two components
+/**
+ * Connects the client networking layer with the GUI controllers.
+ * 
+ * The controller sends requests to the server and notifies GUI observers when
+ * responses are received.
  */
-
 public class ClientController implements ChatIF {
-	// Class variables *************************************************
 
-	// Instance variables **********************************************
-	/* The instance of the client that created this ConsoleChat.*/
-	private Client client;
-	/* the user id*/
-	private String id = null;
-	/* true if the user issues a disconnect */
-	private boolean userIssuedDisconnect = false;
-	/* Observer pattern addition*/
-	private List<OrderObserver> observers = new ArrayList<>();
-	/*
-	 * Observer pattern addition for park screens
-	 */
-	private List<ParkObserver> parkObservers = new ArrayList<>();
-	// observer for making orders
-	private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
+    private Client client;
+    private String id;
+    private boolean userIssuedDisconnect = false;
 
-	// Constructors ****************************************************
+    private List<OrderObserver> orderObservers = new ArrayList<>();
+    private List<ParkObserver> parkObservers = new ArrayList<>();
+    private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
+    private List<ReportObserver> reportObservers = new ArrayList<>();
 
-	/**
-	 * Constructs an instance of the ClientController. also get the user ID from
-	 * console
-	 *
-	 * @param host The host to connect to.
-	 * @param port The port to connect on.
-	 */
-	public ClientController(String host, int port, String id) throws IOException {
-		try {
-			client = new Client(host, port, this);
-		} catch (IOException exception) {
-			throw exception;
-			//System.out.println("Error: Can't setup connection!" + " Terminating client.");
-			//System.exit(1);
-		}
-		this.id = id;
-	}
-	
-	// getters ***************************************************************************
-	/*
-	 * getter that return the user's id
-	 * @return the user ID
-	 * */
-	public String getId() {
-		return id;
-	}
-	
-	// order observer ********************************************************************
-	/*
-	 * Observer pattern addition
-	 * adding observer to observer list
-	 * 
-	 * @param observer observer to add
-	 */
-	public void addObserver(OrderObserver observer) {
-		if (observer != null && !observers.contains(observer)) {
-			observers.add(observer);
-		}
-	}
+    public ClientController(String host, int port, String id) throws IOException {
+        client = new Client(host, port, this);
+        this.id = id;
+    }
 
-	/*
-	 * Observer pattern addition
-	 * removing observer from observer list
-	 * 
-	 * @param observer observer to remove
-	 */
-	public void removeObserver(OrderObserver observer) {
-		observers.remove(observer);
-	}
+    public String getId() {
+        return id;
+    }
 
-	/*
-	 * Observer pattern addition
-	 * notifies the observers of the received orders and sent them said orders
-	 * 
-	 * @param rows of the received orders
-	 */
-	private void notifyOrdersReceived(List<Order> rows) {
-		for (OrderObserver observer : observers) {
-			observer.onOrdersReceived(rows);
-		}
-	}
-	
-	/*
-	 * Observer pattern addition
-	 * notifies the observers of the new order and sends it to them
-	 * 
-	 * @param o the new order
-	 */
-	private void notifyOrderMade(Order o) {
-		for (OrderObserver observer : observers) {
-			observer.addOrder(o);
-		}
-	}
+    // Order observers
 
-	/*
-	 * Observer pattern addition
-	 * notifies the observers the update request's success
-	 * 
-	 * @param success true if the update succeeded, false otherwise
-	 * @param updateMessage the data of the update
-	 */
-	private void notifyUpdateResult(boolean success, UpdateMessage updateMessage) {
-		for (OrderObserver observer : observers) {
-			observer.onUpdateResult(success, updateMessage);
-		}
-	}
-	
-	// make order observer ******************************************************************
-	/*
-	 * adds observer for making orders
-	 * @param o the observer to add to the observer list
-	 * */
-	public void addMakeOrderObserver(MakeOrderObserver o) {
-		if(!(o == null) && !(makeOrderObservers.contains(o)))
-			makeOrderObservers.add(o);
-	}
-	
-	/*
-	 * removes observer from make order observer list
-	 * @param o the observer to remove from the observer list
-	 * */
-	public void removeMakeOrderObserver(MakeOrderObserver o) {
-		makeOrderObservers.remove(o);
-	}
-	
-	/*
-	 * notifies the make order observer about the received list of park Names
-	 * @param parkNames the list of the park names
-	 * */
-	private void notifyParkNamesMakeOrderObserver(List<String> parkNames) {
-		for(MakeOrderObserver o : makeOrderObservers)
-			o.onParkNamesReceived(parkNames);
-	}
-	
-	/*
-	 * notifies the make order observer that a response from the server was received
-	 * @param m the message from the server
-	 */
-	private void notifyServerResponseMakeOrderObserver(Message m) {
-		for(MakeOrderObserver o : new ArrayList<>(makeOrderObservers))
-			o.onMakeOrderServerResponse(m);
-	}
-	
-	// client interactions *****************************************************************
-	/*
-	 * sends the server a request for all orders of the user
-	 */
-	public void requestOrders() {
-		client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));
-	}
-	
-	/*
-	 * sends the server a request to update a specific order
-	 * 
-	 * @param um the data to update
-	 */
-	public void requestUpdate(UpdateMessage um) {
-		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
-	}
+    public void addObserver(OrderObserver observer) {
+        if (observer != null && !orderObservers.contains(observer)) {
+            orderObservers.add(observer);
+        }
+    }
 
-	// GUI methods **********************************************************************
+    public void removeObserver(OrderObserver observer) {
+        orderObservers.remove(observer);
+    }
 
-	/**
-	 * This method overrides the method in the ChatIF interface. 
-	 * it handles updating the UI according to the message received by the server
-	 *
-	 * @param message the message received from the server
-	 */
-	public void display(Message m) {
-		Protocol type = m.getType();
+    private void notifyOrdersReceived(List<Order> rows) {
+        for (OrderObserver observer : orderObservers) {
+            observer.onOrdersReceived(rows);
+        }
+    }
 
-		Platform.runLater(() -> {
-			switch (type) {
-			case CLIENT_DISCONNECT_SERVER:
-				handleServerIssuedDisconnect();
-				break;
+    private void notifyOrderMade(Order order) {
+        for (OrderObserver observer : orderObservers) {
+            observer.addOrder(order);
+        }
+    }
 
-			case UPDATE_ORDER_SUCCESS:
-				notifyUpdateResult(true, (UpdateMessage) m.getData());
-				break;
+    private void notifyUpdateResult(boolean success, UpdateMessage updateMessage) {
+        for (OrderObserver observer : orderObservers) {
+            observer.onUpdateResult(success, updateMessage);
+        }
+    }
 
-			case UPDATE_ORDER_FAILURE:
-				notifyUpdateResult(false, (UpdateMessage) m.getData());
-				break;
+    // Make order observers
 
-			case RETURN_ORDER:
-				List<Order> rows = parseOrderMessage(m.getData());
+    public void addMakeOrderObserver(MakeOrderObserver observer) {
+        if (observer != null && !makeOrderObservers.contains(observer)) {
+            makeOrderObservers.add(observer);
+        }
+    }
 
-				if (rows == null) {
-					break;
-				}
+    public void removeMakeOrderObserver(MakeOrderObserver observer) {
+        makeOrderObservers.remove(observer);
+    }
 
-				notifyOrdersReceived(rows);
-				break;
-			
-			case RETURN_PARK_NAMES_SUCCESS:
-				List<String> parkNames = parseParkNamesMessage(m.getData());
-				if (parkNames == null) {
-					break;
-				}
-				notifyParkNamesMakeOrderObserver(parkNames);
-				break;
-				
-			case RETURN_PARK_NAMES_FAILURE:
-				notifyParkNamesMakeOrderObserver(null);
-				break;
-			
-			case MAKE_ORDER_SUCCESS:
-				notifyOrderMade((Order) m.getData());
-				notifyServerResponseMakeOrderObserver(m);
-				break;
-				
-			case MAKE_ORDER_FAIL_NOT_GUIDE, MAKE_ORDER_FAIL_TIME,
-					MAKE_ORDER_FAIL_NOT_SUBSCRIBED, MAKE_ORDER_FAIL:
-					notifyServerResponseMakeOrderObserver(m);
-					break;	
-				
-			case ACTIVE_PARKS_RESULT:
-			case PARKS_UPDATED:
-				List<Park> parks = parseParkMessage(m.getData());
+    private void notifyParkNamesMakeOrderObserver(List<String> parkNames) {
+        for (MakeOrderObserver observer : makeOrderObservers) {
+            observer.onParkNamesReceived(parkNames);
+        }
+    }
 
-				if (parks == null) {
-					break;
-				}
+    private void notifyServerResponseMakeOrderObserver(Message message) {
+        for (MakeOrderObserver observer : new ArrayList<>(makeOrderObservers)) {
+            observer.onMakeOrderServerResponse(message);
+        }
+    }
 
-				notifyParksReceived(parks);
-				break;
+    // Park observers
 
-			default:
-				System.out.println("Error: Server Response Unknown in "
-						+ "ClientController display" + m.getType());
-			}
-		});
-	}
-	
-	/*
-	 * this function is used to check if a given object is a list of orders
-	 * and return the order list if so
-	 * 
-	 * @param o 	Object to check
-	 */
-	
-	// disconnects *********************************************************************************
-	/*
-	 * this method handles clean disconnect from the server
-	 * when disconnect is issued by the user
-	 */
-	public void disconnectFromServer() {
-		client.handleMessageFromClientUI(new Message(null, Protocol.CLIENT_DISCONNECT_USER));
-		client.quit();
-	}
-	
-	/*
-	 * this method handles clean disconnect from the server
-	 * when disconnect is issued by the server
-	 */
-	public void handleServerIssuedDisconnect() {
-		for (OrderObserver observer : observers) {
-			observer.handleExit();
-		}
-	}
-	
-	/*
-	 * this method returns true if the user initiated a disconnect
-	 * @return true if the user initiated a disconnect
-	 * */
-	public boolean isUserIssuedDisconnect() {
-		return userIssuedDisconnect;
-	}
-	
-	/*
-	 * this method updates whether the user initiated a disconnect
-	 * @param userIssuedDisconnect the value to set to userIssuedDisconnect
-	 * */
-	public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
-		this.userIssuedDisconnect = userIssuedDisconnect;
-	
-	}
-	
-	
-	// park observers ******************************************************************
-	/*
-	 * Observer pattern addition
-	 * adding park observer to observer list
-	 * 
-	 * @param observer park observer to add
-	 */
-	public void addParkObserver(ParkObserver observer) {
-		if (observer != null && !parkObservers.contains(observer)) {
-			parkObservers.add(observer);
-		}
-	}
+    public void addParkObserver(ParkObserver observer) {
+        if (observer != null && !parkObservers.contains(observer)) {
+            parkObservers.add(observer);
+        }
+    }
 
-	/*
-	 * Observer pattern addition
-	 * removing park observer from observer list
-	 * 
-	 * @param observer park observer to remove
-	 */
-	public void removeParkObserver(ParkObserver observer) {
-		parkObservers.remove(observer);
-	}
+    public void removeParkObserver(ParkObserver observer) {
+        parkObservers.remove(observer);
+    }
 
-	/*
-	 * Observer pattern addition
-	 * notifies the park observers of the received parks
-	 * 
-	 * @param parks the received parks
-	 */
-	private void notifyParksReceived(List<Park> parks) {
-		for (ParkObserver observer : parkObservers) {
-			observer.onParksReceived(parks);
-		}
-	}
-	
-	
-	
-	/*
-	 * sends the server a request for all active parks
-	 */
-	public void requestActiveParks() {
-		client.handleMessageFromClientUI(new Message(null, Protocol.GET_ACTIVE_PARKS));
-	}
+    private void notifyParksReceived(List<Park> parks) {
+        for (ParkObserver observer : parkObservers) {
+            observer.onParksReceived(parks);
+        }
+    }
 
-	
-	
-	/*
-	 * sends a general message to the server
-	 * 
-	 * @param message the message to send
-	 */
-	public void sendMessageToServer(Message message) {
-		client.handleMessageFromClientUI(message);
-	
-		
-	// message parsers *********************************************************************
-	}
-	
-	/*
-	 * this function is used to check if a given object is a list of parks
-	 * and return the park list if so
-	 * 
-	 * @param o Object to check
-	 */
-	private List<Park> parseParkMessage(Object o) {
-		List<Park> parks = new ArrayList<>();
+    // Report observers
 
-		if (o instanceof List<?>) {
-			List<?> rawList = (List<?>) o;
+    public void addReportObserver(ReportObserver observer) {
+        if (observer != null && !reportObservers.contains(observer)) {
+            reportObservers.add(observer);
+        }
+    }
 
-			for (Object park : rawList) {
-				if (park instanceof Park) {
-					parks.add((Park) park);
-				} else {
-					return null;
-				}
-			}
-		} else {
-			return null;
-		}
+    public void removeReportObserver(ReportObserver observer) {
+        reportObservers.remove(observer);
+    }
 
-		return parks;
-	}
-	
-	/*
-	 * this function is used to check if a given object is a list of Orders
-	 * and return the order list if so
-	 * 
-	 * @param o 	Object to check
-	 */
-	private List<Order> parseOrderMessage(Object o) {
-		List<Order> rows = new ArrayList<>();
-		if (o instanceof List<?>) {
-			List<?> rawList = (List<?>) o;
-			for(Object row : rawList) {
-				if(row instanceof Order)
-					rows.add((Order) row);
-				else
-					return null;
-			}
-		} else
-			return null;
-		return rows;
-	}
-	
-	/*
-	 * this function is used to check if a given object is a list of Strings
-	 * and return the park names list if so
-	 * 
-	 * @param o 	Object to check
-	 */
-	private List<String> parseParkNamesMessage(Object o) {
-		List<String> names = new ArrayList<>();
-		if (o instanceof List<?>) {
-			List<?> rawList = (List<?>) o;
-			for(Object name : rawList) {
-				if(name instanceof String)
-					names.add((String) name);
-				else
-					return null;
-			}
-		} else
-			return null;
-		return names;
-	}
+    private void notifyReportResponse(OperationResponse response) {
+        for (ReportObserver observer : reportObservers) {
+            observer.onReportResponse(response);
+        }
+    }
+
+    // Requests to server
+
+    public void requestOrders() {
+        sendMessageToServer(new Message(id, Protocol.RETURN_ORDER));
+    }
+
+    public void requestUpdate(UpdateMessage updateMessage) {
+        sendMessageToServer(new Message(updateMessage, Protocol.UPDATE_ORDER));
+    }
+
+    public void requestActiveParks() {
+        sendMessageToServer(new Message(null, Protocol.GET_ACTIVE_PARKS));
+    }
+
+    public void requestReport(ReportRequest request) {
+        sendMessageToServer(new Message(request, Protocol.GET_REPORT_REQUEST));
+    }
+
+    public void sendMessageToServer(Message message) {
+        if (message != null) {
+            client.handleMessageFromClientUI(message);
+        }
+    }
+
+    // Messages from server
+
+    @Override
+    public void display(Message message) {
+        if (message == null) {
+            return;
+        }
+
+        Platform.runLater(() -> handleServerMessage(message));
+    }
+
+    private void handleServerMessage(Message message) {
+        Protocol type = message.getType();
+
+        switch (type) {
+
+        case CLIENT_DISCONNECT_SERVER:
+            handleServerIssuedDisconnect();
+            break;
+
+        case UPDATE_ORDER_SUCCESS:
+            notifyUpdateResult(true, (UpdateMessage) message.getData());
+            break;
+
+        case UPDATE_ORDER_FAILURE:
+            notifyUpdateResult(false, (UpdateMessage) message.getData());
+            break;
+
+        case RETURN_ORDER:
+            handleReturnOrderResponse(message.getData());
+            break;
+
+        case RETURN_PARK_NAMES_SUCCESS:
+            handleParkNamesResponse(message.getData());
+            break;
+
+        case RETURN_PARK_NAMES_FAILURE:
+            notifyParkNamesMakeOrderObserver(null);
+            break;
+
+        case MAKE_ORDER_SUCCESS:
+            notifyOrderMade((Order) message.getData());
+            notifyServerResponseMakeOrderObserver(message);
+            break;
+
+        case MAKE_ORDER_FAIL_NOT_GUIDE:
+        case MAKE_ORDER_FAIL_TIME:
+        case MAKE_ORDER_FAIL_NOT_SUBSCRIBED:
+        case MAKE_ORDER_FAIL:
+            notifyServerResponseMakeOrderObserver(message);
+            break;
+
+        case ACTIVE_PARKS_RESULT:
+        case PARKS_UPDATED:
+            handleParksResponse(message.getData());
+            break;
+
+        case GET_REPORT_RESPONSE:
+            handleReportResponse(message.getData());
+            break;
+
+        default:
+            System.out.println("Error: unknown server response in ClientController: " + type);
+            break;
+        }
+    }
+
+    private void handleReturnOrderResponse(Object data) {
+        List<Order> rows = parseOrderMessage(data);
+
+        if (rows != null) {
+            notifyOrdersReceived(rows);
+        }
+    }
+
+    private void handleParkNamesResponse(Object data) {
+        List<String> parkNames = parseParkNamesMessage(data);
+
+        if (parkNames != null) {
+            notifyParkNamesMakeOrderObserver(parkNames);
+        } else {
+            notifyParkNamesMakeOrderObserver(null);
+        }
+    }
+
+    private void handleParksResponse(Object data) {
+        List<Park> parks = parseParkMessage(data);
+
+        if (parks != null) {
+            notifyParksReceived(parks);
+        }
+    }
+
+    private void handleReportResponse(Object data) {
+        if (data instanceof OperationResponse response) {
+            notifyReportResponse(response);
+            return;
+        }
+
+        OperationResponse response = new OperationResponse(
+                false,
+                "Invalid report response from server",
+                null
+        );
+
+        notifyReportResponse(response);
+    }
+
+    // Disconnect
+
+    public void disconnectFromServer() {
+        userIssuedDisconnect = true;
+        sendMessageToServer(new Message(null, Protocol.CLIENT_DISCONNECT_USER));
+        client.quit();
+    }
+
+    public void handleServerIssuedDisconnect() {
+        for (OrderObserver observer : orderObservers) {
+            observer.handleExit();
+        }
+    }
+
+    public boolean isUserIssuedDisconnect() {
+        return userIssuedDisconnect;
+    }
+
+    public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
+        this.userIssuedDisconnect = userIssuedDisconnect;
+    }
+
+    // Parsers
+    private List<Park> parseParkMessage(Object data) {
+        if (!(data instanceof List<?> rawList)) {
+            return null;
+        }
+
+        List<Park> parks = new ArrayList<>();
+
+        for (Object item : rawList) {
+            if (!(item instanceof Park)) {
+                return null;
+            }
+
+            parks.add((Park) item);
+        }
+
+        return parks;
+    }
+
+    private List<Order> parseOrderMessage(Object data) {
+        if (!(data instanceof List<?> rawList)) {
+            return null;
+        }
+
+        List<Order> orders = new ArrayList<>();
+
+        for (Object item : rawList) {
+            if (!(item instanceof Order)) {
+                return null;
+            }
+
+            orders.add((Order) item);
+        }
+
+        return orders;
+    }
+
+    private List<String> parseParkNamesMessage(Object data) {
+        if (!(data instanceof List<?> rawList)) {
+            return null;
+        }
+
+        List<String> names = new ArrayList<>();
+
+        for (Object item : rawList) {
+            if (!(item instanceof String)) {
+                return null;
+            }
+
+            names.add((String) item);
+        }
+
+        return names;
+    }
 }
