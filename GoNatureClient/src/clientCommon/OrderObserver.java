@@ -16,25 +16,32 @@ public interface OrderObserver {
 	 * @param rows 	the orders
 	 */
 	void onOrdersReceived(List<Order> rows);
-    
-    /*
+
+	/*
 	 * this function handles receiving an update result for an order from the server
 	 * 
 	 * @param success 			whether the update was successful
 	 * @param updateMessage 	the data of the update
 	 */
-    void onUpdateResult(boolean success, UpdateMessage updateMessage);
-    
-    /*
-     * this function handles receiving a cancellation result for an order from the server
-     * 
-     * @param success				whether the cancellation was successful
-     * @param cancelOrderMessage	the data of the cancellation request
-     */
-    void onCancelResult(boolean success, CancelOrderMessage cancelOrderMessage);
-    
-    /*
+	void onUpdateResult(boolean success, UpdateMessage updateMessage);
+
+	/*
+	 * this function handles receiving a cancellation result for an order from the server
+	 * 
+	 * @param success				whether the cancellation was successful
+	 * @param cancelOrderMessage	the data of the cancellation request
+	 */
+	void onCancelResult(boolean success, CancelOrderMessage cancelOrderMessage);
+
+	/*
+	 * this function adds an order to the order table
+	 * 
+	 * @param o the order to add to the order table
+	 */
+	void addOrder(Order o);
+
+	/*
 	 * this function handles the server shutting the client down
 	 */
-    void handleExit();
+	void handleExit();
 }

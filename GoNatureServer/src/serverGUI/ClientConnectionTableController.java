@@ -214,8 +214,10 @@ public class ClientConnectionTableController {
 	 * @param ip       the server's IP address
 	 */
 	public void setLabels(String hostName, String ip) {
-		hostNameLabel.setText(hostName);
-		ipAddressLabel.setText(ip);
+		Platform.runLater(() -> {
+			hostNameLabel.setText(hostName);
+			ipAddressLabel.setText(ip);
+		});
 
 		addLog("Server started on host: " + hostName + ", IP: " + ip);
 	}

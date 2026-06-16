@@ -145,7 +145,36 @@ public abstract class AbstractDBConnection {
 
 		return sql.toString();
 	}
+	
+	/**
+	 * This method constructs a general SELECT query where the conditions are connected by a logical AND
+	 * into a string in the format of a
+	 * PreparedStatement and returns it.
+	 * 
+	 * @param columnNames the columns that appear after SELECT in a SELECT query
+	 * @param keyColumns  the columns that appear after WHERE in a SELECT query
+	 * @return the SELECT query as a String
+	 */
+	public String selectByFieldsAND(String[] columnNames, String[] keyColumns) {
+		StringBuilder sql = new StringBuilder("SELECT ");
 
+		for (String s : columnNames) {
+			sql.append(s + ", ");
+		}
+
+		sql.setLength(sql.length() - 2);
+		sql.append(" FROM `" + getTableName() + "` WHERE ");
+
+		for (String s : keyColumns) {
+			sql.append(s + " = ? AND ");
+		}
+
+		sql.setLength(sql.length() - 5);
+		sql.append(";");
+
+		return sql.toString();
+	}
+	
 	/**
 	 * This method closes the DB connection.
 	 * 

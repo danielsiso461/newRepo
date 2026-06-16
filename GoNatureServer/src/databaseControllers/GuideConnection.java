@@ -22,12 +22,15 @@ public class GuideConnection extends AbstractDBConnection {
     /**
      * Table column names used by this DB connector
      */
-    private String GUIDE_ID = "guide_id";
-    private String SUBSCRIBER_ID = "subscriber_id";
-    private String AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id";
-    private String ORGANIZATION_NAME = "organization_name";
-    private String GUIDE_STATUS = "guide_status";
-
+    private final String 
+    					GUIDE_ID = "guide_id",
+    					SUBSCRIBER_ID = "subscriber_id",
+    					AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id",
+    					ORGANIZATION_NAME = "organization_name",
+    					GUIDE_STATUS = "guide_status";
+    /* this holds the active status of a guide*/    
+    private final String GUIDE_STATUS_ACTIVE = "active";
+    
     /**
      * Private constructor for Singleton
      * 
@@ -60,7 +63,7 @@ public class GuideConnection extends AbstractDBConnection {
     public String getTableName() {
         return ConstantsDBTableNames.GUIDE;
     }
-
+    
     /*
      * This method checks whether a subscriber is already registered as a guide
      * 
@@ -109,7 +112,34 @@ public class GuideConnection extends AbstractDBConnection {
 
         return rows == 1;
     }
+    
+    /* This method checks whether a given id is an active, registered guide
+    * 
+    * @param id the id to check
+    * @return the id of the guide if true, null otherwise
+    * @throws SQLException if the select query fails
+    */
+    public Integer isActiveGuide(int id) throws SQLException {
+       String query = selectByFieldsAND(
+           new String[] { GUIDE_ID },
+           new String[] { SUBSCRIBER_ID, GUIDE_STATUS }
+       );
+       
+       PreparedStatement pstmt = conn.prepareStatement(query);
+       pstmt.setInt(1, id);
+       pstmt.setString(2, GUIDE_STATUS_ACTIVE);
 
+       ResultSet rs = pstmt.executeQuery();
+       
+       Integer exists = null;
+       if(rs.next())
+    	   exists = rs.getObject(GUIDE_ID, Integer.class);
+
+       rs.close();
+       pstmt.close();
+       return exists;
+    }
+    
     @Override
     protected Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();

@@ -14,8 +14,8 @@ import common.Order;
 import common.ParkInfo;
 import common.Protocol;
 import common.UpdateMessage;
-import javafx.application.Platform;
 import common.WaitingListMessage;
+import javafx.application.Platform;
 
 /*
  * this class is the controller that connects the client networking side to the UI side
@@ -51,18 +51,19 @@ public class ClientController implements ChatIF {
 	 * These observers are notified when access-check responses arrive from the server.
 	 */
 	private List<OccasionalCustomerAccessObserver> occasionalCustomerAccessObservers = new ArrayList<>();
+
 	/*
 	 * Observer pattern addition for waiting list screens.
 	 * These observers are notified when waiting-list responses arrive from the server.
 	 */
 	private List<WaitingListObserver> waitingListObservers = new ArrayList<>();
+
 	/*
 	 * Observer pattern addition for make order screens.
 	 * These observers are notified when park names or make-order responses arrive from the server.
 	 */
 	private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
-	
-	
+
 	// Constructors ****************************************************
 
 	/*
@@ -82,7 +83,7 @@ public class ClientController implements ChatIF {
 
 		this.id = id;
 	}
-	
+
 	/*
 	 * Returns the ID of the currently connected user.
 	 * 
@@ -91,7 +92,7 @@ public class ClientController implements ChatIF {
 	public String getId() {
 		return id;
 	}
-	
+
 	/*
 	 * Observer pattern addition.
 	 * Adds an order observer to the observer list.
@@ -123,6 +124,18 @@ public class ClientController implements ChatIF {
 	private void notifyOrdersReceived(List<Order> rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
+		}
+	}
+
+	/*
+	 * Observer pattern addition.
+	 * Notifies the observers of the new order and sends it to them.
+	 * 
+	 * @param order the new order
+	 */
+	private void notifyOrderMade(Order order) {
+		for (OrderObserver observer : observers) {
+			observer.addOrder(order);
 		}
 	}
 
@@ -181,6 +194,7 @@ public class ClientController implements ChatIF {
 			observer.onOccasionalCustomerAccessResult(response);
 		}
 	}
+
 	/*
 	 * Adds a waiting list observer to the observer list.
 	 * 
@@ -212,6 +226,7 @@ public class ClientController implements ChatIF {
 			observer.onJoinWaitingListResult(success, waitingListMessage);
 		}
 	}
+
 	/*
 	 * Notifies all waiting list observers about the reject waiting offer result.
 	 *
@@ -223,6 +238,7 @@ public class ClientController implements ChatIF {
 			observer.onRejectWaitingOfferResult(success, waitingListMessage);
 		}
 	}
+
 	/*
 	 * Notifies all waiting list observers about the accept waiting offer result.
 	 *
@@ -234,6 +250,7 @@ public class ClientController implements ChatIF {
 			observer.onAcceptWaitingOfferResult(success, waitingListMessage);
 		}
 	}
+
 	/*
 	 * Adds a make order observer to the observer list.
 	 * 
@@ -271,10 +288,11 @@ public class ClientController implements ChatIF {
 	 * @param message the message received from the server
 	 */
 	private void notifyMakeOrderServerResponse(Message message) {
-		for (MakeOrderObserver observer : makeOrderObservers) {
+		for (MakeOrderObserver observer : new ArrayList<>(makeOrderObservers)) {
 			observer.onMakeOrderServerResponse(message);
 		}
 	}
+
 	/*
 	 * Sends the server a request for all orders of the current user.
 	 */
@@ -291,7 +309,7 @@ public class ClientController implements ChatIF {
 		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
 	}
 
-	/**
+	/*
 	 * Sends the server a request to cancel a specific order.
 	 *
 	 * The order will not be deleted from the database. The server should update
@@ -303,7 +321,8 @@ public class ClientController implements ChatIF {
 	public void requestCancelOrder(CancelOrderMessage cancelOrderMessage) {
 		client.handleMessageFromClientUI(new Message(cancelOrderMessage, Protocol.CANCEL_ORDER));
 	}
-	/**
+
+	/*
 	 * Sends the server a request to add a visitor to the waiting list.
 	 *
 	 * @param waitingListMessage the data of the waiting list request
@@ -313,7 +332,8 @@ public class ClientController implements ChatIF {
 				new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_REQUEST)
 		);
 	}
-	/**
+
+	/*
 	 * Sends a request to reject an offered waiting list request.
 	 *
 	 * @param waitingId the waiting list request ID that should be rejected
@@ -325,7 +345,7 @@ public class ClientController implements ChatIF {
 				new Message(waitingListMessage, Protocol.REJECT_WAITING_OFFER_REQUEST)
 		);
 	}
-	
+
 	/*
 	 * Sends a request to accept an offered waiting list request.
 	 *
@@ -388,6 +408,7 @@ public class ClientController implements ChatIF {
 			case CANCEL_ORDER_FAILURE:
 				notifyCancelResult(false, (CancelOrderMessage) m.getData());
 				break;
+
 			case JOIN_WAITING_LIST_SUCCESS:
 				notifyJoinWaitingListResult(true, (WaitingListMessage) m.getData());
 				break;
@@ -395,6 +416,7 @@ public class ClientController implements ChatIF {
 			case JOIN_WAITING_LIST_FAILURE:
 				notifyJoinWaitingListResult(false, (WaitingListMessage) m.getData());
 				break;
+
 			case REJECT_WAITING_OFFER_SUCCESS:
 				notifyRejectWaitingOfferResult(true, (WaitingListMessage) m.getData());
 				break;
@@ -402,6 +424,7 @@ public class ClientController implements ChatIF {
 			case REJECT_WAITING_OFFER_FAILURE:
 				notifyRejectWaitingOfferResult(false, (WaitingListMessage) m.getData());
 				break;
+
 			case ACCEPT_WAITING_OFFER_SUCCESS:
 				notifyAcceptWaitingOfferResult(true, (WaitingListMessage) m.getData());
 				break;
@@ -409,6 +432,7 @@ public class ClientController implements ChatIF {
 			case ACCEPT_WAITING_OFFER_FAILURE:
 				notifyAcceptWaitingOfferResult(false, (WaitingListMessage) m.getData());
 				break;
+
 			case RETURN_ORDER:
 				List<Order> rows = parseOrderMessage(m.getData());
 
@@ -417,6 +441,36 @@ public class ClientController implements ChatIF {
 				}
 
 				notifyOrdersReceived(rows);
+				break;
+
+			case RETURN_PARK_NAMES_SUCCESS:
+			case GET_PARK_NAMES:
+				List<String> parkNames = parseStringList(m.getData());
+
+				if (parkNames == null) {
+					break;
+				}
+
+				notifyParkNamesReceivedForMakeOrder(parkNames);
+				break;
+
+			case RETURN_PARK_NAMES_FAILURE:
+				notifyParkNamesReceivedForMakeOrder(null);
+				break;
+
+			case MAKE_ORDER_SUCCESS:
+				if (m.getData() instanceof Order) {
+					notifyOrderMade((Order) m.getData());
+				}
+
+				notifyMakeOrderServerResponse(m);
+				break;
+
+			case MAKE_ORDER_FAIL:
+			case MAKE_ORDER_FAIL_TIME:
+			case MAKE_ORDER_FAIL_NOT_GUIDE:
+			case MAKE_ORDER_FAIL_NOT_SUBSCRIBED:
+				notifyMakeOrderServerResponse(m);
 				break;
 
 			case ACTIVE_PARKS_RESULT:
@@ -434,24 +488,10 @@ public class ClientController implements ChatIF {
 				OperationResponse response = (OperationResponse) m.getData();
 				notifyOccasionalCustomerAccessResult(response);
 				break;
-			case GET_PARK_NAMES:
-				List<String> parkNames = parseStringList(m.getData());
 
-				if (parkNames == null) {
-					break;
-				}
-
-				notifyParkNamesReceivedForMakeOrder(parkNames);
-				break;
-
-			case MAKE_ORDER_SUCCESS:
-			case MAKE_ORDER_FAIL:
-			case MAKE_ORDER_FAIL_TIME:
-			case MAKE_ORDER_FAIL_NOT_GUIDE:
-				notifyMakeOrderServerResponse(m);
-				break;
 			default:
-				System.out.println("Error: Server Response Unknown in ClientController display");
+				System.out.println("Error: Server Response Unknown in ClientController display "
+						+ m.getType());
 			}
 		});
 	}
@@ -462,7 +502,7 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param o object to check
 	 */
-	private List<Order> parseOrderMessage(Object o){
+	private List<Order> parseOrderMessage(Object o) {
 		List<Order> rows = new ArrayList<>();
 
 		if (o instanceof List<?>) {
@@ -581,6 +621,7 @@ public class ClientController implements ChatIF {
 
 		return parks;
 	}
+
 	/*
 	 * This function is used to check if a given object is a list of strings
 	 * and return the string list if so.

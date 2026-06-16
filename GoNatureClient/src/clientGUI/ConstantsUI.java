@@ -1,13 +1,16 @@
 package clientGUI;
+
 /*
  * this class holds constants relevant to the client
  */
 public final class ConstantsUI {
-	protected static final String 
-			orderTable = "/clientGUI/OrderTableDisplayPage.fxml",
+	/*
+	 * holds the UI pages paths
+	 */
+	protected static final String orderTable = "/clientGUI/OrderTableDisplayPage.fxml",
 			updatePage = "/clientGUI/OrderUpdatePage.fxml",
-			welcomePage = "/clientGUI/WelcomePage.fxml";
-			
+			welcomePage = "/clientGUI/WelcomePage.fxml",
+			makeOrderPage = "/clientGUI/MakeOrderPage.fxml";
 
 	/*
 	 * Constants for visitor number and hour pickers.
@@ -18,5 +21,6 @@ public final class ConstantsUI {
 			START_VISITORS = 1,
 			MIN_HOUR = 0,
 			MAX_HOUR = 23;
+
 	private ConstantsUI() {}
 }
