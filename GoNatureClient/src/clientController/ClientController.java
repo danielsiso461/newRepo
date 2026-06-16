@@ -250,6 +250,19 @@ public class ClientController implements ChatIF {
 			observer.onAcceptWaitingOfferResult(success, waitingListMessage);
 		}
 	}
+	
+	/*
+	 * Notifies all waiting list observers about the offered waiting list requests
+	 * received from the server.
+	 *
+	 * @param success true if the offers were loaded successfully
+	 * @param offers  the offered waiting list requests returned from the server
+	 */
+	private void notifyWaitingOffersReceived(boolean success, List<WaitingListMessage> offers) {
+		for (WaitingListObserver observer : waitingListObservers) {
+			observer.onWaitingOffersReceived(success, offers);
+		}
+	}
 
 	/*
 	 * Adds a make order observer to the observer list.
@@ -330,6 +343,18 @@ public class ClientController implements ChatIF {
 	public void requestJoinWaitingList(WaitingListMessage waitingListMessage) {
 		client.handleMessageFromClientUI(
 				new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_REQUEST)
+		);
+	}
+	
+	/*
+	 * Sends the server a request to get all offered waiting list requests for a
+	 * specific subscriber.
+	 *
+	 * @param subscriberId the subscriber ID
+	 */
+	public void requestWaitingOffers(int subscriberId) {
+		client.handleMessageFromClientUI(
+				new Message(subscriberId, Protocol.GET_WAITING_OFFERS_REQUEST)
 		);
 	}
 
@@ -416,6 +441,15 @@ public class ClientController implements ChatIF {
 			case JOIN_WAITING_LIST_FAILURE:
 				notifyJoinWaitingListResult(false, (WaitingListMessage) m.getData());
 				break;
+				
+			case GET_WAITING_OFFERS_SUCCESS:
+				List<WaitingListMessage> offers = parseWaitingOffersMessage(m.getData());
+				notifyWaitingOffersReceived(offers != null, offers);
+				break;
+
+			case GET_WAITING_OFFERS_FAILURE:
+				notifyWaitingOffersReceived(false, null);
+				break;
 
 			case REJECT_WAITING_OFFER_SUCCESS:
 				notifyRejectWaitingOfferResult(true, (WaitingListMessage) m.getData());
@@ -494,6 +528,32 @@ public class ClientController implements ChatIF {
 						+ m.getType());
 			}
 		});
+	}
+	
+	/*
+	 * This function is used to check if a given object is a list of waiting list
+	 * messages and return the waiting list offers if so.
+	 * 
+	 * @param o object to check
+	 */
+	private List<WaitingListMessage> parseWaitingOffersMessage(Object o) {
+		List<WaitingListMessage> offers = new ArrayList<>();
+
+		if (o instanceof List<?>) {
+			List<?> rawList = (List<?>) o;
+
+			for (Object offer : rawList) {
+				if (offer instanceof WaitingListMessage) {
+					offers.add((WaitingListMessage) offer);
+				} else {
+					return null;
+				}
+			}
+		} else {
+			return null;
+		}
+
+		return offers;
 	}
 
 	/*

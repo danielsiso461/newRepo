@@ -246,7 +246,11 @@ public class ServerController implements ServerAndControllerConnection {
 		case JOIN_WAITING_LIST_REQUEST:
 			addLog("Client requested to join the waiting list.");
 			return handleJoinWaitingList(m);
-
+		
+		case GET_WAITING_OFFERS_REQUEST:
+			addLog("Client requested waiting list offers.");
+			return handleGetWaitingOffers(m);
+		
 		case REJECT_WAITING_OFFER_REQUEST:
 			addLog("Client requested to reject a waiting list offer.");
 			return handleRejectWaitingOffer(m);
@@ -811,6 +815,13 @@ public class ServerController implements ServerAndControllerConnection {
 					waitingListMessage.getRequestedOrderDate(),
 					waitingListMessage.getNumberOfVisitors()
 			);
+			if (queuePosition == -1) {
+				waitingListMessage.setWaitingStatus("duplicate");
+
+				addLog("ERROR - Duplicate active waiting list request was not added.");
+
+				return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
+			}
 
 			// Updates the message with the queue position assigned by the database layer.
 			waitingListMessage.setQueuePosition(queuePosition);
@@ -830,7 +841,42 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
 		}
 	}
+	/*
+	 * Handles a client request to get all offered waiting list requests for a
+	 * specific subscriber.
+	 *
+	 * The request data is the subscriber ID. The server returns all waiting list
+	 * requests that are currently in "offered" status and can still be accepted or
+	 * rejected by the visitor.
+	 *
+	 * @param m the message received from the client, containing the subscriber ID
+	 * @return a message with GET_WAITING_OFFERS_SUCCESS or GET_WAITING_OFFERS_FAILURE
+	 */
+	private Message handleGetWaitingOffers(Message m) {
+		if (!(m.getData() instanceof Integer)) {
+			addLog("ERROR - Invalid get waiting offers request data.");
+			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
+		}
 
+		int subscriberId = (int) m.getData();
+
+		try {
+			expireOldWaitingOffers();
+
+			List<WaitingListMessage> offers = wlc.getOfferedRequestsForSubscriber(subscriberId);
+
+			addLog("Returning waiting list offers for subscriber ID: "
+					+ subscriberId + ". Offers count: " + offers.size());
+
+			return new Message(offers, Protocol.GET_WAITING_OFFERS_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to get waiting list offers: " + e.getMessage());
+
+			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
+		}
+	}
 	/*
 	 * Handles a client request to reject an offered waiting list request.
 	 *

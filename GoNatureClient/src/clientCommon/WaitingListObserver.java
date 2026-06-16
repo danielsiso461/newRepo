@@ -1,6 +1,7 @@
 package clientCommon;
 
 import common.WaitingListMessage;
+import java.util.List;
 
 /**
  * This interface represents UI screens that wait for waiting-list related
@@ -40,6 +41,13 @@ public interface WaitingListObserver {
 	 */
 	void onJoinWaitingListResult(boolean success, WaitingListMessage waitingListMessage);
 
+	/**
+	 * Handles the result of requesting the offered waiting list requests.
+	 *
+	 * @param success true if the offers were loaded successfully
+	 * @param offers  the offered waiting list requests returned from the server
+	 */
+	void onWaitingOffersReceived(boolean success, List<WaitingListMessage> offers);
 	
 	/**
 	 * Handles a server shutdown/disconnect event.

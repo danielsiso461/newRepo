@@ -29,7 +29,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	private final String ORDER_DATE = "order_date";
 	private final String VISITOR_NUMBER = "number_of_visitors";
 	private final String CONF_CODE = "confirmation_code";
-	private final String CUSTOMER_ID = "customer_id";
+	private final String CUSTOMER_ID = "subscriber_id";
 	private final String SUBSCRIBER_ID = "subscriber_id";
 	private final String PLACEMENT_DATE = "date_of_placing_order";
 	private final String ORDER_HOUR = "order_hour";
@@ -159,16 +159,25 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method returns all the orders made by a client.
+	 * This method returns all visible orders made by a client.
+	 * 
+	 * Cancelled orders are kept in the database for reports and history,
+	 * but they are not displayed in the visitor's order table.
 	 * 
 	 * @param m the Message received from client
-	 * @return a list of the user's orders
+	 * @return a list of the user's visible orders
 	 * @throws SQLException if the select query fails
 	 */
 	public List<Order> getUserOrders(Message m) throws SQLException {
 		ensureConnection();
 
-		String sql = selectByFields(new String[] { "*" }, new String[] { CUSTOMER_ID });
+		String sql = """
+				SELECT *
+				FROM `order`
+				WHERE subscriber_id = ?
+				  AND order_status <> 'cancelled'
+				ORDER BY order_date;
+				""";
 
 		List<Order> orders = new ArrayList<>();
 
@@ -186,7 +195,6 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return orders;
 	}
-
 	/**
 	 * This method creates a new order in the database.
 	 * 
@@ -673,7 +681,30 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return 0;
 	}
-	
+	/*
+	 * this method returns the next order number for a new order.
+	 * 
+	 * The order_number column is not AUTO_INCREMENT in the database, so the value
+	 * is calculated manually.
+	 * 
+	 * @return the next available order number
+	 * @throws SQLException if the query failed
+	 */
+	private int getNextOrderNumber() throws SQLException {
+		ensureConnection();
+
+		String sql = "SELECT COALESCE(MAX(order_number), 0) + 1 AS next_order_number FROM `order`;";
+
+		try (PreparedStatement ps = conn.prepareStatement(sql);
+				ResultSet rs = ps.executeQuery()) {
+
+			if (rs.next()) {
+				return rs.getInt("next_order_number");
+			}
+		}
+
+		return 1;
+	}
 	/* this method adds an order to the order table
 	 * @param o the order to add
 	 * @return the complete order including order ID and confirmation code
@@ -681,63 +712,51 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * */
 	public Order bookOrder(Order o) throws SQLException {
 		ensureConnection();
-		
-		StringBuilder sql = new StringBuilder();
-		sql.append("INSERT INTO `order` ("
+
+		int newOrderNumber = getNextOrderNumber();
+
+		// create confirmation code
+		int code = newOrderNumber % CONF_CODE_OFFSET + CONF_CODE_OFFSET;
+
+		String sql = "INSERT INTO `order` ("
+				+ ORDER_NUMBER + ", "
 				+ ORDER_DATE + ", "
 				+ VISITOR_NUMBER + ", "
+				+ CONF_CODE + ", "
 				+ CUSTOMER_ID + ", "
 				+ PLACEMENT_DATE + ", "
 				+ PARK_ID + ", "
 				+ GUIDE_ID + ", "
 				+ ORDER_STATUS + ", "
-				+ ORDER_TYPE + ", "
-				+ ORDER_HOUR + ", "
-				+ ORDER_EMAIL);
-		if(o.getIsSubscribed())
-			sql.append(", " + SUBSCRIBER_ID);
-		sql.append(") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
-		if(o.getIsSubscribed())
-			sql.append(", ?");
-		sql.append(");");
-	
-		try (PreparedStatement ps = 
-				conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-			ps.setObject(1, o.getOrderDate());
-			ps.setInt(2, o.getVisitorNumber());
-			ps.setInt(3, o.getUserId());
-			ps.setObject(4, o.getPlacementDate());
-			ps.setInt(5, o.getParkId());
-			ps.setObject(6, o.getGuideId());
-			ps.setString(7, o.getOrderStatus());
-			ps.setString(8, o.getOrderType());
-			ps.setInt(9, o.getOrderHour());
-			ps.setString(10, o.getEmail());
-			if(o.getIsSubscribed())
-				ps.setInt(11, o.getUserId());
-			
-			ps.executeUpdate();
-			
-			try (ResultSet rs = ps.getGeneratedKeys()) {
-				if (rs.next())
-		            o.setOrderId(rs.getInt(1));
+				+ ORDER_TYPE
+				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setInt(1, newOrderNumber);
+			ps.setObject(2, o.getOrderDate());
+			ps.setInt(3, o.getVisitorNumber());
+			ps.setInt(4, code);
+			ps.setInt(5, o.getUserId());
+			ps.setObject(6, o.getPlacementDate());
+			ps.setInt(7, o.getParkId());
+
+			if (o.getGuideId() == null) {
+				ps.setNull(8, java.sql.Types.INTEGER);
+			} else {
+				ps.setInt(8, o.getGuideId());
 			}
-			
-			// create confirmation code
-			int code = o.getOrderId() % CONF_CODE_OFFSET + CONF_CODE_OFFSET;
+
+			ps.setString(9, o.getOrderStatus());
+			ps.setString(10, o.getOrderType());
+
+			ps.executeUpdate();
+
+			o.setOrderId(newOrderNumber);
 			o.setConfirmationCode(code);
-			
-			List<Object> newValues = new ArrayList<>(), keyValues = new ArrayList<>();
-			newValues.add(code);
-			keyValues.add(o.getOrderId());
-			// set confirmation code in DB
-			updateFields(new String[] {CONF_CODE}, newValues, 
-						new String[] {ORDER_NUMBER}, keyValues);
 		}
-		
+
 		return o;
 	}
-	
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */

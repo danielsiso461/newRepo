@@ -3,8 +3,11 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import common.WaitingListMessage;
 
-/**
+/*
  * This class handles all database operations related to the waiting_list table.
  *
  * The waiting list is used when a visitor cannot immediately create an order
@@ -16,7 +19,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 	private static final String TABLE_NAME = "waiting_list";
 
-	/**
+	/*
 	 * Private constructor for Singleton usage.
 	 *
 	 * @throws SQLException if the database connection cannot be created
@@ -25,7 +28,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		connect();
 	}
 
-	/**
+	/*
 	 * Returns the single instance of WaitingListConnection.
 	 *
 	 * @return the WaitingListConnection instance
@@ -39,7 +42,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return instance;
 	}
 
-	/**
+	/*
 	 * Returns the table name used by this database connector.
 	 *
 	 * @return the waiting_list table name
@@ -49,7 +52,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return TABLE_NAME;
 	}
 
-	/**
+	/*
 	 * Makes sure the database connection is open before running a query.
 	 *
 	 * @throws SQLException if the connection cannot be opened
@@ -60,7 +63,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		}
 	}
 
-	/**
+	/*
 	 * Calculates the next queue position for a specific park and requested date.
 	 *
 	 * The next position is calculated by taking the current maximum queue_position
@@ -95,24 +98,72 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return 1;
 	}
+	/*
+	 * Checks whether the subscriber already has an active waiting list request for
+	 * the same park, date, time and number of visitors.
+	 *
+	 * Active requests are requests that are still waiting or already offered.
+	 *
+	 * @param subscriberId       the subscriber ID of the visitor
+	 * @param parkId             the requested park ID
+	 * @param requestedOrderDate the requested visit date and time
+	 * @param numberOfVisitors   the requested number of visitors
+	 * @return true if an active matching request already exists, false otherwise
+	 * @throws SQLException if the select query fails
+	 */
+	private boolean activeWaitingRequestExists(int subscriberId, int parkId,
+			java.time.LocalDateTime requestedOrderDate, int numberOfVisitors) throws SQLException {
+		ensureConnection();
 
-	/**
+		String sql = """
+				SELECT waiting_id
+				FROM waiting_list
+				WHERE subscriber_id = ?
+				  AND park_id = ?
+				  AND requested_order_date = ?
+				  AND number_of_visitors = ?
+				  AND waiting_status IN ('waiting', 'offered')
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, subscriberId);
+			pstmt.setInt(2, parkId);
+			pstmt.setTimestamp(3, java.sql.Timestamp.valueOf(requestedOrderDate));
+			pstmt.setInt(4, numberOfVisitors);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
+	/*
 	 * Adds a visitor request to the waiting list.
 	 *
 	 * The request is inserted with waiting_status = "waiting".
 	 * The queue position is calculated automatically according to the same park
 	 * and requested order date.
 	 *
+	 * If the subscriber already has an active waiting list request for the same
+	 * park, date, time and number of visitors, the method does not insert another
+	 * row and returns -1.
+	 *
 	 * @param subscriberId       the subscriber ID of the visitor
 	 * @param parkId             the requested park ID
 	 * @param requestedOrderDate the requested visit date and time
 	 * @param numberOfVisitors   the requested number of visitors
-	 * @return the queue position assigned to the visitor
+	 * @return the queue position assigned to the visitor, or -1 if a duplicate active request exists
 	 * @throws SQLException if the insert query fails
 	 */
 	public int addToWaitingList(int subscriberId, int parkId, java.time.LocalDateTime requestedOrderDate,
 			int numberOfVisitors) throws SQLException {
 		ensureConnection();
+
+		// Do not allow the same subscriber to join the waiting list more than once
+		// for the exact same park, date, time and number of visitors.
+		if (activeWaitingRequestExists(subscriberId, parkId, requestedOrderDate, numberOfVisitors)) {
+			return -1;
+		}
 
 		int queuePosition = getNextQueuePosition(parkId, requestedOrderDate);
 
@@ -142,8 +193,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return queuePosition;
 	}
-	
-	/**
+	/*
 	 * Offers the newly available place to the first matching visitor in the waiting list.
 	 *
 	 * The method searches for the first visitor waiting for the same park and date.
@@ -206,7 +256,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 			return pstmt.executeUpdate() > 0;
 		}
 	}
-	/**
+	/*
 	 * Rejects an offered waiting list request and offers the available place to the
 	 * next matching visitor in the waiting list.
 	 *
@@ -277,7 +327,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return true;
 	}
-	/**
+	/*
 	 * Expires all waiting list offers whose expiration time has passed and offers
 	 * the available places to the next matching visitors in the waiting list.
 	 *
@@ -341,7 +391,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return expiredCount;
 	}
-	/**
+	/*
 	 * Accepts an offered waiting list request.
 	 *
 	 * The method changes the waiting_status from "offered" to "accepted".
@@ -368,7 +418,62 @@ public class WaitingListConnection extends AbstractDBConnection {
 			return pstmt.executeUpdate() > 0;
 		}
 	}
-	/**
+	
+	/*
+	 * Returns all active offered waiting list requests for a specific subscriber.
+	 *
+	 * The method is used by the client side to display waiting list offers that the
+	 * visitor can accept or reject.
+	 *
+	 * @param subscriberId the subscriber ID
+	 * @return a list of offered waiting list requests
+	 * @throws SQLException if the select query fails
+	 */
+	public List<WaitingListMessage> getOfferedRequestsForSubscriber(int subscriberId) throws SQLException {
+		ensureConnection();
+
+		List<WaitingListMessage> offers = new ArrayList<>();
+
+		String sql = """
+				SELECT
+				    waiting_id,
+				    subscriber_id,
+				    park_id,
+				    requested_order_date,
+				    number_of_visitors,
+				    queue_position,
+				    waiting_status
+				FROM waiting_list
+				WHERE subscriber_id = ?
+				  AND waiting_status IN ('waiting', 'offered')
+				  AND (offer_expires_at IS NULL OR offer_expires_at >= NOW())
+				ORDER BY requested_order_date ASC, queue_position ASC;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, subscriberId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					WaitingListMessage waitingListMessage = new WaitingListMessage(
+							rs.getInt("subscriber_id"),
+							rs.getInt("park_id"),
+							rs.getTimestamp("requested_order_date").toLocalDateTime(),
+							rs.getInt("number_of_visitors")
+					);
+
+					waitingListMessage.setWaitingId(rs.getInt("waiting_id"));
+					waitingListMessage.setQueuePosition(rs.getInt("queue_position"));
+					waitingListMessage.setWaitingStatus(rs.getString("waiting_status"));
+
+					offers.add(waitingListMessage);
+				}
+			}
+		}
+
+		return offers;
+	}
+	/*
 	 * Prevents cloning of the Singleton instance.
 	 */
 	@Override

@@ -519,7 +519,21 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			warningMessage("Failed to reject waiting list offer.");
 		}
 	}
-
+	
+	/*
+	 * Handles the result of loading waiting list offers.
+	 *
+	 * This screen does not display waiting list offers, so no UI action is needed
+	 * here at this stage.
+	 *
+	 * @param success true if the offers were loaded successfully
+	 * @param offers  the offered waiting list requests returned from the server
+	 */
+	@Override
+	public void onWaitingOffersReceived(boolean success, List<WaitingListMessage> offers) {
+		// No action is needed here at this stage.
+	}
+	
 	/*
 	 * Handles the result of accepting a waiting list offer.
 	 *
