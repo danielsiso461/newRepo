@@ -114,18 +114,94 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 
 				messageLabel.setText("Login successful. Welcome " + employee.getFirstName());
 
-				System.out.println("Employee login successful:");
-				System.out.println("Employee = " + employee);
-
-				/*
-				 * Later:
-				 * Navigate to the relevant employee screen according to employee role.
-				 */
+				openEmployeeHomeScreen(employee);
 
 			} else {
 				messageLabel.setText(response.getMessage());
 			}
 		});
+	}
+	
+	/*
+	 * Opens the correct employee home screen according to the employee role.
+	 * 
+	 * @param employee the employee that logged in successfully
+	 */
+	private void openEmployeeHomeScreen(Employee employee) {
+		try {
+			if (clientController != null) {
+				clientController.removeEmployeeLoginObserver(this);
+			}
+
+			String role = employee.getRole();
+
+			FXMLLoader loader;
+			Parent root;
+			Stage stage = (Stage) usernameField.getScene().getWindow();
+
+			switch (role) {
+
+			case "park_worker":
+				loader = new FXMLLoader(getClass().getResource("/clientGUI/ParkWorkerHomePage.fxml"));
+				root = loader.load();
+
+				ParkWorkerHomePageController parkWorkerController = loader.getController();
+				parkWorkerController.setClientController(clientController);
+				parkWorkerController.setLoggedInEmployee(employee);
+
+				stage.setTitle("Park Worker Dashboard");
+				stage.setScene(new Scene(root));
+				stage.show();
+				break;
+
+			case "service_representative":
+				loader = new FXMLLoader(getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml"));
+				root = loader.load();
+
+				ServiceRepresentativeHomePageController serviceController = loader.getController();
+				serviceController.setClientController(clientController);
+				serviceController.setLoggedInEmployee(employee);
+
+				stage.setTitle("Service Representative Dashboard");
+				stage.setScene(new Scene(root));
+				stage.show();
+				break;
+
+			case "park_manager":
+				loader = new FXMLLoader(getClass().getResource("/clientGUI/ParkManagerHomePage.fxml"));
+				root = loader.load();
+
+				ParkManagerHomePageController parkManagerController = loader.getController();
+				parkManagerController.setClientController(clientController);
+				parkManagerController.setLoggedInEmployee(employee);
+
+				stage.setTitle("Park Manager Dashboard");
+				stage.setScene(new Scene(root));
+				stage.show();
+				break;
+
+			case "department_manager":
+				loader = new FXMLLoader(getClass().getResource("/clientGUI/DepartmentManagerHomePage.fxml"));
+				root = loader.load();
+
+				DepartmentManagerHomePageController departmentController = loader.getController();
+				departmentController.setClientController(clientController);
+				departmentController.setLoggedInEmployee(employee);
+
+				stage.setTitle("Department Manager Dashboard");
+				stage.setScene(new Scene(root));
+				stage.show();
+				break;
+
+			default:
+				messageLabel.setText("Unknown employee role: " + role);
+				break;
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			messageLabel.setText("Failed to open employee screen.");
+		}
 	}
 
 	/*

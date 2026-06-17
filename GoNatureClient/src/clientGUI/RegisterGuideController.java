@@ -5,9 +5,20 @@ import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import java.io.IOException;
 
+import clientController.ClientController;
+import common.Employee;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 public class RegisterGuideController {
 
+	private ClientController clientController;
+	private Employee loggedInEmployee;
+	
     @FXML
     private TextField subscriberIdField;
 
@@ -25,6 +36,24 @@ public class RegisterGuideController {
 
     @FXML
     private Label messageLabel;
+    
+    /*
+     * Sets the ClientController used by this screen.
+     * 
+     * @param clientController the active client controller
+     */
+    public void setClientController(ClientController clientController) {
+        this.clientController = clientController;
+    }
+
+    /*
+     * Sets the logged-in service representative.
+     * 
+     * @param employee the employee that opened this screen
+     */
+    public void setLoggedInEmployee(Employee employee) {
+        this.loggedInEmployee = employee;
+    }
 
     @FXML
     private void initialize() {
@@ -92,7 +121,25 @@ public class RegisterGuideController {
 
     @FXML
     private void handleBack(ActionEvent event) {
-        System.out.println("Back clicked");
-        // בהמשך נחבר חזרה למסך הקודם
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
+            );
+
+            Parent root = loader.load();
+
+            ServiceRepresentativeHomePageController controller = loader.getController();
+            controller.setClientController(clientController);
+            controller.setLoggedInEmployee(loggedInEmployee);
+
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setTitle("Service Representative Dashboard");
+            stage.setScene(new Scene(root));
+            stage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            messageLabel.setText("Could not return to service representative screen.");
+        }
     }
 }
