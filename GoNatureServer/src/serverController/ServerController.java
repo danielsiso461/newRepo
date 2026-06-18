@@ -346,6 +346,9 @@ public class ServerController implements ServerAndControllerConnection {
 			
 		case EXISTING_CUSTOMER_LOGIN_REQUEST:
 			return handleExistingCustomerLogin(m);
+			
+		case REGISTER_SUBSCRIBER_REQUEST:
+			return handleRegisterSubscriber(m);	
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -570,6 +573,60 @@ public class ServerController implements ServerAndControllerConnection {
 					new OperationResponse(false, "Database error while customer login", null);
 
 			return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
+		}
+	}
+	
+	/*
+	 * Handles a register subscriber request received from the client.
+	 * 
+	 * The method checks that the username and ID number are not already used.
+	 * If the details are valid, it inserts a new subscriber into the database.
+	 * 
+	 * @param m the message received from the client, containing RegisterSubscriberRequest
+	 * @return a Message with an OperationResponse containing the registration result
+	 */
+	private Message handleRegisterSubscriber(Message m) {
+		RegisterSubscriberRequest request = (RegisterSubscriberRequest) m.getData();
+
+		addLog("Register subscriber request received. Username: " + request.getUsername());
+
+		try {
+			if (sc.isUsernameExists(request.getUsername())) {
+				OperationResponse response =
+						new OperationResponse(false, "Username already exists.", null);
+
+				addLog("Register subscriber failed. Username already exists: " + request.getUsername());
+
+				return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
+			}
+
+			if (sc.isIdNumberExists(request.getIdNumber())) {
+				OperationResponse response =
+						new OperationResponse(false, "ID number already exists.", null);
+
+				addLog("Register subscriber failed. ID number already exists: " + request.getIdNumber());
+
+				return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
+			}
+
+			sc.registerSubscriber(request);
+
+			OperationResponse response =
+					new OperationResponse(true, "Subscriber registered successfully.", null);
+
+			addLog("Subscriber registered successfully. Username: " + request.getUsername());
+
+			return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while registering subscriber: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while registering subscriber.", null);
+
+			return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
 		}
 	}
 

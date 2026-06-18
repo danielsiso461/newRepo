@@ -1,9 +1,17 @@
 package clientGUI;
 
+import java.io.IOException;
+
 import clientController.ClientController;
 import common.Employee;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.stage.Stage;
 
 /*
  * This class is the controller for the department manager home page.
@@ -30,29 +38,67 @@ public class DepartmentManagerHomePageController {
 			welcomeLabel.setText("Welcome " + employee.getFirstName() + " " + employee.getLastName());
 		}
 	}
+	/*
+	 * Handles click on the reports button.
+	 * 
+	 * This screen will allow the department manager to view department-level reports,
+	 * such as visit reports and cancellation reports.
+	 */
+	@FXML
+	private void handleViewReports() {
+		System.out.println("View Reports clicked");
+
+		/*
+		 * Later:
+		 * Open DepartmentManagerReports.fxml
+		 */
+	}
 
 	@FXML
 	private void handleApproveParkRequests() {
 		System.out.println("Approve Park Requests clicked");
 	}
 
+	
+	/*
+	 * Handles click on the park occupancy button.
+	 * 
+	 * This screen will show the current occupancy of parks,
+	 * including current visitors, capacity, and available space.
+	 */
 	@FXML
-	private void handleViewDepartmentReports() {
-		System.out.println("View Department Reports clicked");
+	private void handleViewParkOccupancy() {
+		System.out.println("View Park Occupancy clicked");
+
+		/*
+		 * Later:
+		 * Open DepartmentManagerParkOccupancy.fxml
+		 */
 	}
 
+	/*
+	 * Handles logout from the park worker screen.
+	 * 
+	 * For now, this returns the user to the opening screen.
+	 * 
+	 * @param event the button click event
+	 */
 	@FXML
-	private void handleViewParksStatus() {
-		System.out.println("View Parks Status clicked");
-	}
+	private void handleLogout(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/OpeningScreen.fxml")
+			);
 
-	@FXML
-	private void handleViewCancellationsReport() {
-		System.out.println("View Cancellations Report clicked");
-	}
+			Parent root = loader.load();
 
-	@FXML
-	private void handleLogout() {
-		System.out.println("Logout clicked");
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("GoNature");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

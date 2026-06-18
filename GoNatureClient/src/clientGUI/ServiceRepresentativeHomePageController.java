@@ -39,9 +39,35 @@ public class ServiceRepresentativeHomePageController {
 		}
 	}
 
+	/*
+	 * Opens the subscriber registration screen.
+	 * 
+	 * This screen is used by the service representative to register a new family
+	 * subscriber in the system.
+	 * 
+	 * @param event the button click event
+	 */
 	@FXML
-	private void handleRegisterSubscriber() {
-		System.out.println("Register Subscriber clicked");
+	private void handleRegisterSubscriber(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/RegisterSubscriber.fxml")
+			);
+
+			Parent root = loader.load();
+
+			RegisterSubscriberController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Register Subscriber");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -80,8 +106,29 @@ public class ServiceRepresentativeHomePageController {
 		System.out.println("View Customer Orders clicked");
 	}
 
+	/*
+	 * Handles logout from the park worker screen.
+	 * 
+	 * For now, this returns the user to the opening screen.
+	 * 
+	 * @param event the button click event
+	 */
 	@FXML
-	private void handleLogout() {
-		System.out.println("Logout clicked");
+	private void handleLogout(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/OpeningScreen.fxml")
+			);
+
+			Parent root = loader.load();
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("GoNature");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

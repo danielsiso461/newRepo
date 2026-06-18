@@ -18,6 +18,8 @@ import clientCommon.*;
 import javafx.application.Platform;
 import common.OperationResponse;
 import common.ExistingCustomerLoginRequest;
+import clientCommon.RegisterSubscriberObserver;
+import common.RegisterSubscriberRequest;
 /*
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
@@ -51,6 +53,11 @@ public class ClientController implements ChatIF {
 	 * Observer pattern addition for existing customer login screen.
 	 */
 	private List<ExistingCustomerLoginObserver> existingCustomerLoginObservers = new ArrayList<>();
+	
+	/*
+	 * Observer pattern addition for register subscriber screen.
+	 */
+	private List<RegisterSubscriberObserver> registerSubscriberObservers = new ArrayList<>();
 	
 
 	// Constructors ****************************************************
@@ -196,6 +203,37 @@ public class ClientController implements ChatIF {
 				new Message(request, Protocol.EXISTING_CUSTOMER_LOGIN_REQUEST)
 		);
 	}
+	
+	/*
+	 * Adds a register subscriber observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addRegisterSubscriberObserver(RegisterSubscriberObserver observer) {
+		if (observer != null && !registerSubscriberObservers.contains(observer)) {
+			registerSubscriberObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes a register subscriber observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeRegisterSubscriberObserver(RegisterSubscriberObserver observer) {
+		registerSubscriberObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all register subscriber observers about the server response.
+	 * 
+	 * @param response the response received from the server
+	 */
+	private void notifyRegisterSubscriberResult(OperationResponse response) {
+		for (RegisterSubscriberObserver observer : registerSubscriberObservers) {
+			observer.onRegisterSubscriberResult(response);
+		}
+	}
 
 	// Instance methods ************************************************
 
@@ -254,6 +292,11 @@ public class ClientController implements ChatIF {
 			case EXISTING_CUSTOMER_LOGIN_RESPONSE:
 				OperationResponse existingCustomerLoginResponse = (OperationResponse) m.getData();
 				notifyExistingCustomerLoginResult(existingCustomerLoginResponse);
+				break;	
+				
+			case REGISTER_SUBSCRIBER_RESPONSE:
+				OperationResponse registerSubscriberResponse = (OperationResponse) m.getData();
+				notifyRegisterSubscriberResult(registerSubscriberResponse);
 				break;	
 
 			default:
@@ -406,6 +449,17 @@ public class ClientController implements ChatIF {
 
 		client.handleMessageFromClientUI(
 				new Message(request, Protocol.EMPLOYEE_LOGIN_REQUEST)
+		);
+	}
+	
+	/*
+	 * Sends the server a register subscriber request.
+	 * 
+	 * @param request the subscriber registration details
+	 */
+	public void requestRegisterSubscriber(RegisterSubscriberRequest request) {
+		client.handleMessageFromClientUI(
+				new Message(request, Protocol.REGISTER_SUBSCRIBER_REQUEST)
 		);
 	}
 

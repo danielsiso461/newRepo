@@ -14,12 +14,11 @@
                   <Font name="System Bold Italic" size="24.0" />
                </font>
             </Label>
-            <Label layoutX="284.0" layoutY="74.0" text="Welcome" />
-            <Button layoutX="281.0" layoutY="219.0" mnemonicParsing="false" onAction="#handleApproveParkRequests" text="Approve Park Requests" />
-            <Button layoutX="283.0" layoutY="277.0" mnemonicParsing="false" onAction="#handleViewParksStatus" text="View Parks Occupancy" />
-            <Button alignment="CENTER" layoutX="273.0" layoutY="162.0" mnemonicParsing="false" onAction="#handleViewCancellationsReport" text="View Cancellations Report" textAlignment="JUSTIFY" />
-            <Button layoutX="324.0" layoutY="332.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
-            <Button layoutX="274.0" layoutY="105.0" mnemonicParsing="false" onAction="#handleViewDepartmentReports" text="View Department Reports" />
+            <Label layoutX="273.0" layoutY="84.0" text="Welcome" />
+            <Button layoutX="281.0" layoutY="188.0" mnemonicParsing="false" onAction="#handleApproveParkRequests" text="Approve Park Requests" />
+            <Button layoutX="283.0" layoutY="245.0" mnemonicParsing="false" onAction="#handleViewParkOccupancy" text="View Parks Occupancy" />
+            <Button alignment="CENTER" layoutX="281.0" layoutY="128.0" mnemonicParsing="false" onAction="#handleViewReports" text="View Reports" textAlignment="JUSTIFY" />
+            <Button layoutX="324.0" layoutY="315.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
          </children>
       </AnchorPane>
    </children>

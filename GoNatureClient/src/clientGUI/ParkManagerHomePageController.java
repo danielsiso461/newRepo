@@ -1,9 +1,17 @@
 package clientGUI;
 
+import java.io.IOException;
+
 import clientController.ClientController;
 import common.Employee;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.stage.Stage;
 
 /*
  * This class is the controller for the park manager home page.
@@ -51,8 +59,29 @@ public class ParkManagerHomePageController {
 		System.out.println("Manage Promotions clicked");
 	}
 
+	/*
+	 * Handles logout from the park worker screen.
+	 * 
+	 * For now, this returns the user to the opening screen.
+	 * 
+	 * @param event the button click event
+	 */
 	@FXML
-	private void handleLogout() {
-		System.out.println("Logout clicked");
+	private void handleLogout(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/OpeningScreen.fxml")
+			);
+
+			Parent root = loader.load();
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("GoNature");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

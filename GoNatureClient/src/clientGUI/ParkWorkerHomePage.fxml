@@ -5,8 +5,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25" fx:controller="clientGUI.ParkWorkerHomePageController">
+<AnchorPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="clientGUI.ParkWorkerHomePageController">
    <children>
       <AnchorPane layoutX="-7.0" layoutY="-7.0" prefHeight="400.0" prefWidth="700.0">
          <children>
@@ -15,10 +14,12 @@
                   <Font name="System Bold Italic" size="24.0" />
                </font>
             </Label>
-            <Label fx:id="welcomeLabel" layoutX="300.0" layoutY="106.0" text="Welcome" />
-            <Button layoutX="300.0" layoutY="158.0" mnemonicParsing="false" onAction="#handleSearchVisitorOrder" text="Search Visitor Order" />
-            <Button layoutX="305.0" layoutY="217.0" mnemonicParsing="false" onAction="#handleRecordVisitorExit" text="Record Visitor Exit" />
-            <Button layoutX="336.0" layoutY="273.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
+            <Label fx:id="welcomeLabel" layoutX="304.0" layoutY="102.0" text="Welcome" />
+            <Button layoutX="304.0" layoutY="131.0" mnemonicParsing="false" onAction="#handleCheckVisitorEntry" text="Check Visitor Entry" />
+            <Button layoutX="306.0" layoutY="260.0" mnemonicParsing="false" onAction="#handleViewParkOccupancy" text="View Park Occupancy" />
+            <Button layoutX="335.0" layoutY="311.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
+            <Button layoutX="304.0" layoutY="175.0" mnemonicParsing="false" onAction="#handleWalkInVisitor" text="Handle Walk-In Visitor" />
+            <Button layoutX="306.0" layoutY="218.0" mnemonicParsing="false" onAction="#handleRecordVisitorExit" text="Record Visitor Exit" />
          </children>
       </AnchorPane>
    </children>
