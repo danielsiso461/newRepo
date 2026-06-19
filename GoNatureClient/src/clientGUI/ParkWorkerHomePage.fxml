@@ -15,9 +15,9 @@
                </font>
             </Label>
             <Label fx:id="welcomeLabel" layoutX="304.0" layoutY="102.0" text="Welcome" />
-            <Button layoutX="304.0" layoutY="131.0" mnemonicParsing="false" onAction="#handleCheckVisitorEntry" text="Check Visitor Entry" />
+            <Button layoutX="304.0" layoutY="132.0" mnemonicParsing="false" onAction="#handleCheckVisitorEntry" text="Check Visitor Entry" />
             <Button layoutX="306.0" layoutY="260.0" mnemonicParsing="false" onAction="#handleViewParkOccupancy" text="View Park Occupancy" />
-            <Button layoutX="335.0" layoutY="311.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
+            <Button layoutX="335.0" layoutY="308.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
             <Button layoutX="304.0" layoutY="175.0" mnemonicParsing="false" onAction="#handleWalkInVisitor" text="Handle Walk-In Visitor" />
             <Button layoutX="306.0" layoutY="218.0" mnemonicParsing="false" onAction="#handleRecordVisitorExit" text="Record Visitor Exit" />
          </children>
