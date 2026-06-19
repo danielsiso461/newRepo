@@ -55,6 +55,7 @@ public class ServerController implements ServerAndControllerConnection {
 			sc = SubscriberConnection.getInstance();
 			gc = GuideConnection.getInstance();
 			wlc = WaitingListConnection.getInstance();
+			vc = VisitConnection.getInstance();
 			orderChecker = OrderExceedsParkCapacityCheck.getInstance(pc, oc);
 
 			addLog("Order database connection object created.");
@@ -1068,7 +1069,7 @@ public class ServerController implements ServerAndControllerConnection {
 
 		return true;
 	}
-	/*
+	/**
 	 * Closes all database connections safely.
 	 * 
 	 * Each database connector returns its connection to the connection pool.
@@ -1111,8 +1112,6 @@ public class ServerController implements ServerAndControllerConnection {
 
 			DBConnectionPool.getInstance().closeAllConnections();
 			addLog("All database pool connections were closed.");
-
-			addLog("Database connections closed successfully.");
 
 			addLog("Database connections closed successfully.");
 		} catch (SQLException e) {
