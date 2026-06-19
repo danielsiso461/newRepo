@@ -1,5 +1,5 @@
 package clientGUI;
-//for Example to check if the screen works
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;

@@ -6,18 +6,9 @@ import java.util.List;
 
 import client.Client;
 import clientCommon.*;
-import common.CancelOrderMessage;
-import common.ChatIF;
-import common.Message;
-import common.OperationResponse;
-import common.Order;
-import common.ParkInfo;
-import common.Protocol;
-import common.UpdateMessage;
-import common.WaitingListMessage;
+import common.*;
 import javafx.application.Platform;
-import clientCommon.ParkEntranceObserver;
-import common.ParkEntranceMessage;
+
 /*
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
@@ -58,15 +49,32 @@ public class ClientController implements ChatIF {
 	 * These observers are notified when waiting-list responses arrive from the server.
 	 */
 	private List<WaitingListObserver> waitingListObservers = new ArrayList<>();
+
 	/*
 	 * A list of observers that handle park entrance control responses.
 	 */
 	private List<ParkEntranceObserver> parkEntranceObservers = new ArrayList<>();
+
 	/*
 	 * Observer pattern addition for make order screens.
 	 * These observers are notified when park names or make-order responses arrive from the server.
 	 */
 	private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
+
+	/*
+	 * Observer pattern addition for employee login screen.
+	 */
+	private List<EmployeeLoginObserver> employeeLoginObservers = new ArrayList<>();
+
+	/*
+	 * Observer pattern addition for existing customer login screen.
+	 */
+	private List<ExistingCustomerLoginObserver> existingCustomerLoginObservers = new ArrayList<>();
+
+	/*
+	 * Observer pattern addition for register subscriber screen.
+	 */
+	private List<RegisterSubscriberObserver> registerSubscriberObservers = new ArrayList<>();
 
 	// Constructors ****************************************************
 
@@ -125,7 +133,8 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param rows the received orders
 	 */
-	private void notifyOrdersReceived(List<Order> rows) {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void notifyOrdersReceived(List rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
 		}
@@ -211,6 +220,15 @@ public class ClientController implements ChatIF {
 	}
 
 	/*
+	 * Removes a waiting list observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeWaitingListObserver(WaitingListObserver observer) {
+		waitingListObservers.remove(observer);
+	}
+
+	/*
 	 * Adds a park entrance observer.
 	 *
 	 * @param observer the observer to add
@@ -228,15 +246,6 @@ public class ClientController implements ChatIF {
 	 */
 	public void removeParkEntranceObserver(ParkEntranceObserver observer) {
 		parkEntranceObservers.remove(observer);
-	}
-
-	/*
-	 * Removes a waiting list observer from the observer list.
-	 * 
-	 * @param observer the observer to remove
-	 */
-	public void removeWaitingListObserver(WaitingListObserver observer) {
-		waitingListObservers.remove(observer);
 	}
 
 	/*
@@ -274,7 +283,7 @@ public class ClientController implements ChatIF {
 			observer.onAcceptWaitingOfferResult(success, waitingListMessage);
 		}
 	}
-	
+
 	/*
 	 * Notifies all waiting list observers about the offered waiting list requests
 	 * received from the server.
@@ -331,10 +340,116 @@ public class ClientController implements ChatIF {
 	}
 
 	/*
+	 * Adds an employee login observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addEmployeeLoginObserver(EmployeeLoginObserver observer) {
+		if (observer != null && !employeeLoginObservers.contains(observer)) {
+			employeeLoginObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes an employee login observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeEmployeeLoginObserver(EmployeeLoginObserver observer) {
+		employeeLoginObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all employee login observers about the server response.
+	 * 
+	 * @param response the response received from the server
+	 */
+	private void notifyEmployeeLoginResult(OperationResponse response) {
+		for (EmployeeLoginObserver observer : employeeLoginObservers) {
+			observer.onEmployeeLoginResult(response);
+		}
+	}
+
+	/*
+	 * Adds an existing customer login observer to the observer list.
+	 *
+	 * @param observer the observer to add
+	 */
+	public void addExistingCustomerLoginObserver(ExistingCustomerLoginObserver observer) {
+		if (observer != null && !existingCustomerLoginObservers.contains(observer)) {
+			existingCustomerLoginObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes an existing customer login observer from the observer list.
+	 *
+	 * @param observer the observer to remove
+	 */
+	public void removeExistingCustomerLoginObserver(ExistingCustomerLoginObserver observer) {
+		existingCustomerLoginObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all existing customer login observers about the server response.
+	 *
+	 * @param response the response received from the server
+	 */
+	private void notifyExistingCustomerLoginResult(OperationResponse response) {
+		for (ExistingCustomerLoginObserver observer : existingCustomerLoginObservers) {
+			observer.onExistingCustomerLoginResult(response);
+		}
+	}
+
+	/*
+	 * Adds a register subscriber observer to the observer list.
+	 * 
+	 * @param observer the observer to add
+	 */
+	public void addRegisterSubscriberObserver(RegisterSubscriberObserver observer) {
+		if (observer != null && !registerSubscriberObservers.contains(observer)) {
+			registerSubscriberObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes a register subscriber observer from the observer list.
+	 * 
+	 * @param observer the observer to remove
+	 */
+	public void removeRegisterSubscriberObserver(RegisterSubscriberObserver observer) {
+		registerSubscriberObservers.remove(observer);
+	}
+
+	/*
+	 * Notifies all register subscriber observers about the server response.
+	 * 
+	 * @param response the response received from the server
+	 */
+	private void notifyRegisterSubscriberResult(OperationResponse response) {
+		for (RegisterSubscriberObserver observer : registerSubscriberObservers) {
+			observer.onRegisterSubscriberResult(response);
+		}
+	}
+
+	/*
 	 * Sends the server a request for all orders of the current user.
 	 */
 	public void requestOrders() {
 		client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));
+	}
+
+	/*
+	 * Sends the server a request for all orders of a specific subscriber.
+	 * 
+	 * This method is used after an existing customer logs in successfully.
+	 * 
+	 * @param subscriberId the subscriber id whose orders should be loaded
+	 */
+	public void requestOrdersBySubscriberId(int subscriberId) {
+		client.handleMessageFromClientUI(
+				new Message(String.valueOf(subscriberId), Protocol.RETURN_ORDER)
+		);
 	}
 
 	/*
@@ -369,7 +484,7 @@ public class ClientController implements ChatIF {
 				new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_REQUEST)
 		);
 	}
-	
+
 	/*
 	 * Sends the server a request to get all offered waiting list requests for a
 	 * specific subscriber.
@@ -425,7 +540,59 @@ public class ClientController implements ChatIF {
 				new Message(orderNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
 		);
 	}
-	
+
+	/*
+	 * Sends the server an occasional customer access request.
+	 * 
+	 * The occasional customer identifies himself by ID number.
+	 * 
+	 * @param customerIdNumber the ID number entered by the occasional customer
+	 */
+	public void requestOccasionalCustomerAccess(String customerIdNumber) {
+		client.handleMessageFromClientUI(
+				new Message(customerIdNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
+		);
+	}
+
+	/*
+	 * Sends the server an employee login request.
+	 * 
+	 * @param username the username entered by the employee
+	 * @param password the password entered by the employee
+	 */
+	public void requestEmployeeLogin(String username, String password) {
+		EmployeeLoginRequest request = new EmployeeLoginRequest(username, password);
+
+		client.handleMessageFromClientUI(
+				new Message(request, Protocol.EMPLOYEE_LOGIN_REQUEST)
+		);
+	}
+
+	/*
+	 * Sends the server an existing customer login request.
+	 * 
+	 * @param username the username entered by the customer
+	 * @param password the password entered by the customer
+	 */
+	public void requestExistingCustomerLogin(String username, String password) {
+		ExistingCustomerLoginRequest request = new ExistingCustomerLoginRequest(username, password);
+
+		client.handleMessageFromClientUI(
+				new Message(request, Protocol.EXISTING_CUSTOMER_LOGIN_REQUEST)
+		);
+	}
+
+	/*
+	 * Sends the server a register subscriber request.
+	 * 
+	 * @param request the subscriber registration details
+	 */
+	public void requestRegisterSubscriber(RegisterSubscriberRequest request) {
+		client.handleMessageFromClientUI(
+				new Message(request, Protocol.REGISTER_SUBSCRIBER_REQUEST)
+		);
+	}
+
 	/*
 	 * Sends a request to check in visitors using an order confirmation code.
 	 *
@@ -509,7 +676,7 @@ public class ClientController implements ChatIF {
 			case JOIN_WAITING_LIST_FAILURE:
 				notifyJoinWaitingListResult(false, (WaitingListMessage) m.getData());
 				break;
-				
+
 			case GET_WAITING_OFFERS_SUCCESS:
 				List<WaitingListMessage> offers = parseWaitingOffersMessage(m.getData());
 				notifyWaitingOffersReceived(offers != null, offers);
@@ -536,7 +703,7 @@ public class ClientController implements ChatIF {
 				break;
 
 			case RETURN_ORDER:
-				List<Order> rows = parseOrderMessage(m.getData());
+				List<?> rows = parseOrderMessage(m.getData());
 
 				if (rows == null) {
 					break;
@@ -590,6 +757,22 @@ public class ClientController implements ChatIF {
 				OperationResponse response = (OperationResponse) m.getData();
 				notifyOccasionalCustomerAccessResult(response);
 				break;
+
+			case EMPLOYEE_LOGIN_RESPONSE:
+				OperationResponse employeeLoginResponse = (OperationResponse) m.getData();
+				notifyEmployeeLoginResult(employeeLoginResponse);
+				break;
+
+			case EXISTING_CUSTOMER_LOGIN_RESPONSE:
+				OperationResponse existingCustomerLoginResponse = (OperationResponse) m.getData();
+				notifyExistingCustomerLoginResult(existingCustomerLoginResponse);
+				break;
+
+			case REGISTER_SUBSCRIBER_RESPONSE:
+				OperationResponse registerSubscriberResponse = (OperationResponse) m.getData();
+				notifyRegisterSubscriberResult(registerSubscriberResponse);
+				break;
+
 			case CHECK_IN_ORDER_SUCCESS:
 				notifyCheckInOrderResult(true, (ParkEntranceMessage) m.getData());
 				break;
@@ -621,14 +804,14 @@ public class ClientController implements ChatIF {
 			case GET_CURRENT_VISITORS_FAILURE:
 				notifyCurrentVisitorsReceived(false, (ParkEntranceMessage) m.getData());
 				break;
+
 			default:
 				System.out.println("Error: Server Response Unknown in ClientController display "
 						+ m.getType());
 			}
 		});
 	}
-	
-	
+
 	/*
 	 * This function is used to check if a given object is a list of waiting list
 	 * messages and return the waiting list offers if so.
@@ -661,15 +844,15 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param o object to check
 	 */
-	private List<Order> parseOrderMessage(Object o) {
-		List<Order> rows = new ArrayList<>();
+	private List<?> parseOrderMessage(Object o) {
+		List<Object> rows = new ArrayList<>();
 
 		if (o instanceof List<?>) {
 			List<?> rawList = (List<?>) o;
 
 			for (Object row : rawList) {
-				if (row instanceof Order) {
-					rows.add((Order) row);
+				if (row instanceof Order || row instanceof OrderRow) {
+					rows.add(row);
 				} else {
 					return null;
 				}
@@ -700,6 +883,10 @@ public class ClientController implements ChatIF {
 		}
 
 		for (WaitingListObserver observer : waitingListObservers) {
+			observer.handleExit();
+		}
+
+		for (ParkEntranceObserver observer : parkEntranceObservers) {
 			observer.handleExit();
 		}
 	}
@@ -745,7 +932,7 @@ public class ClientController implements ChatIF {
 			observer.onParksReceived(parks);
 		}
 	}
-	
+
 	/*
 	 * Notifies all park entrance observers about a check-in result.
 	 *

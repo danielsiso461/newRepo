@@ -39,7 +39,7 @@
             <Button fx:id="clearBtn" layoutX="341.0" layoutY="387.0" mnemonicParsing="false" onAction="#handleClear" text="Clear" />
             <Button fx:id="backBtn" layoutX="425.0" layoutY="387.0" mnemonicParsing="false" onAction="#handleBack" text="Back" />
             <Label fx:id="messageLabel" layoutX="111.0" layoutY="445.0" text="Text:" />
-            <TextField fx:id="organizationNameField" layoutX="288.0" layoutY="315.0" />
+            <TextField fx:id="organizationNameField" layoutX="288.0" layoutY="315.0" promptText="Organization Name" />
             <ComboBox fx:id="guideStatusComboBox" layoutX="288.0" layoutY="349.0" prefWidth="150.0" />
          </children>
       </AnchorPane>

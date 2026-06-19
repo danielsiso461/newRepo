@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.Set;
 
 import common.*;
+import java.util.ArrayList;
+
 import databaseControllers.DBConnectionPool;
+import databaseControllers.EmployeeConnection;
 import databaseControllers.GuideConnection;
 import databaseControllers.OrderConnection;
 import databaseControllers.OrderExceedsParkCapacityCheck;
@@ -34,6 +37,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private SubscriberConnection sc;
 	private VisitConnection vc;
 	private GuideConnection gc;
+	private EmployeeConnection ec;
 	private ParkParameterChangeRequestConnection pcrc;
 	private OrderExceedsParkCapacityCheck orderChecker;
 	private int allTimeUserCount = 1;
@@ -56,6 +60,7 @@ public class ServerController implements ServerAndControllerConnection {
 			gc = GuideConnection.getInstance();
 			wlc = WaitingListConnection.getInstance();
 			vc = VisitConnection.getInstance();
+			ec = EmployeeConnection.getInstance();
 			orderChecker = OrderExceedsParkCapacityCheck.getInstance(pc, oc);
 
 			addLog("Order database connection object created.");
@@ -250,11 +255,11 @@ public class ServerController implements ServerAndControllerConnection {
 		case JOIN_WAITING_LIST_REQUEST:
 			addLog("Client requested to join the waiting list.");
 			return handleJoinWaitingList(m);
-		
+
 		case GET_WAITING_OFFERS_REQUEST:
 			addLog("Client requested waiting list offers.");
 			return handleGetWaitingOffers(m);
-		
+
 		case REJECT_WAITING_OFFER_REQUEST:
 			addLog("Client requested to reject a waiting list offer.");
 			return handleRejectWaitingOffer(m);
@@ -262,7 +267,19 @@ public class ServerController implements ServerAndControllerConnection {
 		case ACCEPT_WAITING_OFFER_REQUEST:
 			addLog("Client requested to accept a waiting list offer.");
 			return handleAcceptWaitingOffer(m);
-			
+
+		case EMPLOYEE_LOGIN_REQUEST:
+			addLog("Client requested employee login.");
+			return handleEmployeeLogin(m);
+
+		case EXISTING_CUSTOMER_LOGIN_REQUEST:
+			addLog("Client requested existing customer login.");
+			return handleExistingCustomerLogin(m);
+
+		case REGISTER_SUBSCRIBER_REQUEST:
+			addLog("Client requested subscriber registration.");
+			return handleRegisterSubscriber(m);
+
 		case CHECK_IN_ORDER_REQUEST:
 			addLog("Client requested park check-in by confirmation code.");
 			return handleCheckInOrder(m);
@@ -278,7 +295,6 @@ public class ServerController implements ServerAndControllerConnection {
 		case GET_CURRENT_VISITORS_REQUEST:
 			addLog("Client requested current visitors count.");
 			return handleGetCurrentVisitors(m);
-
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
@@ -1007,41 +1023,191 @@ public class ServerController implements ServerAndControllerConnection {
 	}
 
 	/*
-	 * Handles a client request for occasional customer access by order number.
+	 * Handles an occasional customer access request received from the client.
 	 * 
-	 * The method receives a Message that contains the order number.
-	 * It checks whether the order exists in the database.
-	 * If the order exists, it returns a successful OperationResponse.
-	 * Otherwise, it returns a failure response.
+	 * The occasional customer identifies himself using an ID number.
+	 * The method searches all orders that belong to this ID number and returns
+	 * them to the client.
 	 * 
-	 * @param m the message received from the client, containing the order number
+	 * @param m the message received from the client, containing customer ID number
 	 * @return a Message with an OperationResponse containing the access result
 	 */
 	private Message handleOccasionalCustomerAccess(Message m) {
-		int orderNumber = (int) m.getData();
+		String customerIdNumber = (String) m.getData();
+
+		addLog("Checking occasional customer ID number: " + customerIdNumber);
 
 		try {
-			boolean orderExists = oc.orderExists(orderNumber);
+			ArrayList<OrderRow> orders = oc.getOrdersByCustomerIdNumber(customerIdNumber);
 
-			if (orderExists) {
+			if (orders != null && !orders.isEmpty()) {
 				OperationResponse response =
-						new OperationResponse(true, "Order found", orderNumber);
+						new OperationResponse(true, "Orders found", orders);
+
+				addLog("Occasional customer access approved for ID number: " + customerIdNumber);
 
 				return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 			}
 
 			OperationResponse response =
-					new OperationResponse(false, "Order not found", null);
+					new OperationResponse(false, "No orders found for this ID number", null);
+
+			addLog("Occasional customer access denied. No orders found for ID number: " + customerIdNumber);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 
+			addLog("ERROR - Database error while searching orders by ID number: " + e.getMessage());
+
 			OperationResponse response =
-					new OperationResponse(false, "Database error while searching order", null);
+					new OperationResponse(false, "Database error while searching orders", null);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
+		}
+	}
+	
+	/*
+	 * Handles an employee login request received from the client.
+	 * 
+	 * The method receives username and password from the client, checks them
+	 * against the employee table, and returns the employee data if login succeeds.
+	 * 
+	 * @param m the message received from the client, containing EmployeeLoginRequest
+	 * @return a Message with an OperationResponse containing the login result
+	 */
+	private Message handleEmployeeLogin(Message m) {
+		EmployeeLoginRequest request = (EmployeeLoginRequest) m.getData();
+
+		try {
+			Employee employee = ec.loginEmployee(
+					request.getUsername(),
+					request.getPassword()
+			);
+
+			if (employee == null) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid username or password", null);
+
+				return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+			}
+
+			OperationResponse response =
+					new OperationResponse(true, "Employee login successful", employee);
+
+			addLog("Employee login successful: " + employee.getUsername()
+					+ ", role: " + employee.getRole());
+
+			return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while employee login: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while employee login", null);
+
+			return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
+		}
+	}
+	
+	/*
+	 * Handles an existing customer login request received from the client.
+	 * 
+	 * The method receives username and password from the client, checks them
+	 * against the subscriber table, and returns the subscriber data if login succeeds.
+	 * 
+	 * @param m the message received from the client, containing ExistingCustomerLoginRequest
+	 * @return a Message with an OperationResponse containing the login result
+	 */
+	private Message handleExistingCustomerLogin(Message m) {
+		ExistingCustomerLoginRequest request = (ExistingCustomerLoginRequest) m.getData();
+
+		try {
+			Subscriber subscriber = sc.loginSubscriber(
+					request.getUsername(),
+					request.getPassword()
+			);
+
+			if (subscriber == null) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid username or password", null);
+
+				return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
+			}
+
+			OperationResponse response =
+					new OperationResponse(true, "Customer login successful", subscriber);
+
+			addLog("Existing customer login successful: " + subscriber.getSubscriberName());
+
+			return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while existing customer login: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while customer login", null);
+
+			return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
+		}
+	}
+	
+	/*
+	 * Handles a register subscriber request received from the client.
+	 * 
+	 * The method checks that the username and ID number are not already used.
+	 * If the details are valid, it inserts a new subscriber into the database.
+	 * 
+	 * @param m the message received from the client, containing RegisterSubscriberRequest
+	 * @return a Message with an OperationResponse containing the registration result
+	 */
+	private Message handleRegisterSubscriber(Message m) {
+		RegisterSubscriberRequest request = (RegisterSubscriberRequest) m.getData();
+
+		addLog("Register subscriber request received. Username: " + request.getUsername());
+
+		try {
+			if (sc.isUsernameExists(request.getUsername())) {
+				OperationResponse response =
+						new OperationResponse(false, "Username already exists.", null);
+
+				addLog("Register subscriber failed. Username already exists: " + request.getUsername());
+
+				return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
+			}
+
+			if (sc.isIdNumberExists(request.getIdNumber())) {
+				OperationResponse response =
+						new OperationResponse(false, "ID number already exists.", null);
+
+				addLog("Register subscriber failed. ID number already exists: " + request.getIdNumber());
+
+				return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
+			}
+
+			sc.registerSubscriber(request);
+
+			OperationResponse response =
+					new OperationResponse(true, "Subscriber registered successfully.", null);
+
+			addLog("Subscriber registered successfully. Username: " + request.getUsername());
+
+			return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while registering subscriber: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while registering subscriber.", null);
+
+			return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
 		}
 	}
 
@@ -1093,6 +1259,11 @@ public class ServerController implements ServerAndControllerConnection {
 			if (pcrc != null) {
 				pcrc.close();
 				addLog("Park parameter change request database connection returned to pool.");
+			}
+			
+			if (ec != null) {
+				ec.close();
+				addLog("Employee database connection closed.");
 			}
 
 			if (sc != null) {

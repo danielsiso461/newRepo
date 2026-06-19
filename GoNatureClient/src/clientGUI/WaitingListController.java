@@ -1,6 +1,8 @@
 package clientGUI;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import clientCommon.WaitingListObserver;
 import clientController.ClientController;
@@ -8,6 +10,7 @@ import common.WaitingListMessage;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -15,10 +18,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import java.util.HashSet;
-import java.util.Set;
-
-import javafx.scene.control.Alert;
 
 /*
  * This controller handles the waiting list page.

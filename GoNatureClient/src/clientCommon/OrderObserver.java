@@ -15,7 +15,7 @@ public interface OrderObserver {
 	 * 
 	 * @param rows 	the orders
 	 */
-	void onOrdersReceived(List<Order> rows);
+	void onOrdersReceived(List<?> rows);
 
 	/*
 	 * this function handles receiving an update result for an order from the server

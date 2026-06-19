@@ -10,6 +10,7 @@ import java.util.List;
 import common.Message;
 import common.Order;
 import common.UpdateMessage;
+import common.OrderRow;
 
 /**
  * This class is the DB connector used when working with the orders table.
@@ -32,8 +33,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	private final String CUSTOMER_ID = "subscriber_id";
 	private final String SUBSCRIBER_ID = "subscriber_id";
 	private final String PLACEMENT_DATE = "date_of_placing_order";
-	private final String ORDER_HOUR = "order_hour";
-	private final String ORDER_EMAIL = "email";
+	private final String CUSTOMER_ID_NUMBER = "customer_id_number";
 
 	/**
 	 * The park id column in the order table.
@@ -705,11 +705,14 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return 1;
 	}
-	/* this method adds an order to the order table
+
+	/*
+	 * this method adds an order to the order table
+	 * 
 	 * @param o the order to add
 	 * @return the complete order including order ID and confirmation code
 	 * @throws SQLException if the process fails
-	 * */
+	 */
 	public Order bookOrder(Order o) throws SQLException {
 		ensureConnection();
 
@@ -756,6 +759,65 @@ public final class OrderConnection extends AbstractDBConnection {
 		}
 
 		return o;
+	}
+
+	/**
+	 * This method returns all orders that belong to a specific customer id number.
+	 * 
+	 * This method is used for occasional customers, because they identify themselves
+	 * using their ID number.
+	 * 
+	 * @param customerIdNumber the ID number entered by the occasional customer
+	 * @return a list of OrderRow objects that belong to the given ID number
+	 * @throws SQLException if the select query fails
+	 */
+	public ArrayList<OrderRow> getOrdersByCustomerIdNumber(String customerIdNumber) throws SQLException {
+		ensureConnection();
+
+		ArrayList<OrderRow> orders = new ArrayList<>();
+
+		String query = selectByFields(
+				new String[] {
+						ORDER_NUMBER,
+						ORDER_DATE,
+						VISITOR_NUMBER,
+						CONF_CODE,
+						SUBSCRIBER_ID,
+						PLACEMENT_DATE,
+						PARK_ID,
+						GUIDE_ID,
+						ORDER_STATUS,
+						ORDER_TYPE
+				},
+				new String[] {
+						CUSTOMER_ID_NUMBER
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, customerIdNumber);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					OrderRow order = new OrderRow(
+							rs.getInt(ORDER_NUMBER),
+							rs.getDate(ORDER_DATE).toLocalDate(),
+							rs.getInt(VISITOR_NUMBER),
+							rs.getInt(CONF_CODE),
+							rs.getInt(SUBSCRIBER_ID),
+							rs.getDate(PLACEMENT_DATE).toLocalDate(),
+							rs.getInt(PARK_ID),
+							rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID),
+							rs.getString(ORDER_STATUS),
+							rs.getString(ORDER_TYPE)
+					);
+
+					orders.add(order);
+				}
+			}
+		}
+
+		return orders;
 	}
 	/**
 	 * Prevents cloning of the Singleton instance.

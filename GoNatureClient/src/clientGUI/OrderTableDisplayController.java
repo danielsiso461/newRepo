@@ -1,18 +1,13 @@
 package clientGUI;
 
 import java.io.IOException;
-
-/**
- * Sample Skeleton for 'Untitled' Controller Class
- */
-
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
-
+import common.OrderRow;
 import clientCommon.OrderObserver;
 import clientController.ClientController;
 import common.CancelOrderMessage;
@@ -399,9 +394,33 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * 
 	 * @param rows		the order data
 	 */
-	public void setData(List<Order> rows) {
+	public void setData(List<?> rows) {
 		Platform.runLater(() -> {
-			data.setAll(rows);
+			data.clear();
+
+			for (Object row : rows) {
+				if (row instanceof Order) {
+					data.add((Order) row);
+				} else if (row instanceof OrderRow) {
+					OrderRow orderRow = (OrderRow) row;
+
+					Order order = new Order(
+							orderRow.getOrderNumber(),
+							orderRow.getOrderId(),
+							orderRow.getOrderDate(),
+							orderRow.getVisitorNumber(),
+							orderRow.getConfCode(),
+							orderRow.getUserId(),
+							orderRow.getPlacementDate(),
+							orderRow.getParkId(),
+							orderRow.getGuideId(),
+							orderRow.getOrderStatus(),
+							orderRow.getOrderType()
+					);
+
+					data.add(order);
+				}
+			}
 		});
 	}
 
@@ -440,7 +459,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * @param rows 	the order list
 	 */
 	@Override
-	public void onOrdersReceived(List<Order> rows) {
+	public void onOrdersReceived(List<?> rows) {
 		setData(rows);
 	}
 

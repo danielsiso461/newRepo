@@ -1,9 +1,5 @@
 package clientGUI;
 
-/**
- * Sample Skeleton for 'OrderUpdatePage.fxml' Controller Class
- */
-
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.ResourceBundle;
@@ -25,7 +21,6 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-
 @SuppressWarnings("deprecation")
 public class OrderUpdateController {
 

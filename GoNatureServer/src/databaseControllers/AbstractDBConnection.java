@@ -103,7 +103,7 @@ public abstract class AbstractDBConnection {
 
 		pstmt.close();
 	}
-
+	
 	/**
 	 * This method is a general insert query.
 	 * It inserts a new record into the table using the given columns and values.
@@ -164,17 +164,22 @@ public abstract class AbstractDBConnection {
 		StringBuilder sql = new StringBuilder("SELECT ");
 
 		for (String s : columnNames) {
-			sql.append(s + ", ");
+			sql.append(s).append(", ");
 		}
 
 		sql.setLength(sql.length() - 2);
-		sql.append(" FROM `" + getTableName() + "` WHERE ");
+		sql.append(" FROM `").append(getTableName()).append("`");
 
-		for (String s : keyColumns) {
-			sql.append(s + " = ?, ");
+		if (keyColumns != null && keyColumns.length > 0) {
+			sql.append(" WHERE ");
+
+			for (String s : keyColumns) {
+				sql.append(s).append(" = ? AND ");
+			}
+
+			sql.setLength(sql.length() - 5);
 		}
 
-		sql.setLength(sql.length() - 2);
 		sql.append(";");
 
 		return sql.toString();
