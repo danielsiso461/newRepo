@@ -11,7 +11,8 @@ public final class ConstantsUI {
 	        updatePage = "/clientGUI/OrderUpdatePage.fxml",
 	        welcomePage = "/clientGUI/WelcomePage.fxml",
 	        makeOrderPage = "/clientGUI/MakeOrderPage.fxml",
-	        waitingListPage = "/clientGUI/WaitingListPage.fxml";
+	        waitingListPage = "/clientGUI/WaitingListPage.fxml",
+	        parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
 	/*
 	 * Constants for visitor number and hour pickers.
 	 */

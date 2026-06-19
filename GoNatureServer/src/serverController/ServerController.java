@@ -20,6 +20,7 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
+import databaseControllers.VisitConnection;
 
 // this class is the controller that connects 
 // the networking part of the server and the UI part of it. 
@@ -31,6 +32,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private OrderConnection oc;
 	private ParkConnection pc;
 	private SubscriberConnection sc;
+	private VisitConnection vc;
 	private GuideConnection gc;
 	private ParkParameterChangeRequestConnection pcrc;
 	private OrderExceedsParkCapacityCheck orderChecker;
@@ -63,8 +65,8 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("Waiting list database connection object created.");
 			addLog("Order checker object created.");
 			addLog("All database connection objects were created successfully.");
-
-		} catch (SQLException e) {
+			addLog("Visit database connection object created.");
+		}catch (SQLException e) {
 			e.printStackTrace();
 			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
 		}
@@ -259,6 +261,22 @@ public class ServerController implements ServerAndControllerConnection {
 		case ACCEPT_WAITING_OFFER_REQUEST:
 			addLog("Client requested to accept a waiting list offer.");
 			return handleAcceptWaitingOffer(m);
+			
+		case CHECK_IN_ORDER_REQUEST:
+			addLog("Client requested park check-in by confirmation code.");
+			return handleCheckInOrder(m);
+
+		case CHECK_OUT_VISIT_REQUEST:
+			addLog("Client requested park check-out by confirmation code.");
+			return handleCheckOutVisit(m);
+
+		case OCCASIONAL_VISIT_REQUEST:
+			addLog("Client requested occasional visit entrance.");
+			return handleOccasionalVisit(m);
+
+		case GET_CURRENT_VISITORS_REQUEST:
+			addLog("Client requested current visitors count.");
+			return handleGetCurrentVisitors(m);
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -1125,6 +1143,211 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("ERROR - Failed to close server: " + e.getMessage());
 		} finally {
 			closeDBConnection();
+		}
+	}
+	/*
+	 * Handles a park check-in request using a confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. If the order is valid,
+	 * the server creates a new visit record.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the check-in action
+	 */
+	private Message handleCheckInOrder(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid check-in request data.");
+			return new Message(null, Protocol.CHECK_IN_ORDER_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			int visitId = vc.createVisitFromConfirmationCode(
+					entranceMessage.getConfirmationCode(),
+					entranceMessage.getParkId(),
+					entranceMessage.getActualNumberOfVisitors(),
+					entranceMessage.getEmployeeId(),
+					"confirmation_code"
+			);
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("No valid order was found for this confirmation code.");
+				addLog("Check-in failed. No valid order was found.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -2) {
+				entranceMessage.setResponseMessage("This order already has an open visit.");
+				addLog("Check-in failed. The order already has an open visit.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -3) {
+				entranceMessage.setResponseMessage("Invalid number of visitors for this order.");
+				addLog("Check-in failed. Invalid number of visitors.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setVisitId(visitId);
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Check-in completed successfully. Visit ID: " + visitId);
+
+			addLog("Check-in completed successfully. Visit ID: " + visitId);
+
+			return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to check in order: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while checking in order.");
+			return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles a park check-out request using a confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. If an open visit exists,
+	 * the server closes it by setting exit_time.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the check-out action
+	 */
+	private Message handleCheckOutVisit(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid check-out request data.");
+			return new Message(null, Protocol.CHECK_OUT_VISIT_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			int visitId = vc.closeVisitByConfirmationCode(
+					entranceMessage.getConfirmationCode(),
+					entranceMessage.getParkId(),
+					entranceMessage.getEmployeeId()
+			);
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("No open visit was found for this confirmation code.");
+				addLog("Check-out failed. No open visit was found.");
+				return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_FAILURE);
+			}
+
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setVisitId(visitId);
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Check-out completed successfully. Visit ID: " + visitId);
+
+			addLog("Check-out completed successfully. Visit ID: " + visitId);
+
+			return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to check out visit: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while checking out visit.");
+			return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles an occasional visit request.
+	 *
+	 * Occasional visitors do not have an order. The server checks whether the park has
+	 * available capacity before creating the visit.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the occasional visit action
+	 */
+	private Message handleOccasionalVisit(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid occasional visit request data.");
+			return new Message(null, Protocol.OCCASIONAL_VISIT_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			boolean hasCapacity = pc.hasAvailableCapacity(
+					entranceMessage.getParkId(),
+					entranceMessage.getActualNumberOfVisitors()
+			);
+
+			if (!hasCapacity) {
+				entranceMessage.setResponseMessage("The park does not have enough available capacity.");
+				addLog("Occasional visit failed. Not enough capacity.");
+				return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_FAILURE);
+			}
+
+			int visitId = vc.createOccasionalVisit(
+					entranceMessage.getParkId(),
+					entranceMessage.getActualNumberOfVisitors(),
+					entranceMessage.getEmployeeId(),
+					"id_number"
+			);
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("Failed to create occasional visit.");
+				addLog("Occasional visit failed. Visit was not created.");
+				return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_FAILURE);
+			}
+
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setVisitId(visitId);
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Occasional visit created successfully. Visit ID: " + visitId);
+
+			addLog("Occasional visit created successfully. Visit ID: " + visitId);
+
+			return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to create occasional visit: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while creating occasional visit.");
+			return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles a request for the current number of visitors inside a park.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message with the current visitors count
+	 */
+	private Message handleGetCurrentVisitors(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid current visitors request data.");
+			return new Message(null, Protocol.GET_CURRENT_VISITORS_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Current visitors in park: " + currentVisitors);
+
+			addLog("Current visitors in park " + entranceMessage.getParkId() + ": " + currentVisitors);
+
+			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to get current visitors: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while loading current visitors.");
+			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_FAILURE);
 		}
 	}
 }

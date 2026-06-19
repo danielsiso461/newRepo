@@ -59,7 +59,234 @@ public class VisitConnection extends AbstractDBConnection {
 	protected String getTableName() {
 		return ConstantsDBTableNames.VISIT;
 	}
+	/**
+	 * This method checks that the database connection is open.
+	 * 
+	 * @throws SQLException if reconnecting to the database fails
+	 */
+	private void ensureConnection() throws SQLException {
+		if (conn == null || conn.isClosed()) {
+			connect();
+		}
+	}
+	/**
+	 * Returns the current number of visitors inside a specific park.
+	 *
+	 * Current visitors are visits that have an entry time but no exit time yet.
+	 *
+	 * @param parkId the park ID
+	 * @return the number of visitors currently inside the park
+	 * @throws SQLException if the select query fails
+	 */
+	public int getCurrentVisitorsInPark(int parkId) throws SQLException {
+		ensureConnection();
 
+		String sql = """
+				SELECT COALESCE(SUM(actual_number_of_visitors), 0) AS current_visitors
+				FROM visit
+				WHERE park_id = ?
+				  AND exit_time IS NULL;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getInt("current_visitors");
+				}
+			}
+		}
+
+		return 0;
+	}
+	/**
+	 * Creates a new park visit using an order confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. The method checks that
+	 * the order exists, belongs to the selected park, and is not cancelled, expired,
+	 * completed or marked as no-show.
+	 *
+	 * Return values:
+	 * - positive number: created visit ID
+	 * - -1: no valid order was found
+	 * - -2: the order already has an open visit
+	 * - -3: invalid actual number of visitors
+	 *
+	 * @param confirmationCode       the order confirmation code used as QR simulation
+	 * @param parkId                 the park ID where the visitor entered
+	 * @param actualNumberOfVisitors the actual number of visitors entering
+	 * @param handledByEmployeeId    the employee ID that handled the entrance
+	 * @param identificationMethod   the identification method used at the entrance
+	 * @return the created visit ID, or a negative value if the visit cannot be created
+	 * @throws SQLException if the select or insert query fails
+	 */
+	public int createVisitFromConfirmationCode(
+			int confirmationCode,
+			int parkId,
+			int actualNumberOfVisitors,
+			int handledByEmployeeId,
+			String identificationMethod) throws SQLException {
+		ensureConnection();
+
+		String orderSql = """
+				SELECT order_number, park_id, subscriber_id, number_of_visitors
+				FROM `order`
+				WHERE confirmation_code = ?
+				  AND park_id = ?
+				  AND order_status NOT IN ('cancelled', 'expired', 'completed', 'no_show')
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
+			orderStmt.setInt(1, confirmationCode);
+			orderStmt.setInt(2, parkId);
+
+			try (ResultSet orderRs = orderStmt.executeQuery()) {
+				if (!orderRs.next()) {
+					return -1;
+				}
+
+				int orderNumber = orderRs.getInt("order_number");
+				int subscriberId = orderRs.getInt("subscriber_id");
+				int orderedVisitors = orderRs.getInt("number_of_visitors");
+
+				if (actualNumberOfVisitors <= 0 || actualNumberOfVisitors > orderedVisitors) {
+					return -3;
+				}
+
+				if (hasOpenVisitForOrder(orderNumber)) {
+					return -2;
+				}
+
+				String insertSql = """
+						INSERT INTO visit
+						(
+							order_number,
+							park_id,
+							subscriber_id,
+							visit_type,
+							actual_number_of_visitors,
+							entry_time,
+							handled_by_employee_id,
+							identification_method
+						)
+						VALUES (?, ?, ?, 'ordered', ?, NOW(), ?, ?);
+						""";
+
+				try (PreparedStatement pstmt =
+						conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+					pstmt.setInt(1, orderNumber);
+					pstmt.setInt(2, parkId);
+					pstmt.setInt(3, subscriberId);
+					pstmt.setInt(4, actualNumberOfVisitors);
+					pstmt.setInt(5, handledByEmployeeId);
+					pstmt.setString(6, identificationMethod);
+
+					int rows = pstmt.executeUpdate();
+
+					if (rows == 0) {
+						return -1;
+					}
+
+					try (ResultSet keys = pstmt.getGeneratedKeys()) {
+						if (keys.next()) {
+							return keys.getInt(1);
+						}
+					}
+				}
+			}
+		}
+
+		return -1;
+	}
+	/**
+	 * Checks whether an order already has an open visit.
+	 *
+	 * An open visit is a visit with no exit time yet.
+	 *
+	 * @param orderNumber the order number
+	 * @return true if the order already has an open visit, false otherwise
+	 * @throws SQLException if the select query fails
+	 */
+	private boolean hasOpenVisitForOrder(int orderNumber) throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT visit_id
+				FROM visit
+				WHERE order_number = ?
+				  AND exit_time IS NULL
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, orderNumber);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
+	/**
+	 * Closes an open visit using the order confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation at the park exit.
+	 *
+	 * @param confirmationCode          the order confirmation code
+	 * @param parkId                    the park ID
+	 * @param exitHandledByEmployeeId   the employee ID that handled the exit
+	 * @return the closed visit ID, or -1 if no open visit was found
+	 * @throws SQLException if the select or update query fails
+	 */
+	public int closeVisitByConfirmationCode(
+			int confirmationCode,
+			int parkId,
+			int exitHandledByEmployeeId) throws SQLException {
+		ensureConnection();
+
+		String findSql = """
+				SELECT v.visit_id
+				FROM visit v
+				JOIN `order` o
+				    ON v.order_number = o.order_number
+				WHERE o.confirmation_code = ?
+				  AND v.park_id = ?
+				  AND v.exit_time IS NULL
+				LIMIT 1;
+				""";
+
+		try (PreparedStatement findStmt = conn.prepareStatement(findSql)) {
+			findStmt.setInt(1, confirmationCode);
+			findStmt.setInt(2, parkId);
+
+			try (ResultSet rs = findStmt.executeQuery()) {
+				if (!rs.next()) {
+					return -1;
+				}
+
+				int visitId = rs.getInt("visit_id");
+
+				String updateSql = """
+						UPDATE visit
+						SET exit_time = NOW(),
+						    exit_handled_by_employee_id = ?
+						WHERE visit_id = ?;
+						""";
+
+				try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+					updateStmt.setInt(1, exitHandledByEmployeeId);
+					updateStmt.setInt(2, visitId);
+
+					if (updateStmt.executeUpdate() > 0) {
+						return visitId;
+					}
+				}
+			}
+		}
+
+		return -1;
+	}
 	/**
 	 * This method creates a new visit from an approved order.
 	 * 
@@ -128,6 +355,66 @@ public class VisitConnection extends AbstractDBConnection {
 
 		if (keys.next()) {
 			return keys.getInt(1);
+		}
+
+		return -1;
+	}
+	
+	/**
+	 * Creates an occasional visit without an existing order.
+	 *
+	 * This method is used for visitors who arrive at the park without a reservation.
+	 * The server should check park capacity before calling this method.
+	 *
+	 * @param parkId                 the park ID
+	 * @param actualNumberOfVisitors the actual number of visitors entering
+	 * @param handledByEmployeeId    the employee ID that handled the entrance
+	 * @param identificationMethod    the identification method used at the entrance
+	 * @return the generated visit ID if the visit was created successfully, or -1 otherwise
+	 * @throws SQLException if the insert query fails
+	 */
+	public int createOccasionalVisit(
+			int parkId,
+			int actualNumberOfVisitors,
+			int handledByEmployeeId,
+			String identificationMethod) throws SQLException {
+		ensureConnection();
+
+		if (actualNumberOfVisitors <= 0) {
+			return -1;
+		}
+
+		String insertSql = """
+				INSERT INTO visit
+				(
+					park_id,
+					visit_type,
+					actual_number_of_visitors,
+					entry_time,
+					handled_by_employee_id,
+					identification_method
+				)
+				VALUES (?, 'occasional', ?, NOW(), ?, ?);
+				""";
+
+		try (PreparedStatement pstmt =
+				conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+			pstmt.setInt(1, parkId);
+			pstmt.setInt(2, actualNumberOfVisitors);
+			pstmt.setInt(3, handledByEmployeeId);
+			pstmt.setString(4, identificationMethod);
+
+			int rows = pstmt.executeUpdate();
+
+			if (rows == 0) {
+				return -1;
+			}
+
+			try (ResultSet keys = pstmt.getGeneratedKeys()) {
+				if (keys.next()) {
+					return keys.getInt(1);
+				}
+			}
 		}
 
 		return -1;

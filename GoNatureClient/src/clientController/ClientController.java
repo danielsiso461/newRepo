@@ -16,7 +16,8 @@ import common.Protocol;
 import common.UpdateMessage;
 import common.WaitingListMessage;
 import javafx.application.Platform;
-
+import clientCommon.ParkEntranceObserver;
+import common.ParkEntranceMessage;
 /*
  * this class is the controller that connects the client networking side to the UI side
  * it is also taking care of the logic between the two components
@@ -57,7 +58,10 @@ public class ClientController implements ChatIF {
 	 * These observers are notified when waiting-list responses arrive from the server.
 	 */
 	private List<WaitingListObserver> waitingListObservers = new ArrayList<>();
-
+	/*
+	 * A list of observers that handle park entrance control responses.
+	 */
+	private List<ParkEntranceObserver> parkEntranceObservers = new ArrayList<>();
 	/*
 	 * Observer pattern addition for make order screens.
 	 * These observers are notified when park names or make-order responses arrive from the server.
@@ -204,6 +208,26 @@ public class ClientController implements ChatIF {
 		if (observer != null && !waitingListObservers.contains(observer)) {
 			waitingListObservers.add(observer);
 		}
+	}
+
+	/*
+	 * Adds a park entrance observer.
+	 *
+	 * @param observer the observer to add
+	 */
+	public void addParkEntranceObserver(ParkEntranceObserver observer) {
+		if (observer != null && !parkEntranceObservers.contains(observer)) {
+			parkEntranceObservers.add(observer);
+		}
+	}
+
+	/*
+	 * Removes a park entrance observer.
+	 *
+	 * @param observer the observer to remove
+	 */
+	public void removeParkEntranceObserver(ParkEntranceObserver observer) {
+		parkEntranceObservers.remove(observer);
 	}
 
 	/*
@@ -401,6 +425,50 @@ public class ClientController implements ChatIF {
 				new Message(orderNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
 		);
 	}
+	
+	/*
+	 * Sends a request to check in visitors using an order confirmation code.
+	 *
+	 * @param parkEntranceMessage the check-in request data
+	 */
+	public void requestCheckInOrder(ParkEntranceMessage parkEntranceMessage) {
+		client.handleMessageFromClientUI(
+				new Message(parkEntranceMessage, Protocol.CHECK_IN_ORDER_REQUEST)
+		);
+	}
+
+	/*
+	 * Sends a request to check out visitors using an order confirmation code.
+	 *
+	 * @param parkEntranceMessage the check-out request data
+	 */
+	public void requestCheckOutVisit(ParkEntranceMessage parkEntranceMessage) {
+		client.handleMessageFromClientUI(
+				new Message(parkEntranceMessage, Protocol.CHECK_OUT_VISIT_REQUEST)
+		);
+	}
+
+	/*
+	 * Sends a request to create an occasional visit.
+	 *
+	 * @param parkEntranceMessage the occasional visit request data
+	 */
+	public void requestOccasionalVisit(ParkEntranceMessage parkEntranceMessage) {
+		client.handleMessageFromClientUI(
+				new Message(parkEntranceMessage, Protocol.OCCASIONAL_VISIT_REQUEST)
+		);
+	}
+
+	/*
+	 * Sends a request to get the current number of visitors in a park.
+	 *
+	 * @param parkEntranceMessage the current visitors request data
+	 */
+	public void requestCurrentVisitors(ParkEntranceMessage parkEntranceMessage) {
+		client.handleMessageFromClientUI(
+				new Message(parkEntranceMessage, Protocol.GET_CURRENT_VISITORS_REQUEST)
+		);
+	}
 
 	/*
 	 * This method overrides the method in the ChatIF interface.
@@ -522,13 +590,44 @@ public class ClientController implements ChatIF {
 				OperationResponse response = (OperationResponse) m.getData();
 				notifyOccasionalCustomerAccessResult(response);
 				break;
+			case CHECK_IN_ORDER_SUCCESS:
+				notifyCheckInOrderResult(true, (ParkEntranceMessage) m.getData());
+				break;
 
+			case CHECK_IN_ORDER_FAILURE:
+				notifyCheckInOrderResult(false, (ParkEntranceMessage) m.getData());
+				break;
+
+			case CHECK_OUT_VISIT_SUCCESS:
+				notifyCheckOutVisitResult(true, (ParkEntranceMessage) m.getData());
+				break;
+
+			case CHECK_OUT_VISIT_FAILURE:
+				notifyCheckOutVisitResult(false, (ParkEntranceMessage) m.getData());
+				break;
+
+			case OCCASIONAL_VISIT_SUCCESS:
+				notifyOccasionalVisitResult(true, (ParkEntranceMessage) m.getData());
+				break;
+
+			case OCCASIONAL_VISIT_FAILURE:
+				notifyOccasionalVisitResult(false, (ParkEntranceMessage) m.getData());
+				break;
+
+			case GET_CURRENT_VISITORS_SUCCESS:
+				notifyCurrentVisitorsReceived(true, (ParkEntranceMessage) m.getData());
+				break;
+
+			case GET_CURRENT_VISITORS_FAILURE:
+				notifyCurrentVisitorsReceived(false, (ParkEntranceMessage) m.getData());
+				break;
 			default:
 				System.out.println("Error: Server Response Unknown in ClientController display "
 						+ m.getType());
 			}
 		});
 	}
+	
 	
 	/*
 	 * This function is used to check if a given object is a list of waiting list
@@ -644,6 +743,54 @@ public class ClientController implements ChatIF {
 	private void notifyParksReceived(List<ParkInfo> parks) {
 		for (ParkObserver observer : parkObservers) {
 			observer.onParksReceived(parks);
+		}
+	}
+	
+	/*
+	 * Notifies all park entrance observers about a check-in result.
+	 *
+	 * @param success             true if check-in succeeded
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
+	private void notifyCheckInOrderResult(boolean success, ParkEntranceMessage parkEntranceMessage) {
+		for (ParkEntranceObserver observer : parkEntranceObservers) {
+			observer.onCheckInOrderResult(success, parkEntranceMessage);
+		}
+	}
+
+	/*
+	 * Notifies all park entrance observers about a check-out result.
+	 *
+	 * @param success             true if check-out succeeded
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
+	private void notifyCheckOutVisitResult(boolean success, ParkEntranceMessage parkEntranceMessage) {
+		for (ParkEntranceObserver observer : parkEntranceObservers) {
+			observer.onCheckOutVisitResult(success, parkEntranceMessage);
+		}
+	}
+
+	/*
+	 * Notifies all park entrance observers about an occasional visit result.
+	 *
+	 * @param success             true if the occasional visit was created successfully
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
+	private void notifyOccasionalVisitResult(boolean success, ParkEntranceMessage parkEntranceMessage) {
+		for (ParkEntranceObserver observer : parkEntranceObservers) {
+			observer.onOccasionalVisitResult(success, parkEntranceMessage);
+		}
+	}
+
+	/*
+	 * Notifies all park entrance observers about the current visitors count.
+	 *
+	 * @param success             true if the current visitors count was loaded successfully
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
+	private void notifyCurrentVisitorsReceived(boolean success, ParkEntranceMessage parkEntranceMessage) {
+		for (ParkEntranceObserver observer : parkEntranceObservers) {
+			observer.onCurrentVisitorsReceived(success, parkEntranceMessage);
 		}
 	}
 
