@@ -23,7 +23,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * The single instance of SubscriberConnection.
 	 */
 	private static SubscriberConnection instance;
-
+	
 	/**
 	 * Private constructor for Singleton.
 	 * 
@@ -45,6 +45,8 @@ public class SubscriberConnection extends AbstractDBConnection {
 	private final String CREDIT_CARD_LAST4 = "credit_card_last4";
 	private final String USERNAME = "username";
 	private final String PASSWORD = "password";
+
+
 	/**
 	 * Returns the single instance of SubscriberConnection.
 	 * 
@@ -69,25 +71,6 @@ public class SubscriberConnection extends AbstractDBConnection {
 	@Override
 	protected String getTableName() {
 		return ConstantsDBTableNames.SUBSCRIBER;
-	}
-
-	/**
-	 * This method returns a subscriber by subscriber ID.
-	 * 
-	 * The subscriber ID is used by visitors to identify themselves in the system and
-	 * to make orders.
-	 * 
-	 * @param subscriberId the subscriber ID
-	 * @return a ResultSet containing the subscriber data if the subscriber exists
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getSubscriberById(int subscriberId) throws SQLException {
-		String sql = "SELECT * FROM subscriber WHERE subscriber_id = ?;";
-
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, subscriberId);
-
-		return pstmt.executeQuery();
 	}
 
 	/**
@@ -121,29 +104,31 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 */
 	public Subscriber findSubscriberById(int subscriberId) throws SQLException {
 		String query = selectByFields(
-				new String[] { SUBSCRIBER_ID, SUBSCRIBER_NAME, SUBSCRIBER_EMAIL },
-				new String[] { SUBSCRIBER_ID }
+				new String[] {
+						SUBSCRIBER_ID,
+						SUBSCRIBER_NAME,
+						SUBSCRIBER_EMAIL
+				},
+				new String[] {
+						SUBSCRIBER_ID
+				}
 		);
 
-		PreparedStatement pstmt = conn.prepareStatement(query);
-		pstmt.setInt(1, subscriberId);
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setInt(1, subscriberId);
 
-		ResultSet rs = pstmt.executeQuery();
-
-		Subscriber subscriber = null;
-
-		if (rs.next()) {
-			subscriber = new Subscriber(
-					rs.getInt(SUBSCRIBER_ID),
-					rs.getString(SUBSCRIBER_NAME),
-					rs.getString(SUBSCRIBER_EMAIL)
-			);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return new Subscriber(
+							rs.getInt(SUBSCRIBER_ID),
+							rs.getString(SUBSCRIBER_NAME),
+							rs.getString(SUBSCRIBER_EMAIL)
+					);
+				}
+			}
 		}
 
-		rs.close();
-		pstmt.close();
-
-		return subscriber;
+		return null;
 	}
 
 	/**
@@ -301,6 +286,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	public void registerSubscriber(RegisterSubscriberRequest request) throws SQLException {
 		String sql = "INSERT INTO `" + getTableName() + "` "
 				+ "("
+				+ SUBSCRIBER_ID + ", "
 				+ SUBSCRIBER_NAME + ", "
 				+ SUBSCRIBER_ID_NUMBER + ", "
 				+ SUBSCRIBER_PHONE + ", "
@@ -310,30 +296,51 @@ public class SubscriberConnection extends AbstractDBConnection {
 				+ CREDIT_CARD_LAST4 + ", "
 				+ USERNAME + ", "
 				+ PASSWORD
-				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			String fullName = request.getFirstName() + " " + request.getLastName();
 
-			pstmt.setString(1, fullName);
-			pstmt.setString(2, request.getIdNumber());
-			pstmt.setString(3, request.getPhone());
-			pstmt.setString(4, request.getEmail());
-			pstmt.setInt(5, request.getFamilyMembersCount());
-			pstmt.setString(6, request.getPaymentMethod());
+			int subscriberId = Integer.parseInt(request.getIdNumber());
+
+			pstmt.setInt(1, subscriberId);
+			pstmt.setString(2, fullName);
+			pstmt.setString(3, request.getIdNumber());
+			pstmt.setString(4, request.getPhone());
+			pstmt.setString(5, request.getEmail());
+			pstmt.setInt(6, request.getFamilyMembersCount());
+			pstmt.setString(7, request.getPaymentMethod());
 
 			if (request.getCreditCardLast4() == null || request.getCreditCardLast4().trim().isEmpty()) {
-				pstmt.setNull(7, java.sql.Types.VARCHAR);
+				pstmt.setNull(8, java.sql.Types.VARCHAR);
 			} else {
-				pstmt.setString(7, request.getCreditCardLast4());
+				pstmt.setString(8, request.getCreditCardLast4());
 			}
 
-			pstmt.setString(8, request.getUsername());
-			pstmt.setString(9, request.getPassword());
+			pstmt.setString(9, request.getUsername());
+			pstmt.setString(10, request.getPassword());
 
 			pstmt.executeUpdate();
 		}
 	}
 	
-	
+	/*
+	 * this method gets the subscriber's phone by their ID
+	 * @param id the user's id
+	 * @return the phone number
+	 * @throws SQLException if the query failed
+	 */
+	public String getPhoneNumberById(int id) throws SQLException {
+		String sql = selectByFields(new String[] {SUBSCRIBER_PHONE}, new String[] {SUBSCRIBER_ID});
+		
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, id);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if(rs.next())
+					return rs.getString(SUBSCRIBER_PHONE);
+			}
+		}
+		return null;
+	}
+
 }

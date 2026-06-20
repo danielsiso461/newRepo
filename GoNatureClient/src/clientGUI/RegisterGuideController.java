@@ -14,7 +14,18 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-public class RegisterGuideController {
+
+import clientCommon.SearchSubscriberObserver;
+import common.OperationResponse;
+import common.Subscriber;
+import javafx.application.Platform;
+
+import clientCommon.RegisterGuideObserver;
+import common.GuideRegistrationRequest;
+import common.OperationResponse;
+import javafx.application.Platform;
+
+public class RegisterGuideController implements SearchSubscriberObserver, RegisterGuideObserver {
 
 	private ClientController clientController;
 	private Employee loggedInEmployee;
@@ -43,7 +54,12 @@ public class RegisterGuideController {
      * @param clientController the active client controller
      */
     public void setClientController(ClientController clientController) {
-        this.clientController = clientController;
+    	this.clientController = clientController;
+
+    	if (this.clientController != null) {
+    		this.clientController.addSearchSubscriberObserver(this);
+    		this.clientController.addRegisterGuideObserver(this);
+    	}
     }
 
     /*
@@ -67,44 +83,98 @@ public class RegisterGuideController {
 
     @FXML
     private void handleSearchSubscriber(ActionEvent event) {
-        String subscriberId = subscriberIdField.getText();
+    	String subscriberIdText = subscriberIdField.getText();
 
-        if (subscriberId == null || subscriberId.trim().isEmpty()) {
-            messageLabel.setText("Please enter subscriber ID.");
-            return;
-        }
+    	if (subscriberIdText == null || subscriberIdText.trim().isEmpty()) {
+    		messageLabel.setText("Please enter subscriber ID.");
+    		return;
+    	}
 
-        System.out.println("Search subscriber clicked. ID = " + subscriberId);
+    	int subscriberId;
 
-        // זמני בלבד עד שנחבר לשרת ול-DB
-        subscriberNameLabel.setText("Example Subscriber");
-        subscriberEmailLabel.setText("example@email.com");
-        messageLabel.setText("Subscriber found.");
+    	try {
+    		subscriberId = Integer.parseInt(subscriberIdText.trim());
+    	} catch (NumberFormatException e) {
+    		messageLabel.setText("Subscriber ID must be a number.");
+    		return;
+    	}
+
+    	if (clientController == null) {
+    		messageLabel.setText("Client is not connected to server.");
+    		return;
+    	}
+
+    	System.out.println("Search subscriber clicked. ID = " + subscriberId);
+
+    	messageLabel.setText("Searching subscriber...");
+    	subscriberNameLabel.setText("-");
+    	subscriberEmailLabel.setText("-");
+
+    	clientController.requestSearchSubscriber(subscriberId);
     }
 
     @FXML
     private void handleRegisterGuide(ActionEvent event) {
-        String subscriberId = subscriberIdField.getText();
-        String organizationName = organizationNameField.getText();
-        String guideStatus = guideStatusComboBox.getValue();
+    	String subscriberIdText = subscriberIdField.getText();
+    	String organizationName = organizationNameField.getText();
+    	String guideStatus = guideStatusComboBox.getValue();
 
-        if (subscriberId == null || subscriberId.trim().isEmpty()) {
-            messageLabel.setText("Please search subscriber first.");
-            return;
-        }
+    	if (subscriberIdText == null || subscriberIdText.trim().isEmpty()) {
+    		messageLabel.setText("Please search subscriber first.");
+    		return;
+    	}
 
-        if (organizationName == null || organizationName.trim().isEmpty()) {
-            messageLabel.setText("Please enter organization name.");
-            return;
-        }
+    	int subscriberId;
 
-        System.out.println("Register guide clicked");
-        System.out.println("Subscriber ID = " + subscriberId);
-        System.out.println("Organization Name = " + organizationName);
-        System.out.println("Guide Status = " + guideStatus);
+    	try {
+    		subscriberId = Integer.parseInt(subscriberIdText.trim());
+    	} catch (NumberFormatException e) {
+    		messageLabel.setText("Subscriber ID must be a number.");
+    		return;
+    	}
 
-        // זמני בלבד עד שנחבר לשרת ול-DB
-        messageLabel.setText("Guide registered successfully.");
+    	if (organizationName == null || organizationName.trim().isEmpty()) {
+    		messageLabel.setText("Please enter organization name.");
+    		return;
+    	}
+
+    	if (guideStatus == null || guideStatus.trim().isEmpty()) {
+    		messageLabel.setText("Please select guide status.");
+    		return;
+    	}
+
+    	if (clientController == null) {
+    		messageLabel.setText("Client is not connected to server.");
+    		return;
+    	}
+
+    	if (loggedInEmployee == null) {
+    		messageLabel.setText("No logged-in employee was found.");
+    		return;
+    	}
+
+    	GuideRegistrationRequest request = new GuideRegistrationRequest(
+    			subscriberId,
+    			organizationName.trim(),
+    			guideStatus,
+    			loggedInEmployee.getEmployeeId()
+    	);
+
+    	messageLabel.setText("Registering guide...");
+
+    	clientController.requestRegisterGuide(request);
+    }
+    
+    @Override
+    public void onRegisterGuideResult(OperationResponse response) {
+    	Platform.runLater(() -> {
+    		if (response == null) {
+    			messageLabel.setText("No response from server.");
+    			return;
+    		}
+
+    		messageLabel.setText(response.getMessage());
+    	});
     }
 
     @FXML
@@ -118,28 +188,60 @@ public class RegisterGuideController {
         subscriberEmailLabel.setText("-");
         messageLabel.setText("");
     }
+    
+    /*
+     * Receives the search subscriber result from the ClientController.
+     * 
+     * @param response the response received from the server
+     */
+    @Override
+    public void onSearchSubscriberResult(OperationResponse response) {
+    	Platform.runLater(() -> {
+    		if (response == null) {
+    			messageLabel.setText("No response from server.");
+    			return;
+    		}
+
+    		if (response.isSuccess()) {
+    			Subscriber subscriber = (Subscriber) response.getData();
+
+    			subscriberNameLabel.setText(subscriber.getSubscriberName());
+    			subscriberEmailLabel.setText(subscriber.getSubscriberEmail());
+    			messageLabel.setText(response.getMessage());
+    		} else {
+    			subscriberNameLabel.setText("-");
+    			subscriberEmailLabel.setText("-");
+    			messageLabel.setText(response.getMessage());
+    		}
+    	});
+    }
 
     @FXML
     private void handleBack(ActionEvent event) {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
-            );
+    	try {
+    		if (clientController != null) {
+    			clientController.removeSearchSubscriberObserver(this);
+    			clientController.removeRegisterGuideObserver(this);
+    		}
 
-            Parent root = loader.load();
+    		FXMLLoader loader = new FXMLLoader(
+    				getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
+    		);
 
-            ServiceRepresentativeHomePageController controller = loader.getController();
-            controller.setClientController(clientController);
-            controller.setLoggedInEmployee(loggedInEmployee);
+    		Parent root = loader.load();
 
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setTitle("Service Representative Dashboard");
-            stage.setScene(new Scene(root));
-            stage.show();
+    		ServiceRepresentativeHomePageController controller = loader.getController();
+    		controller.setClientController(clientController);
+    		controller.setLoggedInEmployee(loggedInEmployee);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            messageLabel.setText("Could not return to service representative screen.");
-        }
+    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    		stage.setTitle("Service Representative Dashboard");
+    		stage.setScene(new Scene(root));
+    		stage.show();
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		messageLabel.setText("Could not return to service representative screen.");
+    	}
     }
 }

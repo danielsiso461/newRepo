@@ -3,6 +3,7 @@ package clientGUI;
 import java.util.List;
 import java.util.function.Consumer;
 
+import clientCommon.ParkObserver;
 import common.Message;
 import common.ParkInfo;
 import common.Protocol;
@@ -15,11 +16,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import clientCommon.ParkObserver;
-import java.util.List;
-
-import clientCommon.ParkObserver;
-import common.ParkInfo;
 
 /**
  * This class is the JavaFX controller for the park selection screen.
@@ -235,12 +231,13 @@ public class ParkSelectionPageController implements ParkObserver {
 	public ParkInfo getSelectedPark() {
 		return selectedPark;
 	}
-	
+
 	/**
 	 * This method is called when park data is received from the server.
 	 * 
 	 * @param parks the active parks received from the server
 	 */
+	@Override
 	public void onParksReceived(List<ParkInfo> parks) {
 		setParks(parks);
 	}

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.Message;
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 
 /**
@@ -31,28 +31,18 @@ public final class OrderConnection extends AbstractDBConnection {
 	private final String CONF_CODE = "confirmation_code";
 	private final String USER_ID = "subscriber_id";
 	private final String PLACEMENT_DATE = "date_of_placing_order";
-	private final String CUSTOMER_ID_NUMBER = "customer_id_number";
-
-	/**
-	 * The park id column in the order table.
-	 */
 	private final String PARK_ID = "park_id";
-
-	/**
-	 * The guide id column in the order table.
-	 */
 	private final String GUIDE_ID = "guide_id";
-
-	/**
-	 * The order status column in the order table.
-	 */
 	private final String ORDER_STATUS = "order_status";
-
-	/**
-	 * The order type column in the order table.
-	 */
 	private final String ORDER_TYPE = "order_type";
+	private final String ORDER_HOUR = "order_hour";
+	private final String CUSTOMER_ID = "customer_id";
+	private final String ORDER_EMAIL = "email";
 
+
+	/* this is used to generate confirmation codes */
+	private final int CONF_CODE_OFFSET = 100000;
+	
 	/**
 	 * Private constructor for Singleton.
 	 * 
@@ -98,23 +88,23 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method converts the current row of a ResultSet into an OrderRow object.
+	 * This method converts the current row of a ResultSet into an Order object.
 	 * 
 	 * @param index the row index used for display in the client table
 	 * @param rs    the ResultSet positioned on the current order row
-	 * @return an OrderRow object that represents the current order
+	 * @return an Order object that represents the current order
 	 * @throws SQLException if reading data from the ResultSet fails
 	 */
-	private OrderRow convertResultSetToOrderRow(int index, ResultSet rs) throws SQLException {
+	private Order convertResultSetToOrder(int index, ResultSet rs) throws SQLException {
 		Integer guideId = rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID);
 
-		return new OrderRow(
+		return new Order(
 				index,
 				rs.getInt(ORDER_NUMBER),
 				rs.getDate(ORDER_DATE).toLocalDate(),
 				rs.getInt(VISITOR_NUMBER),
 				rs.getInt(CONF_CODE),
-				rs.getInt(USER_ID),
+				rs.getInt(CUSTOMER_ID),
 				rs.getDate(PLACEMENT_DATE).toLocalDate(),
 				rs.getInt(PARK_ID),
 				guideId,
@@ -161,12 +151,12 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of the user's orders
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getUserOrders(Message m) throws SQLException {
+	public List<Order> getUserOrders(Message m) throws SQLException {
 		ensureConnection();
 
-		String sql = selectByFields(new String[] { "*" }, new String[] { USER_ID });
+		String sql = selectByFields(new String[] { "*" }, new String[] { CUSTOMER_ID });
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, Integer.parseInt((String) m.getData()));
@@ -175,7 +165,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -204,6 +194,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				INSERT INTO `order`
 				(
 					order_date,
+					order_hour,
 					number_of_visitors,
 					confirmation_code,
 					subscriber_id,
@@ -251,10 +242,10 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * This method returns one order by its order number.
 	 * 
 	 * @param orderNumber the order number
-	 * @return an OrderRow object if the order exists, otherwise null
+	 * @return an Order object if the order exists, otherwise null
 	 * @throws SQLException if the select query fails
 	 */
-	public OrderRow getOrderByNumber(int orderNumber) throws SQLException {
+	public Order getOrderByNumber(int orderNumber) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -268,7 +259,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					return convertResultSetToOrderRow(1, rs);
+					return convertResultSetToOrder(1, rs);
 				}
 			}
 		}
@@ -283,7 +274,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders that belong to the given park
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByPark(int parkId) throws SQLException {
+	public List<Order> getOrdersByPark(int parkId) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -293,7 +284,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -302,7 +293,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -317,7 +308,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders with the given status
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByStatus(String orderStatus) throws SQLException {
+	public List<Order> getOrdersByStatus(String orderStatus) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -327,7 +318,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, orderStatus);
@@ -336,7 +327,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -351,7 +342,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders with the given type
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByType(String orderType) throws SQLException {
+	public List<Order> getOrdersByType(String orderType) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -361,7 +352,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, orderType);
@@ -370,7 +361,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -605,7 +596,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of approved orders for the given park and date
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
+	public List<Order> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
 			throws SQLException {
 		ensureConnection();
 
@@ -618,7 +609,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_number;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -628,7 +619,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -677,11 +668,11 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * using their ID number.
 	 * 
 	 * @param customerIdNumber the ID number entered by the occasional customer
-	 * @return a list of OrderRow objects that belong to the given ID number
+	 * @return a list of Order objects that belong to the given ID number
 	 * @throws SQLException if the select query fails
 	 */
-	public ArrayList<OrderRow> getOrdersByCustomerIdNumber(String customerIdNumber) throws SQLException {
-		ArrayList<OrderRow> orders = new ArrayList<>();
+	public ArrayList<Order> getOrdersByCustomerIdNumber(String customerIdNumber) throws SQLException {
+		ArrayList<Order> orders = new ArrayList<>();
 
 		String query = selectByFields(
 				new String[] {
@@ -697,16 +688,18 @@ public final class OrderConnection extends AbstractDBConnection {
 						ORDER_TYPE
 				},
 				new String[] {
-						CUSTOMER_ID_NUMBER
+						CUSTOMER_ID
 				}
 		);
+
+		System.out.println("Occasional customer orders query = " + query);
 
 		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
 			pstmt.setString(1, customerIdNumber);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
-					OrderRow order = new OrderRow(
+					Order order = new Order(
 							rs.getInt(ORDER_NUMBER),
 							rs.getDate(ORDER_DATE).toLocalDate(),
 							rs.getInt(VISITOR_NUMBER),
@@ -726,6 +719,71 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return orders;
 	}
+
+	/* this method adds an order to the order table
+	 * @param o the order to add
+	 * @return the complete order including order ID and confirmation code
+	 * @throws SQLException if the process fails
+	 * */
+	public Order bookOrder(Order o) throws SQLException {
+		ensureConnection();
+		
+		StringBuilder sql = new StringBuilder();
+		sql.append("INSERT INTO `order` ("
+				+ ORDER_DATE + ", "
+				+ VISITOR_NUMBER + ", "
+				+ CUSTOMER_ID + ", "
+				+ PLACEMENT_DATE + ", "
+				+ PARK_ID + ", "
+				+ GUIDE_ID + ", "
+				+ ORDER_STATUS + ", "
+				+ ORDER_TYPE + ", "
+				+ ORDER_HOUR + ", "
+				+ ORDER_EMAIL);
+		if(o.getIsSubscribed())
+			sql.append(", " + USER_ID);
+		sql.append(") VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?");
+		if(o.getIsSubscribed())
+			sql.append(", ?");
+		sql.append(");");
+	
+		try (PreparedStatement ps = 
+				conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+			ps.setObject(1, o.getOrderDate());
+			ps.setInt(2, o.getVisitorNumber());
+			ps.setInt(3, o.getUserId());
+			ps.setObject(4, o.getPlacementDate());
+			ps.setInt(5, o.getParkId());
+			ps.setObject(6, o.getGuideId());
+			ps.setString(7, o.getOrderStatus());
+			ps.setString(8, o.getOrderType());
+			ps.setInt(9, o.getOrderHour());
+			ps.setString(10, o.getEmail());
+			if(o.getIsSubscribed())
+				ps.setInt(11, o.getUserId());
+			
+			ps.executeUpdate();
+			
+			try (ResultSet rs = ps.getGeneratedKeys()) {
+				if (rs.next())
+		            o.setOrderId(rs.getInt(1));
+			}
+			
+			// create confirmation code
+			int code = o.getOrderId() % CONF_CODE_OFFSET + CONF_CODE_OFFSET;
+			o.setConfirmationCode(code);
+			
+			List<Object> newValues = new ArrayList<>(), keyValues = new ArrayList<>();
+			newValues.add(code);
+			keyValues.add(o.getOrderId());
+			// set confirmation code in DB
+			updateFields(new String[] {CONF_CODE}, newValues, 
+						new String[] {ORDER_NUMBER}, keyValues);
+		}
+		
+		return o;
+	}
+
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */

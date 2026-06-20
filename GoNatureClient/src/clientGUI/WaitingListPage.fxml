@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="12.0"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="clientGUI.WaitingListController">
+
+   <children>
+
+      <!-- Page title. -->
+      <Label text="Join Waiting List">
+         <font>
+            <Font size="28.0" />
+         </font>
+      </Label>
+
+      <!-- Subscriber ID of the visitor who wants to join the waiting list. -->
+      <TextField fx:id="subscriberIdField" maxWidth="300.0" promptText="Subscriber ID" />
+
+      <!-- Park ID requested by the visitor. -->
+      <TextField fx:id="parkIdField" maxWidth="300.0" promptText="Park ID" />
+
+      <!-- Requested visit date and time. Format: yyyy-MM-ddTHH:mm -->
+      <TextField fx:id="requestedDateField" maxWidth="300.0" promptText="Requested Date: 2026-06-15T10:00" />
+
+      <!-- Number of visitors requested. -->
+      <TextField fx:id="visitorsField" maxWidth="300.0" promptText="Number of Visitors" />
+
+      <!-- Sends the waiting list request to the server. -->
+      <Button fx:id="joinButton" mnemonicParsing="false" onAction="#joinWaitingListClick" text="Join Waiting List">
+         <font>
+            <Font size="20.0" />
+         </font>
+      </Button>
+
+      <!-- Displays success, failure and validation messages. -->
+      <Label fx:id="messageLabel" wrapText="true" maxWidth="500.0">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Label>
+
+   </children>
+</VBox>

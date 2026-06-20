@@ -2,6 +2,8 @@ package server;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 import common.Message;
 import common.Protocol;
@@ -21,6 +23,7 @@ public final class Server extends AbstractServer {
 	private static Server instance = null;
 
 	private ServerAndControllerConnection serverController;
+	private Map<String, ConnectionToClient> currIdConnection = new HashMap<>();
 
 	/**
 	 * Constructs an instance of the server.
@@ -76,7 +79,7 @@ public final class Server extends AbstractServer {
 		if (m.getType() == Protocol.RETURN_ORDER) {
 			User u = makeUserFromConnectionToClient(client);
 			u.setUserId((String) m.getData());
-
+			
 			if (!serverController.addUserOnUserConnected(u)) {
 				try {
 					client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
@@ -87,13 +90,14 @@ public final class Server extends AbstractServer {
 				return;
 			} else {
 				client.setInfo("User", u);
+				if(currIdConnection.containsKey(u.getUserId()) == false)
+					currIdConnection.put(u.getUserId(), client);
 			}
 		}
 
 		// check if the user issued a disconnect
 		if (m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
-			User u = (User) client.getInfo("User");
-			serverController.removeUserOnUserDisconnected(u);
+			processClientDisconnection(client);
 			return;
 		}
 
@@ -102,12 +106,87 @@ public final class Server extends AbstractServer {
 			Message returnMessage = serverController.handleRequest(m);
 
 			if (returnMessage != null) {
+				if(returnMessage.getType() == Protocol.UPDATE_ORDER_SUCCESS || 
+					returnMessage.getType() == Protocol.UPDATE_ORDER_FAILURE) {
+					String messageId = ((User) client.getInfo("User")).getUserId();
+					ConnectionToClient c = currIdConnection.get(messageId);
+					c.sendToClient(returnMessage);
+					return;
+				}
 				client.sendToClient(returnMessage);
 			} else {
 				System.out.println("Error: request handling failure");
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
+		}
+	}
+	
+	/**
+	 * This method is called when a client disconnects from the server in an orderly way.
+	 * 
+	 * For example, this can happen when the client calls closeConnection().
+	 * The method delegates the actual disconnection handling to processClientDisconnection
+	 * in order to avoid duplicate code.
+	 *
+	 * @param client the client connection that was disconnected
+	 */
+	@Override
+	protected void clientDisconnected(ConnectionToClient client) {
+		processClientDisconnection(client);
+	}
+
+	/**
+	 * This method is called when an exception occurs in the client connection.
+	 * 
+	 * This usually happens when the client closes the window, the client process is
+	 * terminated, or the connection is lost unexpectedly.
+	 * The method delegates the actual disconnection handling to processClientDisconnection
+	 * in order to close the connection safely from the server side.
+	 *
+	 * @param client    the client connection where the exception occurred
+	 * @param exception the exception that caused the disconnection
+	 */
+	@Override
+	protected void clientException(ConnectionToClient client, Throwable exception) {
+		processClientDisconnection(client);
+	}
+
+	/**
+	 * Handles client disconnection in one central place.
+	 * 
+	 * This method is used both for orderly disconnection and for unexpected
+	 * disconnection. Since OCSF may sometimes call more than one disconnection
+	 * routine for the same client, the method first checks whether this client was
+	 * already processed.
+	 * 
+	 * If the client was not processed yet, the method marks it as disconnected,
+	 * removes the related User object from the server controller, and closes the
+	 * client connection safely.
+	 *
+	 * @param client the client connection that should be disconnected
+	 */
+	private void processClientDisconnection(ConnectionToClient client) {
+		if (client == null) {
+			return;
+		}
+
+		if (client.getInfo("Disconnected") != null) {
+			return;
+		}
+
+		client.setInfo("Disconnected", true);
+
+		User u = (User) client.getInfo("User");
+
+		if (u != null) {
+			serverController.removeUserOnUserDisconnected(u);
+		}
+
+		try {
+			client.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -148,6 +227,9 @@ public final class Server extends AbstractServer {
 				client.isAlive());
 	}
 
+	
+	
+	
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */

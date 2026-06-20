@@ -1,7 +1,6 @@
 package clientCommon;
 
 import java.util.List;
-
 import common.ParkInfo;
 
 /**

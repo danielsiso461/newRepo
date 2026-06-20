@@ -19,7 +19,7 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.List;
 
-import common.OrderRow;
+import common.Order;
 
 /*
  * This class is the controller for the occasional customer access screen.
@@ -125,7 +125,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			}
 
 			if (response.isSuccess()) {
-				ArrayList<OrderRow> orders = (ArrayList<OrderRow>) response.getData();
+				ArrayList<Order> orders = (ArrayList<Order>) response.getData();
 
 				messageLabel.setText("Orders found.");
 				openOrderTableScreen(orders);
@@ -181,7 +181,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 	 * 
 	 * @param orders the orders received from the server
 	 */
-	private void openOrderTableScreen(ArrayList<OrderRow> orders) {
+	private void openOrderTableScreen(ArrayList<Order> orders) {
 		try {
 			if (clientController != null) {
 				clientController.removeOccasionalCustomerAccessObserver(this);

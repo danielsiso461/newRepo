@@ -5,6 +5,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import common.GuideRegistrationRequest;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import common.GuideRegistrationRequest;
 
 /**
  * This class is the DB connector used when working with the guide table
@@ -22,12 +27,15 @@ public class GuideConnection extends AbstractDBConnection {
     /**
      * Table column names used by this DB connector
      */
-    private String GUIDE_ID = "guide_id";
-    private String SUBSCRIBER_ID = "subscriber_id";
-    private String AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id";
-    private String ORGANIZATION_NAME = "organization_name";
-    private String GUIDE_STATUS = "guide_status";
-
+    private final String 
+    					GUIDE_ID = "guide_id",
+    					SUBSCRIBER_ID = "subscriber_id",
+    					AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id",
+    					ORGANIZATION_NAME = "organization_name",
+    					GUIDE_STATUS = "guide_status";
+    /* this holds the active status of a guide*/    
+    private final String GUIDE_STATUS_ACTIVE = "active";
+    
     /**
      * Private constructor for Singleton
      * 
@@ -60,7 +68,7 @@ public class GuideConnection extends AbstractDBConnection {
     public String getTableName() {
         return ConstantsDBTableNames.GUIDE;
     }
-
+    
     /*
      * This method checks whether a subscriber is already registered as a guide
      * 
@@ -69,47 +77,70 @@ public class GuideConnection extends AbstractDBConnection {
      * @throws SQLException if the select query fails
      */
     public boolean isSubscriberAlreadyGuide(int subscriberId) throws SQLException {
-        String query = selectByFields(
-            new String[] { GUIDE_ID },
-            new String[] { SUBSCRIBER_ID }
-        );
+    	String query = selectByFields(
+    			new String[] {
+    					GUIDE_ID
+    			},
+    			new String[] {
+    					SUBSCRIBER_ID
+    			}
+    	);
 
-        PreparedStatement pstmt = conn.prepareStatement(query);
-        pstmt.setInt(1, subscriberId);
+    	try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+    		pstmt.setInt(1, subscriberId);
 
-        ResultSet rs = pstmt.executeQuery();
-
-        boolean exists = rs.next();
-
-        rs.close();
-        pstmt.close();
-
-        return exists;
+    		try (ResultSet rs = pstmt.executeQuery()) {
+    			return rs.next();
+    		}
+    	}
     }
 
-    public boolean registerGuide(GuideRegistrationRequest request) throws SQLException {
-        String query =
-            "INSERT INTO `" + getTableName() + "` " +
-            "(" + SUBSCRIBER_ID + ", " +
-                  AUTHORIZED_BY_EMPLOYEE_ID + ", " +
-                  ORGANIZATION_NAME + ", " +
-                  GUIDE_STATUS + ", created_at) " +
-            "VALUES (?, ?, ?, ?, NOW())";
+    public void registerGuide(GuideRegistrationRequest request) throws SQLException {
+    	String sql = "INSERT INTO `" + getTableName() + "` "
+    			+ "("
+    			+ SUBSCRIBER_ID + ", "
+    			+ ORGANIZATION_NAME + ", "
+    			+ GUIDE_STATUS + ", "
+    			+ AUTHORIZED_BY_EMPLOYEE_ID
+    			+ ") VALUES (?, ?, ?, ?);";
 
-        PreparedStatement pstmt = conn.prepareStatement(query);
+    	try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    		pstmt.setInt(1, request.getSubscriberId());
+    		pstmt.setString(2, request.getOrganizationName());
+    		pstmt.setString(3, request.getGuideStatus());
+    		pstmt.setInt(4, request.getAuthorizedByEmployeeId());
 
-        pstmt.setInt(1, request.getSubscriberId());
-        pstmt.setInt(2, request.getAuthorizedByEmployeeId());
-        pstmt.setString(3, request.getOrganizationName());
-        pstmt.setString(4, request.getGuideStatus());
-
-        int rows = pstmt.executeUpdate();
-
-        pstmt.close();
-
-        return rows == 1;
+    		pstmt.executeUpdate();
+    	}
     }
+    
+    /* This method checks whether a given id is an active, registered guide
+    * 
+    * @param id the id to check
+    * @return the id of the guide if true, null otherwise
+    * @throws SQLException if the select query fails
+    */
+    public Integer isActiveGuide(int id) throws SQLException {
+       String query = selectByFieldsAND(
+           new String[] { GUIDE_ID },
+           new String[] { SUBSCRIBER_ID, GUIDE_STATUS }
+       );
+       
+       PreparedStatement pstmt = conn.prepareStatement(query);
+       pstmt.setInt(1, id);
+       pstmt.setString(2, GUIDE_STATUS_ACTIVE);
 
+       ResultSet rs = pstmt.executeQuery();
+       
+       Integer exists = null;
+       if(rs.next())
+    	   exists = rs.getObject(GUIDE_ID, Integer.class);
+
+       rs.close();
+       pstmt.close();
+       return exists;
+    }
+    
     @Override
     protected Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
