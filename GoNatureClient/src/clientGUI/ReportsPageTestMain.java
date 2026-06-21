@@ -15,18 +15,17 @@ import javafx.stage.Stage;
 public class ReportsPageTestMain extends Application {
 
     private ClientController clientController;
-
+    private static final String HOST = "127.0.0.1";
     @Override
     public void start(Stage primaryStage) {
-        String host = "10.0.0.10";
 
-        int employeeId = 4;
-        String employeeRole = "department_manager";
+        int employeeId = 1;
+        String employeeRole = "park_manager";
         int employeeParkId = 1;
 
         try {
             clientController = new ClientController(
-                    host,
+            		HOST,
                     CommonConstants.DEFAULT_PORT,
                     String.valueOf(employeeId)
             );

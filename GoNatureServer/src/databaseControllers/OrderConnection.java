@@ -88,15 +88,23 @@ public final class OrderConnection extends AbstractDBConnection {
             newValues.add(um.getNumberOfVisitors());
         }
 
+        if (columnNames.isEmpty()) {
+            throw new SQLException("No order fields were selected for update.");
+        }
+
         keyColumns.add(ORDER_NUMBER);
         keyValues.add(um.getOrderId());
 
-        updateFields(
+        boolean updated = updateFields(
                 columnNames.toArray(new String[0]),
                 newValues,
                 keyColumns.toArray(new String[0]),
                 keyValues
         );
+
+        if (!updated) {
+            throw new SQLException("Failed to update order.");
+        }
     }
 
     public List<Order> getUserOrders(Message m) throws SQLException {
@@ -252,12 +260,15 @@ public final class OrderConnection extends AbstractDBConnection {
         }
     }
 
-    public boolean updateOrderStatus(int orderNumber, String newStatus, int changedByEmployeeId, String reason)
-            throws SQLException {
+    public boolean updateOrderStatus(int orderNumber, String newStatus,
+            int changedByEmployeeId, String reason) throws SQLException {
 
         ensureConnection();
 
-        String oldStatusSql = selectByFields(new String[] { ORDER_STATUS }, new String[] { ORDER_NUMBER });
+        String oldStatusSql = selectByFields(
+                new String[] { ORDER_STATUS },
+                new String[] { ORDER_NUMBER }
+        );
 
         String oldStatus;
 
@@ -279,12 +290,16 @@ public final class OrderConnection extends AbstractDBConnection {
         newValues.add(newStatus);
         keyValues.add(orderNumber);
 
-        updateFields(
+        boolean updated = updateFields(
                 new String[] { ORDER_STATUS },
                 newValues,
                 new String[] { ORDER_NUMBER },
                 keyValues
         );
+
+        if (!updated) {
+            return false;
+        }
 
         OrderStatusHistoryConnection.getInstance().addHistory(
                 orderNumber,
@@ -330,12 +345,16 @@ public final class OrderConnection extends AbstractDBConnection {
         newValues.add(parkId);
         keyValues.add(orderNumber);
 
-        updateFields(
+        boolean updated = updateFields(
                 new String[] { PARK_ID },
                 newValues,
                 new String[] { ORDER_NUMBER },
                 keyValues
         );
+
+        if (!updated) {
+            throw new SQLException("Failed to update order park.");
+        }
     }
 
     public void updateOrderGuide(int orderNumber, Integer guideId) throws SQLException {
@@ -347,12 +366,16 @@ public final class OrderConnection extends AbstractDBConnection {
         newValues.add(guideId);
         keyValues.add(orderNumber);
 
-        updateFields(
+        boolean updated = updateFields(
                 new String[] { GUIDE_ID },
                 newValues,
                 new String[] { ORDER_NUMBER },
                 keyValues
         );
+
+        if (!updated) {
+            throw new SQLException("Failed to update order guide.");
+        }
     }
 
     public void updateOrderType(int orderNumber, String orderType) throws SQLException {
@@ -364,12 +387,16 @@ public final class OrderConnection extends AbstractDBConnection {
         newValues.add(orderType);
         keyValues.add(orderNumber);
 
-        updateFields(
+        boolean updated = updateFields(
                 new String[] { ORDER_TYPE },
                 newValues,
                 new String[] { ORDER_NUMBER },
                 keyValues
         );
+
+        if (!updated) {
+            throw new SQLException("Failed to update order type.");
+        }
     }
 
     public List<Order> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
@@ -492,12 +519,16 @@ public final class OrderConnection extends AbstractDBConnection {
         newValues.add(code);
         keyValues.add(o.getOrderId());
 
-        updateFields(
+        boolean updated = updateFields(
                 new String[] { CONF_CODE },
                 newValues,
                 new String[] { ORDER_NUMBER },
                 keyValues
         );
+
+        if (!updated) {
+            throw new SQLException("Failed to update order confirmation code.");
+        }
 
         return o;
     }

@@ -18,6 +18,8 @@ import common.Protocol;
 import common.ReportRequest;
 import common.UpdateMessage;
 import javafx.application.Platform;
+import clientCommon.ParkParameterObserver;
+import common.ParkParameterChangeRequest;
 
 /**
  * Connects the client networking layer with the GUI controllers.
@@ -35,7 +37,9 @@ public class ClientController implements ChatIF {
     private List<ParkObserver> parkObservers = new ArrayList<>();
     private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
     private List<ReportObserver> reportObservers = new ArrayList<>();
-
+    private List<ParkParameterObserver> parkParameterObservers = new ArrayList<>();
+    
+    
     public ClientController(String host, int port, String id) throws IOException {
         client = new Client(host, port, this);
         this.id = id;
@@ -116,6 +120,34 @@ public class ClientController implements ChatIF {
             observer.onParksReceived(parks);
         }
     }
+    
+ // Park parameter observers
+
+    public void addParkParameterObserver(ParkParameterObserver observer) {
+        if (observer != null && !parkParameterObservers.contains(observer)) {
+            parkParameterObservers.add(observer);
+        }
+    }
+
+    public void removeParkParameterObserver(ParkParameterObserver observer) {
+        parkParameterObservers.remove(observer);
+    }
+
+    private void notifyPendingParkParameterRequestsReceived(
+            List<ParkParameterChangeRequest> requests) {
+
+        for (ParkParameterObserver observer : parkParameterObservers) {
+            observer.onPendingParkParameterRequestsReceived(requests);
+        }
+    }
+
+    private void notifyParkParameterOperationResponse(
+            OperationResponse response, Protocol responseType) {
+
+        for (ParkParameterObserver observer : parkParameterObservers) {
+            observer.onParkParameterOperationResponse(response, responseType);
+        }
+    }
 
     // Report observers
 
@@ -158,7 +190,60 @@ public class ClientController implements ChatIF {
             client.handleMessageFromClientUI(message);
         }
     }
+    
+    public void createParkParameterChangeRequest(int parkId, int employeeId,
+            String parameterName, String newValue) {
 
+        Object[] data = new Object[] {
+                parkId,
+                employeeId,
+                parameterName,
+                newValue
+        };
+
+        sendMessageToServer(new Message(
+                data,
+                Protocol.CREATE_PARK_PARAMETER_CHANGE_REQUEST
+        ));
+    }
+    
+    public void requestPendingParkParameterChangeRequests(int employeeId) {
+        sendMessageToServer(new Message(
+                employeeId,
+                Protocol.GET_PENDING_PARK_PARAMETER_CHANGE_REQUESTS
+        ));
+    }
+    
+    public void approveParkParameterChangeRequest(int requestId,
+            int employeeId, String reviewNote) {
+
+        Object[] data = new Object[] {
+                requestId,
+                employeeId,
+                reviewNote
+        };
+
+        sendMessageToServer(new Message(
+                data,
+                Protocol.APPROVE_PARK_PARAMETER_CHANGE_REQUEST
+        ));
+    }
+    
+    public void rejectParkParameterChangeRequest(int requestId,
+            int employeeId, String reviewNote) {
+
+        Object[] data = new Object[] {
+                requestId,
+                employeeId,
+                reviewNote
+        };
+
+        sendMessageToServer(new Message(
+                data,
+                Protocol.REJECT_PARK_PARAMETER_CHANGE_REQUEST
+        ));
+    }
+    
     // Messages from server
 
     @Override
@@ -168,6 +253,55 @@ public class ClientController implements ChatIF {
         }
 
         Platform.runLater(() -> handleServerMessage(message));
+    }
+    
+    private void handlePendingParkParameterRequestsResponse(Object data, Protocol responseType) {
+        if (!(data instanceof OperationResponse response)) {
+            OperationResponse invalidResponse = new OperationResponse(
+                    false,
+                    "Invalid pending requests response from server",
+                    null
+            );
+
+            notifyParkParameterOperationResponse(invalidResponse, responseType);
+            return;
+        }
+
+        if (!response.isSuccess()) {
+            notifyParkParameterOperationResponse(response, responseType);
+            return;
+        }
+
+        List<ParkParameterChangeRequest> requests =
+                parseParkParameterRequestMessage(response.getData());
+
+        if (requests == null) {
+            OperationResponse invalidDataResponse = new OperationResponse(
+                    false,
+                    "Invalid pending requests data from server",
+                    null
+            );
+
+            notifyParkParameterOperationResponse(invalidDataResponse, responseType);
+            return;
+        }
+
+        notifyPendingParkParameterRequestsReceived(requests);
+    }
+    
+    private void handleParkParameterOperationResponse(Object data, Protocol responseType) {
+        if (data instanceof OperationResponse response) {
+            notifyParkParameterOperationResponse(response, responseType);
+            return;
+        }
+
+        OperationResponse response = new OperationResponse(
+                false,
+                "Invalid park parameter response from server",
+                null
+        );
+
+        notifyParkParameterOperationResponse(response, responseType);
     }
 
     private void handleServerMessage(Message message) {
@@ -198,6 +332,17 @@ public class ClientController implements ChatIF {
         case RETURN_PARK_NAMES_FAILURE:
             notifyParkNamesMakeOrderObserver(null);
             break;
+            
+        case PENDING_PARK_PARAMETER_CHANGE_REQUESTS_RESULT:
+            handlePendingParkParameterRequestsResponse(message.getData(), type);
+            break;
+
+        case PARK_PARAMETER_CHANGE_REQUEST_CREATED:
+        case PARK_PARAMETER_CHANGE_REQUEST_APPROVED:
+        case PARK_PARAMETER_CHANGE_REQUEST_REJECTED:
+        case PARK_PARAMETER_CHANGE_REQUEST_FAILURE:
+            handleParkParameterOperationResponse(message.getData(), type);
+            break;
 
         case MAKE_ORDER_SUCCESS:
             notifyOrderMade((Order) message.getData());
@@ -219,6 +364,8 @@ public class ClientController implements ChatIF {
         case GET_REPORT_RESPONSE:
             handleReportResponse(message.getData());
             break;
+        
+        
 
         default:
             System.out.println("Error: unknown server response in ClientController: " + type);
@@ -343,4 +490,24 @@ public class ClientController implements ChatIF {
 
         return names;
     }
+    
+    
+    private List<ParkParameterChangeRequest> parseParkParameterRequestMessage(Object data) {
+        if (!(data instanceof List<?> rawList)) {
+            return null;
+        }
+
+        List<ParkParameterChangeRequest> requests = new ArrayList<>();
+
+        for (Object item : rawList) {
+            if (!(item instanceof ParkParameterChangeRequest)) {
+                return null;
+            }
+
+            requests.add((ParkParameterChangeRequest) item);
+        }
+
+        return requests;
+    }
+    
 }

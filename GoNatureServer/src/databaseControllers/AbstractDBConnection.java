@@ -52,14 +52,26 @@ public abstract class AbstractDBConnection {
     /**
      * General UPDATE query.
      */
-    public void updateFields(String[] columnNames, List<Object> newValues,
+    public boolean updateFields(String[] columnNames, List<Object> newValues,
             String[] keyColumns, List<Object> keyValues) throws SQLException {
 
         ensureConnection();
 
-        if (columnNames.length != newValues.size() || keyColumns.length != keyValues.size()) {
+        if (columnNames == null || newValues == null
+                || keyColumns == null || keyValues == null) {
             System.out.println("bad sql update request");
-            return;
+            return false;
+        }
+
+        if (columnNames.length != newValues.size()
+                || keyColumns.length != keyValues.size()) {
+            System.out.println("bad sql update request");
+            return false;
+        }
+
+        if (columnNames.length == 0 || keyColumns.length == 0) {
+            System.out.println("bad sql update request");
+            return false;
         }
 
         StringBuilder sql = new StringBuilder("UPDATE `" + getTableName() + "` SET ");
@@ -91,9 +103,11 @@ public abstract class AbstractDBConnection {
 
             if (rows > 0) {
                 System.out.println("Update completed successfully!");
-            } else {
-                System.out.println("Update failed: record not found.");
+                return true;
             }
+
+            System.out.println("Update failed: record not found.");
+            return false;
         }
     }
 

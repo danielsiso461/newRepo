@@ -43,6 +43,9 @@ public class ParkConnection extends AbstractDBConnection {
         return ConstantsDBTableNames.PARK;
     }
 
+    /**
+     * Converts a database row into a Park object.
+     */
     private Park convertResultSetToPark(ResultSet rs) throws SQLException {
         return new Park(
                 rs.getInt(PARK_ID),
@@ -52,8 +55,31 @@ public class ParkConnection extends AbstractDBConnection {
                 rs.getDouble(ESTIMATED_VISIT_DURATION_HOURS),
                 rs.getDouble(FULL_ENTRY_PRICE),
                 rs.getInt(IS_ACTIVE) == 1,
-                rs.getInt(PROMOTIONS) == 1
+                convertPromotionToBoolean(rs.getString(PROMOTIONS))
         );
+    }
+
+    /**
+     * Converts the promotions column from varchar to boolean.
+     * 
+     * Empty, null, "0", "false", "no", and "none" are treated as false.
+     * Any other value means that the park has some promotion.
+     */
+    private boolean convertPromotionToBoolean(String promotionValue) {
+        if (promotionValue == null) {
+            return false;
+        }
+
+        String value = promotionValue.trim().toLowerCase();
+
+        if (value.isEmpty()) {
+            return false;
+        }
+
+        return !value.equals("0")
+                && !value.equals("false")
+                && !value.equals("no")
+                && !value.equals("none");
     }
 
     /**
@@ -181,7 +207,7 @@ public class ParkConnection extends AbstractDBConnection {
 
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt(PROMOTIONS) == 1;
+                    return convertPromotionToBoolean(rs.getString(PROMOTIONS));
                 }
             }
         }
@@ -322,5 +348,76 @@ public class ParkConnection extends AbstractDBConnection {
         }
 
         return -1;
+    }
+
+    /**
+     * Updates one park parameter after a department manager approves a request.
+     */
+    public boolean updateParkParameter(int parkId, String parameterName, String newValue)
+            throws SQLException {
+
+        ensureConnection();
+
+        if (parameterName == null || parameterName.isBlank()
+                || newValue == null || newValue.isBlank()) {
+            throw new SQLException("Invalid park parameter update request.");
+        }
+
+        String columnName = getParkColumnByParameterName(parameterName);
+
+        if (columnName == null) {
+            throw new SQLException("Unknown park parameter: " + parameterName);
+        }
+
+        Object convertedValue = convertParkParameterValue(parameterName, newValue);
+
+        return updateFields(
+                new String[] { columnName },
+                List.of(convertedValue),
+                new String[] { PARK_ID },
+                List.of(parkId)
+        );
+    }
+
+    /**
+     * Converts a request parameter name to a real park table column name.
+     */
+    private String getParkColumnByParameterName(String parameterName) {
+        switch (parameterName) {
+
+        case MAX_CAPACITY:
+            return MAX_CAPACITY;
+
+        case PLACES_FOR_UNPLANNED_VISITORS:
+            return PLACES_FOR_UNPLANNED_VISITORS;
+
+        case ESTIMATED_VISIT_DURATION_HOURS:
+            return ESTIMATED_VISIT_DURATION_HOURS;
+
+        case PROMOTIONS:
+            return PROMOTIONS;
+
+        default:
+            return null;
+        }
+    }
+
+    /**
+     * Converts the new value from String to the correct DB value type.
+     */
+    private Object convertParkParameterValue(String parameterName, String newValue) {
+        switch (parameterName) {
+
+        case MAX_CAPACITY:
+        case PLACES_FOR_UNPLANNED_VISITORS:
+        case ESTIMATED_VISIT_DURATION_HOURS:
+            return Integer.parseInt(newValue);
+
+        case PROMOTIONS:
+            return newValue;
+
+        default:
+            return newValue;
+        }
     }
 }

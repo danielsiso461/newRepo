@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Set;
 
 import common.CommonConstants;
-import common.GuideRegistrationRequest;
 import common.Message;
 import common.OperationResponse;
 import common.Order;
@@ -31,6 +30,8 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
+import common.ParkParameterChangeRequest;
+
 
 /**
  * This class connects the networking part of the server and the server GUI.
@@ -225,6 +226,213 @@ public class ServerController implements ServerAndControllerConnection {
             addLog("ERROR - Failed to notify clients about parks update: " + e.getMessage());
         }
     }
+    
+    
+    private Message handleCreateParkParameterChangeRequest(Message m) {
+        addLog("Client requested to create park parameter change request.");
+
+        try {
+            if (!(m.getData() instanceof Object[] data)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Invalid park parameter change request data",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            int parkId = (int) data[0];
+            int requestedByEmployeeId = (int) data[1];
+            String parameterName = (String) data[2];
+            String newValue = (String) data[3];
+
+            if (!ec.isParkManager(requestedByEmployeeId)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Only park managers can request park parameter changes",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            int employeeParkId = ec.getEmployeeParkId(requestedByEmployeeId);
+
+            if (employeeParkId != parkId) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Park manager can request changes only for his own park",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            Park park = pc.getFullParkById(parkId);
+
+            if (park == null) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Park was not found",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            String oldValue = getCurrentParkParameterValue(park, parameterName);
+
+            if (oldValue == null) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Unknown park parameter",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            boolean created = pcrc.createChangeRequest(
+                    parkId,
+                    requestedByEmployeeId,
+                    parameterName,
+                    oldValue,
+                    newValue
+            );
+
+            if (!created) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Failed to create park parameter change request",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            OperationResponse response = new OperationResponse(
+                    true,
+                    "Park parameter change request was created successfully",
+                    null
+            );
+
+            addLog("Park parameter change request was created successfully.");
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_CREATED);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            addLog("ERROR - Failed to create park parameter change request: " + e.getMessage());
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Database error while creating park parameter change request",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            addLog("ERROR - Invalid park parameter change request data: " + e.getMessage());
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Failed to create park parameter change request",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+        }
+    }
+    
+    
+    private String getCurrentParkParameterValue(Park park, String parameterName) {
+        if (park == null || parameterName == null) {
+            return null;
+        }
+
+        switch (parameterName) {
+
+        case "max_capacity":
+            return String.valueOf(park.getMaxCapacity());
+
+        case "places_for_unplanned_visitors":
+            return String.valueOf(park.getPlacesForUnplannedVisitors());
+
+        case "estimated_visit_duration_hours":
+            return String.valueOf((int) park.getEstimatedVisitDurationHours());
+
+        case "promotions":
+            return String.valueOf(park.hasPromotions());
+
+        default:
+            return null;
+        }
+    }
+    
+    
+    private Message handleGetPendingParkParameterChangeRequests(Message m) {
+        addLog("Client requested pending park parameter change requests.");
+
+        try {
+            if (!(m.getData() instanceof Integer employeeId)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Invalid employee id",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            if (!ec.isDepartmentManager(employeeId)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Only department managers can view pending parameter change requests",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            List<ParkParameterChangeRequest> requests = pcrc.getPendingRequests();
+
+            OperationResponse response = new OperationResponse(
+                    true,
+                    "Pending park parameter change requests loaded successfully",
+                    requests
+            );
+
+            return new Message(response, Protocol.PENDING_PARK_PARAMETER_CHANGE_REQUESTS_RESULT);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            addLog("ERROR - Failed to load pending park parameter change requests: " + e.getMessage());
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Database error while loading pending requests",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            addLog("ERROR - Failed to load pending park parameter change requests: " + e.getMessage());
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Failed to load pending requests",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+        }
+    }
+    
 
     /**
      * Handles a request received from a client.
@@ -275,17 +483,23 @@ public class ServerController implements ServerAndControllerConnection {
         case REGISTER_GUIDE_REQUEST:
             return handleRegisterGuide(m);
 
-        /**
-         * Added for reports.
-         */
+        
         case GET_REPORT_REQUEST:
             return handleGetReport(m);
+            
+        case CREATE_PARK_PARAMETER_CHANGE_REQUEST:
+            return handleCreateParkParameterChangeRequest(m);
+
+        case GET_PENDING_PARK_PARAMETER_CHANGE_REQUESTS:
+            return handleGetPendingParkParameterChangeRequests(m);
 
         default:
             System.out.println("Error: client request unknown");
             addLog("ERROR - Unknown client request: " + type);
             return null;
         }
+        
+        
     }
 
     /**
@@ -768,38 +982,126 @@ public class ServerController implements ServerAndControllerConnection {
         addLog("Client requested approval of park parameter change request.");
 
         try {
-            Object[] data = (Object[]) m.getData();
+            if (!(m.getData() instanceof Object[] data)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Invalid approval request data",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
 
             int requestId = (int) data[0];
             int approvedByEmployeeId = (int) data[1];
-            String reviewNote = (String) data[2];
+            String reviewNote = data.length > 2 && data[2] != null
+                    ? data[2].toString().trim()
+                    : "";
 
-            addLog("Approving park parameter change request. Request ID: " + requestId
-                    + ", approved by employee ID: " + approvedByEmployeeId);
+            if (!ec.isDepartmentManager(approvedByEmployeeId)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Only department managers can approve parameter change requests",
+                        null
+                );
 
-            boolean approved = pcrc.approveRequest(requestId, approvedByEmployeeId, reviewNote);
-
-            if (approved) {
-                addLog("Park parameter change request approved successfully. Request ID: " + requestId);
-                addLog("Park data may have changed. Notifying all clients.");
-
-                notifyParksUpdated();
-
-                return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_APPROVED);
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
             }
 
-            addLog("Park parameter change request approval failed. Request ID: " + requestId);
-            return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            ParkParameterChangeRequest request = pcrc.getRequestById(requestId);
+
+            if (request == null) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Request was not found",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            if (!"pending".equals(request.getRequestStatus())) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Only pending requests can be approved",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            boolean parkUpdated = pc.updateParkParameter(
+                    request.getParkId(),
+                    request.getParameterName(),
+                    request.getNewValue()
+            );
+
+            if (!parkUpdated) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Failed to update park parameter",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            boolean approved = pcrc.approveRequest(
+                    requestId,
+                    approvedByEmployeeId,
+                    reviewNote
+            );
+
+            if (!approved) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Failed to approve park parameter change request",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            notifyParksUpdated();
+
+            String message = buildReviewNoteMessage(
+                    "Park parameter change request approved successfully.",
+                    reviewNote
+            );
+
+            addLog(message + " Request ID: " + requestId);
+
+            OperationResponse response = new OperationResponse(
+                    true,
+                    message,
+                    requestId
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_APPROVED);
 
         } catch (SQLException e) {
             e.printStackTrace();
             addLog("ERROR - Failed to approve park parameter change request: " + e.getMessage());
-            return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Database error while approving request",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
 
         } catch (Exception e) {
             e.printStackTrace();
             addLog("ERROR - Invalid approval request data: " + e.getMessage());
-            return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Failed to approve request",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
         }
     }
 
@@ -813,34 +1115,108 @@ public class ServerController implements ServerAndControllerConnection {
         addLog("Client requested rejection of park parameter change request.");
 
         try {
-            Object[] data = (Object[]) m.getData();
+            if (!(m.getData() instanceof Object[] data)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Invalid rejection request data",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
 
             int requestId = (int) data[0];
             int approvedByEmployeeId = (int) data[1];
-            String reviewNote = (String) data[2];
+            String reviewNote = data.length > 2 && data[2] != null
+                    ? data[2].toString().trim()
+                    : "";
 
-            addLog("Rejecting park parameter change request. Request ID: " + requestId
-                    + ", reviewed by employee ID: " + approvedByEmployeeId);
+            if (!ec.isDepartmentManager(approvedByEmployeeId)) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Only department managers can reject parameter change requests",
+                        null
+                );
 
-            boolean rejected = pcrc.rejectRequest(requestId, approvedByEmployeeId, reviewNote);
-
-            if (rejected) {
-                addLog("Park parameter change request rejected successfully. Request ID: " + requestId);
-                return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_REJECTED);
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
             }
 
-            addLog("Park parameter change request rejection failed. Request ID: " + requestId);
-            return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            ParkParameterChangeRequest request = pcrc.getRequestById(requestId);
+
+            if (request == null) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Request was not found",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            if (!"pending".equals(request.getRequestStatus())) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Only pending requests can be rejected",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            boolean rejected = pcrc.rejectRequest(
+                    requestId,
+                    approvedByEmployeeId,
+                    reviewNote
+            );
+
+            if (!rejected) {
+                OperationResponse response = new OperationResponse(
+                        false,
+                        "Failed to reject park parameter change request",
+                        null
+                );
+
+                return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+            }
+
+            String message = buildReviewNoteMessage(
+                    "Park parameter change request rejected successfully.",
+                    reviewNote
+            );
+
+            addLog(message + " Request ID: " + requestId);
+
+            OperationResponse response = new OperationResponse(
+                    true,
+                    message,
+                    requestId
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_REJECTED);
 
         } catch (SQLException e) {
             e.printStackTrace();
             addLog("ERROR - Failed to reject park parameter change request: " + e.getMessage());
-            return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Database error while rejecting request",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
 
         } catch (Exception e) {
             e.printStackTrace();
             addLog("ERROR - Invalid rejection request data: " + e.getMessage());
-            return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+            OperationResponse response = new OperationResponse(
+                    false,
+                    "Failed to reject request",
+                    null
+            );
+
+            return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
         }
     }
 
@@ -947,5 +1323,13 @@ public class ServerController implements ServerAndControllerConnection {
         } finally {
             closeDBConnection();
         }
+    }
+    
+    private String buildReviewNoteMessage(String baseMessage, String reviewNote) {
+        if (reviewNote == null || reviewNote.isBlank()) {
+            return baseMessage + " With no review note.";
+        }
+
+        return baseMessage + " With review note: \"" + reviewNote.trim() + "\"";
     }
 }
