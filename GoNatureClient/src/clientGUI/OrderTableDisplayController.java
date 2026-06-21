@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
-import common.OrderRow;
 import clientCommon.OrderObserver;
 import clientController.ClientController;
 import common.CancelOrderMessage;
@@ -394,33 +393,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * 
 	 * @param rows		the order data
 	 */
-	public void setData(List<?> rows) {
+	public void setData(List<Order> rows) {
 		Platform.runLater(() -> {
-			data.clear();
-
-			for (Object row : rows) {
-				if (row instanceof Order) {
-					data.add((Order) row);
-				} else if (row instanceof OrderRow) {
-					OrderRow orderRow = (OrderRow) row;
-
-					Order order = new Order(
-							orderRow.getOrderNumber(),
-							orderRow.getOrderId(),
-							orderRow.getOrderDate(),
-							orderRow.getVisitorNumber(),
-							orderRow.getConfCode(),
-							orderRow.getUserId(),
-							orderRow.getPlacementDate(),
-							orderRow.getParkId(),
-							orderRow.getGuideId(),
-							orderRow.getOrderStatus(),
-							orderRow.getOrderType()
-					);
-
-					data.add(order);
-				}
-			}
+			data.setAll(rows);
 		});
 	}
 
@@ -459,10 +434,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * @param rows 	the order list
 	 */
 	@Override
-	public void onOrdersReceived(List<?> rows) {
+	public void onOrdersReceived(List<Order> rows) {
 		setData(rows);
 	}
-
 	/*
 	 * this method handles updating the UI upon reply from 
 	 * the server to requesting an order update
@@ -477,31 +451,45 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			return;
 		}
 
+		int updatedOrderId = updateMessage.getOrderId();
+
 		if (success) {
 			notifLabel.setTextFill(Color.GREEN);
-			notifLabel.setText("Order update for order#:" +
-					updateMessage.getOrderNumber() + " succeeded.");
+			notifLabel.setText("Order update for order ID: " + updatedOrderId + " succeeded.");
 
-			// updating order in tableview - update is local, as it was confirmed by server
-			Order updatedRow = data.get(updateMessage.getOrderNumber() - 1);
+			boolean found = false;
 
-			if (updateMessage.getUpdateDate() != null) {
-				updatedRow.setOrderDate(updateMessage.getUpdateDate());
+			for (int i = 0; i < data.size(); i++) {
+				Order updatedRow = data.get(i);
+
+				if (updatedRow.getOrderId() != null && updatedRow.getOrderId() == updatedOrderId) {
+					if (updateMessage.getUpdateDate() != null) {
+						updatedRow.setOrderDate(updateMessage.getUpdateDate());
+					}
+
+					if (updateMessage.getNumberOfVisitors() > 0) {
+						updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
+					}
+
+					data.set(i, updatedRow);
+					found = true;
+					break;
+				}
 			}
 
-			if (updateMessage.getNumberOfVisitors() > 0) {
-				updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
+			if (!found) {
+				System.out.println("Updated order was not found in the local table: " + updatedOrderId);
 			}
-
-			data.set(updateMessage.getOrderNumber() - 1, updatedRow);
 		} else {
 			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Order update for order#:" +
-					updateMessage.getOrderNumber() + " failed.");
+			notifLabel.setText("Order update for order ID: " + updatedOrderId + " failed.");
 		}
 
-		// removing order from waiting list
-		removeOrderFromUpdateWaitingList(updateMessage.getOrderId());
+		removeOrderFromUpdateWaitingList(updatedOrderId);
+
+		if (selectedRow != null) {
+			onRowSelected(selectedRow);
+		}
 	}
 
 	/*

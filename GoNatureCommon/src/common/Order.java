@@ -159,6 +159,89 @@ public class Order implements Serializable {
 		this.email = email;
 	}
 	
+	/**
+	 * Constructs an order using the same structure that was previously used by Order.
+	 * <p>
+	 * This constructor is useful when loading existing orders from the database,
+	 * where the order number also represents the order ID, and the subscriber ID
+	 * represents the user ID related to the order.
+	 *
+	 * @param orderNumber        the order number
+	 * @param orderDate          the date of the order
+	 * @param numberOfVisitors   the number of visitors in the order
+	 * @param confirmationCode   the confirmation code of the order
+	 * @param subscriberId       the subscriber ID related to the order
+	 * @param dateOfPlacingOrder the date on which the order was placed
+	 * @param parkId             the park ID of the order
+	 * @param guideId            the guide ID, or null for private orders
+	 * @param orderStatus        the current status of the order
+	 * @param orderType          the type of the order
+	 */
+	public Order(int orderNumber, LocalDate orderDate, int numberOfVisitors,
+			int confirmationCode, int subscriberId, LocalDate dateOfPlacingOrder,
+			int parkId, Integer guideId, String orderStatus, String orderType) {
+
+		this.orderNumber = orderNumber;
+		this.orderId = orderNumber;
+		this.orderDate = orderDate;
+		this.visitorNumber = numberOfVisitors;
+		this.confCode = confirmationCode;
+		this.userId = subscriberId;
+		this.placementDate = dateOfPlacingOrder;
+		this.parkId = parkId;
+		this.guideId = guideId;
+		this.orderStatus = orderStatus;
+		this.orderType = orderType;
+	}
+	
+	/**
+	 * Returns the subscriber ID related to the order.
+	 * <p>
+	 * In the current Order class, the subscriber ID is represented by the userId field.
+	 * This method is kept for compatibility with code that previously worked with Order.
+	 *
+	 * @return the subscriber ID
+	 */
+	public Integer getSubscriberId() {
+		return userId;
+	}
+
+	/**
+	 * Returns the number of visitors in the order.
+	 * <p>
+	 * This method is an alias for getVisitorNumber and is kept for clearer naming
+	 * and compatibility with existing UI code.
+	 *
+	 * @return the number of visitors
+	 */
+	public Integer getNumberOfVisitors() {
+		return visitorNumber;
+	}
+
+	/**
+	 * Returns the confirmation code of the order.
+	 * <p>
+	 * This method is an alias for getConfCode and is kept for compatibility
+	 * with existing code that uses the full field name.
+	 *
+	 * @return the confirmation code
+	 */
+	public Integer getConfirmationCode() {
+		return confCode;
+	}
+
+	/**
+	 * Returns the date on which the order was placed.
+	 * <p>
+	 * This method is an alias for getPlacementDate and is kept for compatibility
+	 * with existing code that uses the database field name.
+	 *
+	 * @return the date of placing the order
+	 */
+	public LocalDate getDateOfPlacingOrder() {
+		return placementDate;
+	}
+	
 	/*
 	 * getter that returns the order number
 	 * 

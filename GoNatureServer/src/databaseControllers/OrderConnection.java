@@ -10,7 +10,6 @@ import java.util.List;
 import common.Message;
 import common.Order;
 import common.UpdateMessage;
-import common.OrderRow;
 
 /**
  * This class is the DB connector used when working with the orders table.
@@ -34,6 +33,9 @@ public final class OrderConnection extends AbstractDBConnection {
 	private final String SUBSCRIBER_ID = "subscriber_id";
 	private final String PLACEMENT_DATE = "date_of_placing_order";
 	private final String CUSTOMER_ID_NUMBER = "customer_id_number";
+	private final String ORDER_HOUR = "order_hour";
+	private final String ORDER_CUSTOMER_ID = "customer_id";
+	private final String EMAIL = "email";
 
 	/**
 	 * The park id column in the order table.
@@ -716,6 +718,42 @@ public final class OrderConnection extends AbstractDBConnection {
 	public Order bookOrder(Order o) throws SQLException {
 		ensureConnection();
 
+		if (o == null) {
+			throw new SQLException("Order is missing.");
+		}
+
+		if (o.getOrderDate() == null) {
+			throw new SQLException("Order date is missing.");
+		}
+
+		if (o.getVisitorNumber() == null) {
+			throw new SQLException("Number of visitors is missing.");
+		}
+
+		if (o.getUserId() == null) {
+			throw new SQLException("User ID is missing.");
+		}
+
+		if (o.getParkId() == null) {
+			throw new SQLException("Park ID is missing.");
+		}
+
+		if (o.getPlacementDate() == null) {
+			o.setPlacementDate(java.time.LocalDate.now());
+		}
+
+		if (o.getOrderStatus() == null || o.getOrderStatus().isBlank()) {
+			o.setOrderStatus(Order.ORDER_STATUS_PENDING);
+		}
+
+		if (o.getOrderType() == null || o.getOrderType().isBlank()) {
+			if (o.getGuideId() == null) {
+				o.setOrderType(Order.ORDER_TYPE_PRIVATE);
+			} else {
+				o.setOrderType(Order.ORDER_TYPE_ORGANIZED);
+			}
+		}
+
 		int newOrderNumber = getNextOrderNumber();
 
 		// create confirmation code
@@ -726,21 +764,30 @@ public final class OrderConnection extends AbstractDBConnection {
 				+ ORDER_DATE + ", "
 				+ VISITOR_NUMBER + ", "
 				+ CONF_CODE + ", "
-				+ CUSTOMER_ID + ", "
+				+ SUBSCRIBER_ID + ", "
 				+ PLACEMENT_DATE + ", "
 				+ PARK_ID + ", "
 				+ GUIDE_ID + ", "
 				+ ORDER_STATUS + ", "
-				+ ORDER_TYPE
-				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+				+ ORDER_TYPE + ", "
+				+ ORDER_HOUR + ", "
+				+ ORDER_CUSTOMER_ID + ", "
+				+ EMAIL
+				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
 		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			ps.setInt(1, newOrderNumber);
-			ps.setObject(2, o.getOrderDate());
+			ps.setDate(2, java.sql.Date.valueOf(o.getOrderDate()));
 			ps.setInt(3, o.getVisitorNumber());
 			ps.setInt(4, code);
-			ps.setInt(5, o.getUserId());
-			ps.setObject(6, o.getPlacementDate());
+
+			if (o.getIsSubscribed()) {
+				ps.setInt(5, o.getUserId());
+			} else {
+				ps.setNull(5, java.sql.Types.INTEGER);
+			}
+
+			ps.setDate(6, java.sql.Date.valueOf(o.getPlacementDate()));
 			ps.setInt(7, o.getParkId());
 
 			if (o.getGuideId() == null) {
@@ -751,60 +798,70 @@ public final class OrderConnection extends AbstractDBConnection {
 
 			ps.setString(9, o.getOrderStatus());
 			ps.setString(10, o.getOrderType());
+			ps.setInt(11, o.getOrderHour());
+			ps.setInt(12, o.getUserId());
+			ps.setString(13, o.getEmail() == null ? "" : o.getEmail());
 
 			ps.executeUpdate();
 
+			o.setOrderNumber(newOrderNumber);
 			o.setOrderId(newOrderNumber);
 			o.setConfirmationCode(code);
 		}
 
 		return o;
 	}
-
 	/**
 	 * This method returns all orders that belong to a specific customer id number.
 	 * 
-	 * This method is used for occasional customers, because they identify themselves
-	 * using their ID number.
+	 * The method receives an ID number and returns the matching orders.
+	 * It supports both subscribers and occasional customers.
 	 * 
-	 * @param customerIdNumber the ID number entered by the occasional customer
-	 * @return a list of OrderRow objects that belong to the given ID number
+	 * @param customerIdNumber the ID number entered by the customer
+	 * @return a list of Order objects that belong to the given ID number
 	 * @throws SQLException if the select query fails
 	 */
-	public ArrayList<OrderRow> getOrdersByCustomerIdNumber(String customerIdNumber) throws SQLException {
+	public ArrayList<Order> getOrdersByCustomerIdNumber(String customerIdNumber) throws SQLException {
 		ensureConnection();
 
-		ArrayList<OrderRow> orders = new ArrayList<>();
+		ArrayList<Order> orders = new ArrayList<>();
 
-		String query = selectByFields(
-				new String[] {
-						ORDER_NUMBER,
-						ORDER_DATE,
-						VISITOR_NUMBER,
-						CONF_CODE,
-						SUBSCRIBER_ID,
-						PLACEMENT_DATE,
-						PARK_ID,
-						GUIDE_ID,
-						ORDER_STATUS,
-						ORDER_TYPE
-				},
-				new String[] {
-						CUSTOMER_ID_NUMBER
-				}
-		);
+		String sql = """
+				SELECT
+				    o.order_number,
+				    o.order_date,
+				    o.number_of_visitors,
+				    o.confirmation_code,
+				    o.subscriber_id,
+				    o.date_of_placing_order,
+				    o.park_id,
+				    o.guide_id,
+				    o.order_status,
+				    o.order_type,
+				    o.order_hour,
+				    o.customer_id,
+				    o.email
+				FROM `order` o
+				LEFT JOIN subscriber s
+				    ON o.subscriber_id = s.subscriber_id
+				WHERE (CAST(o.customer_id AS CHAR) = ?
+				       OR s.subscriber_id_number = ?)
+				  AND o.order_status <> 'cancelled'
+				ORDER BY o.order_date;
+				""";
 
-		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, customerIdNumber);
+			pstmt.setString(2, customerIdNumber);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
-					OrderRow order = new OrderRow(
+					Order order = new Order(
 							rs.getInt(ORDER_NUMBER),
 							rs.getDate(ORDER_DATE).toLocalDate(),
 							rs.getInt(VISITOR_NUMBER),
 							rs.getInt(CONF_CODE),
-							rs.getInt(SUBSCRIBER_ID),
+							rs.getInt(ORDER_CUSTOMER_ID),
 							rs.getDate(PLACEMENT_DATE).toLocalDate(),
 							rs.getInt(PARK_ID),
 							rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID),
@@ -819,6 +876,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return orders;
 	}
+	
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */

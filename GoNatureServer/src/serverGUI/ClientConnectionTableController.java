@@ -57,7 +57,7 @@ public class ClientConnectionTableController {
 	private TableColumn<User, String> hostName; // Value injected by FXMLLoader
 
 	@FXML // fx:id="status"
-	private TableColumn<User, Boolean> status; // Value injected by FXMLLoader
+	private TableColumn<User, String> status; // Value injected by FXMLLoader
 
 	@FXML // fx:id="userId"
 	private TableColumn<User, String> userId; // Value injected by FXMLLoader
@@ -158,7 +158,6 @@ public class ClientConnectionTableController {
 					+ ", Host = " + u.getHostName());
 		});
 	}
-
 	/*
 	 * This method handles updating the data of a disconnected user.
 	 * 
@@ -169,14 +168,18 @@ public class ClientConnectionTableController {
 	 */
 	public void onUserDisconnected(User u) {
 		Platform.runLater(() -> {
-			data.set(u.getUserNumber() - 1, u);
+			int index = data.indexOf(u);
+
+			if (index >= 0) {
+				data.set(index, u);
+				userTable.refresh();
+			}
 
 			addLog("User disconnected: ID = " + u.getUserId()
 					+ ", IP = " + u.getUserIp()
 					+ ", Host = " + u.getHostName());
 		});
 	}
-
 	/*
 	 * This method adds a new message to the server log area.
 	 * 

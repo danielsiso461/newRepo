@@ -104,6 +104,14 @@ public class ClientController implements ChatIF {
 	public String getId() {
 		return id;
 	}
+	/*
+	 * Updates the ID of the currently connected user.
+	 * 
+	 * @param id the current user's ID
+	 */
+	public void setId(String id) {
+		this.id = id;
+	}
 
 	/*
 	 * Observer pattern addition.
@@ -133,8 +141,7 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param rows the received orders
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void notifyOrdersReceived(List rows) {
+	private void notifyOrdersReceived(List<Order> rows) {
 		for (OrderObserver observer : observers) {
 			observer.onOrdersReceived(rows);
 		}
@@ -536,11 +543,12 @@ public class ClientController implements ChatIF {
 	 * @param orderNumber the order number entered by the customer
 	 */
 	public void requestOccasionalCustomerAccess(int orderNumber) {
+		this.id = String.valueOf(orderNumber);
+
 		client.handleMessageFromClientUI(
 				new Message(orderNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
 		);
 	}
-
 	/*
 	 * Sends the server an occasional customer access request.
 	 * 
@@ -549,11 +557,12 @@ public class ClientController implements ChatIF {
 	 * @param customerIdNumber the ID number entered by the occasional customer
 	 */
 	public void requestOccasionalCustomerAccess(String customerIdNumber) {
+		this.id = customerIdNumber;
+
 		client.handleMessageFromClientUI(
 				new Message(customerIdNumber, Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST)
 		);
 	}
-
 	/*
 	 * Sends the server an employee login request.
 	 * 
@@ -703,7 +712,7 @@ public class ClientController implements ChatIF {
 				break;
 
 			case RETURN_ORDER:
-				List<?> rows = parseOrderMessage(m.getData());
+				List<Order> rows = parseOrderMessage(m.getData());
 
 				if (rows == null) {
 					break;
@@ -844,15 +853,15 @@ public class ClientController implements ChatIF {
 	 * 
 	 * @param o object to check
 	 */
-	private List<?> parseOrderMessage(Object o) {
-		List<Object> rows = new ArrayList<>();
+	private List<Order> parseOrderMessage(Object o) {
+		List<Order> rows = new ArrayList<>();
 
 		if (o instanceof List<?>) {
 			List<?> rawList = (List<?>) o;
 
 			for (Object row : rawList) {
-				if (row instanceof Order || row instanceof OrderRow) {
-					rows.add(row);
+				if (row instanceof Order) {
+					rows.add((Order) row);
 				} else {
 					return null;
 				}
@@ -863,7 +872,6 @@ public class ClientController implements ChatIF {
 
 		return rows;
 	}
-
 	/*
 	 * This method handles clean disconnect from the server
 	 * when disconnect is issued by the user.

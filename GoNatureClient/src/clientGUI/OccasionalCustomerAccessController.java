@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import clientCommon.OccasionalCustomerAccessObserver;
 import clientController.ClientController;
 import common.OperationResponse;
-import common.OrderRow;
+import common.Order;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -102,6 +102,12 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 
 		messageLabel.setText("Checking orders...");
 
+		// Save the current customer ID in the shared ClientController.
+		// This ID is later used by Make Order and Waiting List screens.
+		clientController.setId(customerIdNumber);
+
+		System.out.println("Saved customer ID in ClientController: " + clientController.getId());
+
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);
 	}
 
@@ -122,7 +128,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			}
 
 			if (response.isSuccess()) {
-				ArrayList<OrderRow> orders = (ArrayList<OrderRow>) response.getData();
+				ArrayList<Order> orders = (ArrayList<Order>) response.getData();
 
 				messageLabel.setText("Orders found.");
 				openOrderTableScreen(orders);
@@ -178,7 +184,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 	 * 
 	 * @param orders the orders received from the server
 	 */
-	private void openOrderTableScreen(ArrayList<OrderRow> orders) {
+	private void openOrderTableScreen(ArrayList<Order> orders) {
 		try {
 			if (clientController != null) {
 				clientController.removeOccasionalCustomerAccessObserver(this);

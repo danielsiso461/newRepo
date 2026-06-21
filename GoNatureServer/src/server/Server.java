@@ -5,8 +5,7 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import common.Message;
-import common.Protocol;
+import common.*;
 import ocsf.server.AbstractServer;
 import ocsf.server.ConnectionToClient;
 import serverCommon.ServerAndControllerConnection;
@@ -68,51 +67,29 @@ public final class Server extends AbstractServer {
 		if (msg == null) {
 			return;
 		}
-		if(!(msg instanceof Message))
-			return;
-		
-		Message m = (Message) msg;
 
-		// makes a user instance for a client
-		// if the id bound to the client is a duplicate it disconnects the client
-		// otherwise binds a User instance to the client
-		if (m.getType() == Protocol.RETURN_ORDER) {
-			User u = makeUserFromConnectionToClient(client);
-			u.setUserId((String) m.getData());
-			
-			if (!serverController.addUserOnUserConnected(u)) {
-				try {
-					client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
-					client.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				return;
-			} else {
-				client.setInfo("User", u);
-				if(currIdConnection.containsKey(u.getUserId()) == false)
-					currIdConnection.put(u.getUserId(), client);
-			}
+		if (!(msg instanceof Message)) {
+			return;
 		}
 
-		// check if the user issued a disconnect
+		Message m = (Message) msg;
+
+		// Check if the user issued a disconnect.
 		if (m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
 			processClientDisconnection(client);
 			return;
 		}
 
-		// handling client requests
+		// Register the client in the server table once we can identify him.
+		if (!registerClientIfNeeded(m, client)) {
+			return;
+		}
+
+		// Handling client requests.
 		try {
 			Message returnMessage = serverController.handleRequest(m);
 
 			if (returnMessage != null) {
-				if(returnMessage.getType() == Protocol.UPDATE_ORDER_SUCCESS || 
-					returnMessage.getType() == Protocol.UPDATE_ORDER_FAILURE) {
-					String messageId = ((User) client.getInfo("User")).getUserId();
-					ConnectionToClient c = currIdConnection.get(messageId);
-					c.sendToClient(returnMessage);
-					return;
-				}
 				client.sendToClient(returnMessage);
 			} else {
 				System.out.println("Error: request handling failure");
@@ -120,6 +97,118 @@ public final class Server extends AbstractServer {
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 		}
+	}
+	/*
+	 * Registers the client in the server user table once an identifying value is
+	 * available in the received message.
+	 *
+	 * @param m      the message received from the client
+	 * @param client the client connection
+	 * @return true if the request can continue, false if the client was disconnected
+	 */
+	private boolean registerClientIfNeeded(Message m, ConnectionToClient client) {
+		if (client == null || client.getInfo("User") != null) {
+			return true;
+		}
+
+		String userId = extractUserIdFromMessage(m);
+
+		if (userId == null || userId.isBlank()) {
+			return true;
+		}
+
+		User u = makeUserFromConnectionToClient(client);
+		u.setUserId(userId);
+
+		if (!serverController.addUserOnUserConnected(u)) {
+			try {
+				client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			return false;
+		}
+
+		client.setInfo("User", u);
+
+		if (!currIdConnection.containsKey(u.getUserId())) {
+			currIdConnection.put(u.getUserId(), client);
+		}
+
+		return true;
+	}
+
+	/*
+	 * Extracts a user identifier from a client message.
+	 *
+	 * The server table should show the user once the client enters the system,
+	 * even if the first request is not RETURN_ORDER.
+	 *
+	 * @param m the message received from the client
+	 * @return the user identifier, or null if the message does not contain one
+	 */
+	private String extractUserIdFromMessage(Message m) {
+		if (m == null || m.getData() == null) {
+			return null;
+		}
+
+		switch (m.getType()) {
+		case RETURN_ORDER:
+		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
+			return String.valueOf(m.getData());
+
+		case GET_WAITING_OFFERS_REQUEST:
+			return String.valueOf(m.getData());
+
+		case JOIN_WAITING_LIST_REQUEST:
+			if (m.getData() instanceof WaitingListMessage) {
+				WaitingListMessage waitingListMessage = (WaitingListMessage) m.getData();
+				return String.valueOf(waitingListMessage.getSubscriberId());
+			}
+			break;
+
+		case MAKE_ORDER:
+			if (m.getData() instanceof Order) {
+				Order order = (Order) m.getData();
+				return String.valueOf(order.getUserId());
+			}
+			break;
+
+		case UPDATE_ORDER:
+			if (m.getData() instanceof UpdateMessage) {
+				UpdateMessage updateMessage = (UpdateMessage) m.getData();
+				return updateMessage.getOrdererId();
+			}
+			break;
+
+		case CANCEL_ORDER:
+			if (m.getData() instanceof CancelOrderMessage) {
+				CancelOrderMessage cancelOrderMessage = (CancelOrderMessage) m.getData();
+				return cancelOrderMessage.getOrdererId();
+			}
+			break;
+
+		case EMPLOYEE_LOGIN_REQUEST:
+			if (m.getData() instanceof EmployeeLoginRequest) {
+				EmployeeLoginRequest request = (EmployeeLoginRequest) m.getData();
+				return "employee: " + request.getUsername();
+			}
+			break;
+
+		case EXISTING_CUSTOMER_LOGIN_REQUEST:
+			if (m.getData() instanceof ExistingCustomerLoginRequest) {
+				ExistingCustomerLoginRequest request = (ExistingCustomerLoginRequest) m.getData();
+				return "customer: " + request.getUsername();
+			}
+			break;
+
+		default:
+			break;
+		}
+
+		return null;
 	}
 	
 	/**
@@ -181,6 +270,10 @@ public final class Server extends AbstractServer {
 
 		if (u != null) {
 			serverController.removeUserOnUserDisconnected(u);
+		}
+
+		if (u != null && u.getUserId() != null) {
+			currIdConnection.remove(u.getUserId());
 		}
 
 		try {

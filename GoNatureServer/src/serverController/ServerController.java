@@ -1038,7 +1038,7 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("Checking occasional customer ID number: " + customerIdNumber);
 
 		try {
-			ArrayList<OrderRow> orders = oc.getOrdersByCustomerIdNumber(customerIdNumber);
+			ArrayList<Order> orders = oc.getOrdersByCustomerIdNumber(customerIdNumber);
 
 			if (orders != null && !orders.isEmpty()) {
 				OperationResponse response =

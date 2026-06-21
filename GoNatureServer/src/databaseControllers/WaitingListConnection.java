@@ -306,7 +306,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		String updateSql = """
 				UPDATE waiting_list
-				SET waiting_status = 'rejected'
+				SET waiting_status = 'cancelled'
 				WHERE waiting_id = ?
 				  AND waiting_status = 'offered';
 				""";
@@ -407,7 +407,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		String sql = """
 				UPDATE waiting_list
-				SET waiting_status = 'accepted'
+				SET waiting_status = 'confirmed'
 				WHERE waiting_id = ?
 				  AND waiting_status = 'offered';
 				""";
@@ -420,13 +420,13 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 	
 	/*
-	 * Returns all active offered waiting list requests for a specific subscriber.
+	 * Returns all active waiting list requests for a specific subscriber.
 	 *
-	 * The method is used by the client side to display waiting list offers that the
-	 * visitor can accept or reject.
+	 * The method returns requests with status "waiting" and "offered".
+	 * Requests with status "offered" are returned only if the offer did not expire.
 	 *
 	 * @param subscriberId the subscriber ID
-	 * @return a list of offered waiting list requests
+	 * @return a list of active waiting list requests
 	 * @throws SQLException if the select query fails
 	 */
 	public List<WaitingListMessage> getOfferedRequestsForSubscriber(int subscriberId) throws SQLException {
@@ -449,8 +449,13 @@ public class WaitingListConnection extends AbstractDBConnection {
 				LEFT JOIN subscriber s
 				    ON wl.subscriber_id = s.subscriber_id
 				WHERE wl.subscriber_id = ?
-				  AND wl.waiting_status IN ('waiting', 'offered')
-				  AND (wl.offer_expires_at IS NULL OR wl.offer_expires_at >= NOW())
+				  AND (
+				        wl.waiting_status = 'waiting'
+				        OR (
+				            wl.waiting_status = 'offered'
+				            AND (wl.offer_expires_at IS NULL OR wl.offer_expires_at >= NOW())
+				        )
+				  )
 				ORDER BY wl.requested_order_date ASC, wl.queue_position ASC;
 				""";
 
@@ -471,6 +476,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 					waitingListMessage.setWaitingStatus(rs.getString("waiting_status"));
 					waitingListMessage.setSubscriberEmail(rs.getString("subscriber_email"));
 					waitingListMessage.setSubscriberPhone(rs.getString("subscriber_phone"));
+
 					offers.add(waitingListMessage);
 				}
 			}
