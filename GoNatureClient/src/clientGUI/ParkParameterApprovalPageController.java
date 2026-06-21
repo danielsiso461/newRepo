@@ -1,6 +1,7 @@
 package clientGUI;
 
 import java.util.List;
+import java.util.Locale;
 
 import clientCommon.ClientSession;
 import clientCommon.ParkParameterObserver;
@@ -27,7 +28,19 @@ import javafx.scene.control.cell.PropertyValueFactory;
  */
 public class ParkParameterApprovalPageController implements ParkParameterObserver {
 
+    private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
+    private static final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
+            "places_for_unplanned_visitors";
+    private static final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
+            "estimated_visit_duration_hours";
+    private static final String PARAMETER_PROMOTIONS = "promotions";
+
+    private static final String ROLE_DEPARTMENT_MANAGER = "department_manager";
+
     private ClientController clientController;
+
+    private String lastSubmittedReviewNote = "";
+    private String lastOperationMessageToKeep;
 
     @FXML
     private Label headerLabel;
@@ -93,26 +106,56 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
         approveButton.setDisable(true);
         rejectButton.setDisable(true);
 
-        if (!"department_manager".equals(ClientSession.getEmployeeRole())) {
-            statusLabel.setText("Status: Only department managers can review requests.");
+        if (!ROLE_DEPARTMENT_MANAGER.equals(ClientSession.getEmployeeRole())) {
+            setErrorStatus("Only department managers can review requests.");
+
+            approveButton.setDisable(true);
+            rejectButton.setDisable(true);
             refreshButton.setDisable(true);
             return;
         }
 
-        statusLabel.setText("Status: Ready");
+        setInfoStatus("Ready");
     }
 
     private void setupTableColumns() {
-        requestIdColumn.setCellValueFactory(new PropertyValueFactory<>("requestId"));
-        parkIdColumn.setCellValueFactory(new PropertyValueFactory<>("parkId"));
-        requestedByColumn.setCellValueFactory(new PropertyValueFactory<>("requestedByEmployeeId"));
-        oldValueColumn.setCellValueFactory(new PropertyValueFactory<>("oldValue"));
-        newValueColumn.setCellValueFactory(new PropertyValueFactory<>("newValue"));
-        statusColumn.setCellValueFactory(new PropertyValueFactory<>("requestStatus"));
+        requestIdColumn.setCellValueFactory(
+                new PropertyValueFactory<>("requestId")
+        );
+
+        parkIdColumn.setCellValueFactory(
+                new PropertyValueFactory<>("parkId")
+        );
+
+        requestedByColumn.setCellValueFactory(
+                new PropertyValueFactory<>("requestedByEmployeeId")
+        );
+
+        statusColumn.setCellValueFactory(
+                new PropertyValueFactory<>("requestStatus")
+        );
 
         parameterColumn.setCellValueFactory(cellData ->
                 new SimpleStringProperty(
                         formatParameterName(cellData.getValue().getParameterName())
+                )
+        );
+
+        oldValueColumn.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        formatParameterValue(
+                                cellData.getValue().getParameterName(),
+                                cellData.getValue().getOldValue()
+                        )
+                )
+        );
+
+        newValueColumn.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        formatParameterValue(
+                                cellData.getValue().getParameterName(),
+                                cellData.getValue().getNewValue()
+                        )
                 )
         );
     }
@@ -123,7 +166,7 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 
                     boolean noSelection = selectedRequest == null;
                     boolean notDepartmentManager =
-                            !"department_manager".equals(ClientSession.getEmployeeRole());
+                            !ROLE_DEPARTMENT_MANAGER.equals(ClientSession.getEmployeeRole());
 
                     approveButton.setDisable(noSelection || notDepartmentManager);
                     rejectButton.setDisable(noSelection || notDepartmentManager);
@@ -137,23 +180,44 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
         }
 
         switch (parameterName) {
-        case "max_capacity":
+
+        case PARAMETER_MAX_CAPACITY:
             return "Maximum capacity";
 
-        case "places_for_unplanned_visitors":
+        case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
             return "Places for unplanned visitors";
 
-        case "estimated_visit_duration_hours":
+        case PARAMETER_ESTIMATED_VISIT_DURATION_HOURS:
             return "Estimated visit duration (hours)";
+
+        case PARAMETER_PROMOTIONS:
+            return "Promotion discount (%)";
 
         default:
             return parameterName;
         }
     }
 
+    private String formatParameterValue(String parameterName, String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+
+        if (PARAMETER_PROMOTIONS.equals(parameterName)) {
+            try {
+                double percent = Double.parseDouble(value);
+                return String.format(Locale.US, "%.2f%%", percent);
+            } catch (NumberFormatException e) {
+                return value;
+            }
+        }
+
+        return value;
+    }
+
     @FXML
     private void handleRefresh() {
-        requestPendingRequests();
+        requestPendingRequests(true);
     }
 
     @FXML
@@ -162,25 +226,29 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
                 requestsTableView.getSelectionModel().getSelectedItem();
 
         if (selectedRequest == null) {
-            showWarningAlert("No request selected", "Please select a request first.");
-            statusLabel.setText("Status: Please select a request.");
+            String message = "Please select a request first.";
+
+            setErrorStatus(message);
+            showWarningAlert("No request selected", message);
             return;
         }
 
         if (clientController == null) {
-            showErrorAlert("Client Error", "Client is not connected.");
-            statusLabel.setText("Status: Client is not connected.");
+            String message = "Client is not connected.";
+
+            setErrorStatus(message);
+            showErrorAlert("Client Error", message);
             return;
         }
 
-        String reviewNote = reviewNoteArea.getText();
+        lastSubmittedReviewNote = normalizeReviewNote(reviewNoteArea.getText());
 
-        statusLabel.setText("Status: Approving request...");
+        setInfoStatus("Approving request...");
 
         clientController.approveParkParameterChangeRequest(
                 selectedRequest.getRequestId(),
                 ClientSession.getEmployeeId(),
-                reviewNote
+                lastSubmittedReviewNote
         );
     }
 
@@ -190,45 +258,51 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
                 requestsTableView.getSelectionModel().getSelectedItem();
 
         if (selectedRequest == null) {
-            showWarningAlert("No request selected", "Please select a request first.");
-            statusLabel.setText("Status: Please select a request.");
+            String message = "Please select a request first.";
+
+            setErrorStatus(message);
+            showWarningAlert("No request selected", message);
             return;
         }
 
         if (clientController == null) {
-            showErrorAlert("Client Error", "Client is not connected.");
-            statusLabel.setText("Status: Client is not connected.");
+            String message = "Client is not connected.";
+
+            setErrorStatus(message);
+            showErrorAlert("Client Error", message);
             return;
         }
 
-        String reviewNote = reviewNoteArea.getText();
+        lastSubmittedReviewNote = normalizeReviewNote(reviewNoteArea.getText());
 
-        statusLabel.setText("Status: Rejecting request...");
+        setInfoStatus("Rejecting request...");
 
         clientController.rejectParkParameterChangeRequest(
                 selectedRequest.getRequestId(),
                 ClientSession.getEmployeeId(),
-                reviewNote
+                lastSubmittedReviewNote
         );
     }
 
-    private void requestPendingRequests() {
+    private void requestPendingRequests(boolean showLoadingStatus) {
         if (clientController == null) {
-            statusLabel.setText("Status: Client is not connected.");
+            setErrorStatus("Client is not connected.");
             return;
         }
 
         if (!ClientSession.isEmployeeLoggedIn()) {
-            statusLabel.setText("Status: Employee is not logged in.");
+            setErrorStatus("Employee is not logged in.");
             return;
         }
 
-        if (!"department_manager".equals(ClientSession.getEmployeeRole())) {
-            statusLabel.setText("Status: Only department managers can load pending requests.");
+        if (!ROLE_DEPARTMENT_MANAGER.equals(ClientSession.getEmployeeRole())) {
+            setErrorStatus("Only department managers can load pending requests.");
             return;
         }
 
-        statusLabel.setText("Status: Loading pending requests...");
+        if (showLoadingStatus) {
+            setInfoStatus("Loading pending requests...");
+        }
 
         clientController.requestPendingParkParameterChangeRequests(
                 ClientSession.getEmployeeId()
@@ -252,10 +326,16 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
         approveButton.setDisable(true);
         rejectButton.setDisable(true);
 
+        if (lastOperationMessageToKeep != null) {
+            setSuccessStatus(lastOperationMessageToKeep);
+            lastOperationMessageToKeep = null;
+            return;
+        }
+
         if (items.isEmpty()) {
-            statusLabel.setText("Status: No pending requests.");
+            setInfoStatus("No pending requests.");
         } else {
-            statusLabel.setText("Status: " + items.size() + " pending requests loaded.");
+            setInfoStatus(items.size() + " pending requests loaded.");
         }
     }
 
@@ -264,60 +344,73 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
             OperationResponse response, Protocol responseType) {
 
         if (response == null) {
-            statusLabel.setText("Status: No response from server.");
-            showErrorAlert("No Response", "No response was received from the server.");
+            String message = "No response was received from the server.";
+
+            setErrorStatus(message);
+            showErrorAlert("No Response", message);
             return;
         }
 
-        statusLabel.setText("Status: " + response.getMessage());
+        String message = buildMessageWithReviewNote(
+                response.getMessage(),
+                lastSubmittedReviewNote
+        );
 
         if (!response.isSuccess()) {
-            showErrorAlert("Operation Failed", response.getMessage());
+            setErrorStatus(message);
+            showErrorAlert("Operation Failed", message);
             return;
         }
 
         if (responseType == Protocol.PARK_PARAMETER_CHANGE_REQUEST_APPROVED) {
-            showInfoAlert("Request Approved", response.getMessage());
+            setSuccessStatus(message);
+            showInfoAlert("Request Approved", message);
+
             reviewNoteArea.clear();
-            requestPendingRequests();
+            lastOperationMessageToKeep = message;
+            requestPendingRequests(false);
             return;
         }
 
         if (responseType == Protocol.PARK_PARAMETER_CHANGE_REQUEST_REJECTED) {
-            showInfoAlert("Request Rejected", response.getMessage());
+            setSuccessStatus(message);
+            showInfoAlert("Request Rejected", message);
+
             reviewNoteArea.clear();
-            requestPendingRequests();
+            lastOperationMessageToKeep = message;
+            requestPendingRequests(false);
             return;
         }
 
-        showInfoAlert("Operation Completed", response.getMessage());
+        setSuccessStatus(message);
+        showInfoAlert("Operation Completed", message);
     }
 
+    private String normalizeReviewNote(String reviewNote) {
+        if (reviewNote == null) {
+            return "";
+        }
 
-    private void showInfoAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        return reviewNote.trim();
     }
 
-    private void showWarningAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    private String buildMessageWithReviewNote(String baseMessage, String reviewNote) {
+        String safeBaseMessage = baseMessage == null || baseMessage.isBlank()
+                ? "Operation completed."
+                : baseMessage.trim();
+
+        if (safeBaseMessage.contains("With review note:")
+                || safeBaseMessage.contains("With no review note.")) {
+            return safeBaseMessage;
+        }
+
+        if (reviewNote == null || reviewNote.isBlank()) {
+            return safeBaseMessage + " With no review note.";
+        }
+
+        return safeBaseMessage + " With review note: \"" + reviewNote.trim() + "\"";
     }
 
-    private void showErrorAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-    
     private void setInfoStatus(String message) {
         updateStatusLabel(message, "status-info");
         System.out.println("[ParkParameterApprovalPage] " + message);
@@ -343,5 +436,29 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
         if (!statusLabel.getStyleClass().contains(statusStyleClass)) {
             statusLabel.getStyleClass().add(statusStyleClass);
         }
+    }
+
+    private void showInfoAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showWarningAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showErrorAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

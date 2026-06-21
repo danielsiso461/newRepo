@@ -57,6 +57,39 @@ public final class ClientScreenManager {
         loadPage("/clientGUI/ReportsPage.fxml", "Reports");
     }
 
+    public static void showEntryPaymentPage() {
+        if (!ClientSession.isEmployeeLoggedIn()) {
+            System.out.println("Access denied: only employees can open entry payment page.");
+            return;
+        }
+
+        loadPage("/clientGUI/EntryPaymentPage.fxml", "Entry Payment");
+    }
+    
+    public static void showParkVisitorCounterViewPage() {
+        String role = ClientSession.getEmployeeRole();
+
+        if (!"park_manager".equals(role)
+                && !"department_manager".equals(role)) {
+            System.out.println("Access denied: only park managers and department managers can open visitor counter view page.");
+            return;
+        }
+
+        loadPage("/clientGUI/ParkVisitorCounterViewPage.fxml", "Park Visitor Counter");
+    }
+
+    public static void showParkVisitorCounterUpdatePage() {
+        String role = ClientSession.getEmployeeRole();
+
+        if (!"park_worker".equals(role)
+                && !"park_manager".equals(role)) {
+            System.out.println("Access denied: only park workers and park managers can update visitor counter.");
+            return;
+        }
+
+        loadPage("/clientGUI/ParkVisitorCounterUpdatePage.fxml", "Update Visitor Counter");
+    }
+
     public static void showParkParameterRequestPage() {
         if (!"park_manager".equals(ClientSession.getEmployeeRole())) {
             System.out.println("Access denied: only park managers can open parameter request page.");
@@ -94,7 +127,7 @@ public final class ClientScreenManager {
 
             /*
              * Keep a reasonable minimum size.
-             * The FXML layouts are now responsible for resizing naturally.
+             * The FXML layouts are responsible for resizing naturally.
              */
             primaryStage.setMinWidth(650.0);
             primaryStage.setMinHeight(500.0);
@@ -141,6 +174,28 @@ public final class ClientScreenManager {
 
             return;
         }
+        
+        if (controller instanceof ParkVisitorCounterViewPageController counterViewController) {
+            counterViewController.setClientController(clientController);
+
+            clientController.addParkVisitorCounterObserver(counterViewController);
+
+            if (ClientSession.isEmployeeLoggedIn()) {
+                clientController.requestParkVisitorCounters(
+                        ClientSession.getEmployeeId()
+                );
+            }
+
+            return;
+        }
+
+        if (controller instanceof ParkVisitorCounterUpdatePageController counterUpdateController) {
+            counterUpdateController.setClientController(clientController);
+
+            clientController.addParkVisitorCounterObserver(counterUpdateController);
+
+            return;
+        }
 
         if (controller instanceof ParkParameterRequestPageController requestController) {
             requestController.setClientController(clientController);
@@ -165,6 +220,12 @@ public final class ClientScreenManager {
                         ClientSession.getEmployeeId()
                 );
             }
+
+            return;
+        }
+
+        if (controller instanceof EntryPaymentPageController entryPaymentController) {
+            entryPaymentController.setClientController(clientController);
 
             return;
         }

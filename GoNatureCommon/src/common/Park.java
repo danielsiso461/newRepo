@@ -3,10 +3,7 @@ package common;
 import java.io.Serializable;
 
 /**
- * Represents a park in the system.
- * 
- * The same class is used both for server-side park logic and for sending park
- * data to the client.
+ * Represents a park in the GoNature system.
  */
 public class Park implements Serializable {
 
@@ -14,23 +11,30 @@ public class Park implements Serializable {
 
     private int parkId;
     private String parkName;
-    private Integer maxCapacity;
-    private Integer placesForUnplannedVisitors;
-    private Double estimatedVisitDurationHours;
-    private Double fullEntryPrice;
-    private Boolean active;
-    private boolean promotions;
+    private int maxCapacity;
+    private int currentVisitors;
+    private int placesForUnplannedVisitors;
+    private double estimatedVisitDurationHours;
+    private double fullEntryPrice;
+    private boolean active;
 
-    /**
-     * Creates a full Park object.
+    /*
+     * Stores the park promotion discount percent.
+     * Example:
+     * 0.00  means no discount.
+     * 10.00 means 10% discount.
      */
-    public Park(int parkId, String parkName, int maxCapacity, int placesForUnplannedVisitors,
-                double estimatedVisitDurationHours, double fullEntryPrice,
-                boolean active, boolean promotions) {
+    private double promotions;
+
+    public Park(int parkId, String parkName, int maxCapacity,
+            int currentVisitors, int placesForUnplannedVisitors,
+            double estimatedVisitDurationHours, double fullEntryPrice,
+            boolean active, double promotions) {
 
         this.parkId = parkId;
         this.parkName = parkName;
         this.maxCapacity = maxCapacity;
+        this.currentVisitors = currentVisitors;
         this.placesForUnplannedVisitors = placesForUnplannedVisitors;
         this.estimatedVisitDurationHours = estimatedVisitDurationHours;
         this.fullEntryPrice = fullEntryPrice;
@@ -38,15 +42,47 @@ public class Park implements Serializable {
         this.promotions = promotions;
     }
 
-    /**
-     * Creates a Park object with public display data only.
+    /*
+     * Backward-compatible constructor for older code that does not send
+     * currentVisitors yet.
      */
-    public Park(int parkId, String parkName,
-                double estimatedVisitDurationHours, double fullEntryPrice) {
+    public Park(int parkId, String parkName, int maxCapacity,
+            int placesForUnplannedVisitors, double estimatedVisitDurationHours,
+            double fullEntryPrice, boolean active, double promotions) {
 
-        this(parkId, parkName, 0, 0,
-                estimatedVisitDurationHours, fullEntryPrice,
-                true, false);
+        this(
+                parkId,
+                parkName,
+                maxCapacity,
+                0,
+                placesForUnplannedVisitors,
+                estimatedVisitDurationHours,
+                fullEntryPrice,
+                active,
+                promotions
+        );
+    }
+
+    /*
+     * Backward-compatible constructor.
+     * If some older code still sends boolean promotions, true is treated as 1%.
+     * Prefer using the double promotions constructor.
+     */
+    public Park(int parkId, String parkName, int maxCapacity,
+            int placesForUnplannedVisitors, double estimatedVisitDurationHours,
+            double fullEntryPrice, boolean active, boolean hasPromotions) {
+
+        this(
+                parkId,
+                parkName,
+                maxCapacity,
+                0,
+                placesForUnplannedVisitors,
+                estimatedVisitDurationHours,
+                fullEntryPrice,
+                active,
+                hasPromotions ? 1.00 : 0.00
+        );
     }
 
     public int getParkId() {
@@ -59,6 +95,14 @@ public class Park implements Serializable {
 
     public int getMaxCapacity() {
         return maxCapacity;
+    }
+
+    public int getCurrentVisitors() {
+        return currentVisitors;
+    }
+
+    public int getAvailablePlaces() {
+        return maxCapacity - currentVisitors;
     }
 
     public int getPlacesForUnplannedVisitors() {
@@ -77,8 +121,20 @@ public class Park implements Serializable {
         return active;
     }
 
-    public boolean hasPromotions() {
+    public double getPromotions() {
         return promotions;
+    }
+
+    public double getPromotionPercent() {
+        return promotions;
+    }
+
+    public boolean hasPromotions() {
+        return promotions > 0;
+    }
+
+    public void setParkId(int parkId) {
+        this.parkId = parkId;
     }
 
     public void setParkName(String parkName) {
@@ -87,6 +143,10 @@ public class Park implements Serializable {
 
     public void setMaxCapacity(int maxCapacity) {
         this.maxCapacity = maxCapacity;
+    }
+
+    public void setCurrentVisitors(int currentVisitors) {
+        this.currentVisitors = currentVisitors;
     }
 
     public void setPlacesForUnplannedVisitors(int placesForUnplannedVisitors) {
@@ -105,13 +165,10 @@ public class Park implements Serializable {
         this.active = active;
     }
 
-    public void setPromotions(boolean promotions) {
+    public void setPromotions(double promotions) {
         this.promotions = promotions;
     }
 
-    /**
-     * Used by ComboBox and ListView to display only the park name.
-     */
     @Override
     public String toString() {
         return parkName;
