@@ -718,6 +718,11 @@ public class ClientController implements ChatIF {
 					break;
 				}
 
+				if (!rows.isEmpty() && rows.get(0).getUserId() != null) {
+					this.id = String.valueOf(rows.get(0).getUserId());
+					System.out.println("ClientController ID saved from order table: " + this.id);
+				}
+
 				notifyOrdersReceived(rows);
 				break;
 

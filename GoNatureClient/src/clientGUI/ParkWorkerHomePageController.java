@@ -12,6 +12,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
+import clientGUI.ParkEntranceControlController.EntranceMode;
 
 /*
  * This class is the controller for the park worker home page.
@@ -49,77 +50,56 @@ public class ParkWorkerHomePageController {
 			welcomeLabel.setText("Welcome " + employee.getFirstName() + " " + employee.getLastName());
 		}
 	}
-
-	/*
-	 * Opens the visitor entry check screen.
-	 * 
-	 * This functionality will allow the park worker to search for an existing
-	 * order by visitor ID and confirmation code, then approve the entry.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleCheckVisitorEntry(ActionEvent event) {
-		System.out.println("Check Visitor Entry clicked");
-
-		/*
-		 * Later:
-		 * Open ParkWorkerCheckEntry.fxml
-		 */
+		openParkEntranceControlPage(event, EntranceMode.CHECK_IN);
 	}
 
-	/*
-	 * Opens the walk-in visitor handling screen.
-	 * 
-	 * This functionality will allow the park worker to check available space
-	 * and approve entry for visitors without a prior order.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleWalkInVisitor(ActionEvent event) {
-		System.out.println("Handle Walk-In Visitor clicked");
-
-		/*
-		 * Later:
-		 * Open ParkWorkerWalkInVisitor.fxml
-		 */
+		openParkEntranceControlPage(event, EntranceMode.OCCASIONAL_VISIT);
 	}
 
-	/*
-	 * Opens the visitor exit recording screen.
-	 * 
-	 * This functionality will allow the park worker to record visitors leaving
-	 * the park and update the current number of visitors.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleRecordVisitorExit(ActionEvent event) {
-		System.out.println("Record Visitor Exit clicked");
+		openParkEntranceControlPage(event, EntranceMode.CHECK_OUT);
+	}
 
-		/*
-		 * Later:
-		 * Open ParkWorkerRecordExit.fxml
-		 */
+	@FXML
+	private void handleViewParkOccupancy(ActionEvent event) {
+		openParkEntranceControlPage(event, EntranceMode.CURRENT_VISITORS);
 	}
 
 	/*
-	 * Opens the park occupancy screen.
+	 * Opens the park entrance control page.
 	 * 
-	 * This functionality will show the current number of visitors in the park,
-	 * the park capacity, and the number of available places.
+	 * This page includes check-in, check-out, occasional visit,
+	 * and current visitors actions.
 	 * 
 	 * @param event the button click event
+	 * @param entranceMode the entrance action mode to open
 	 */
-	@FXML
-	private void handleViewParkOccupancy(ActionEvent event) {
-		System.out.println("View Park Occupancy clicked");
+	private void openParkEntranceControlPage(ActionEvent event, EntranceMode entranceMode) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ParkEntranceControlPage.fxml")
+			);
 
-		/*
-		 * Later:
-		 * Open ParkWorkerParkOccupancy.fxml
-		 */
+			Parent root = loader.load();
+
+			ParkEntranceControlController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+			controller.setEntranceMode(entranceMode);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Park Entrance Control");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/*

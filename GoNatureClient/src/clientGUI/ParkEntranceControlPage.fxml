@@ -103,6 +103,15 @@
                   <Font size="16.0" />
                </font>
             </Button>
+			 
+			  <!-- Returns to the park worker home page. -->
+			<Button mnemonicParsing="false"
+			        onAction="#backButtonClick"
+			        text="Back">
+			   <font>
+			      <Font size="16.0" />
+			   </font>
+			</Button>
 
          </children>
       </HBox>

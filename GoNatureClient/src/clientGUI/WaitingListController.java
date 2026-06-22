@@ -154,6 +154,7 @@ public class WaitingListController implements WaitingListObserver {
 		} catch (NumberFormatException e) {
 			messageLabel.setTextFill(Color.RED);
 			messageLabel.setText("Invalid subscriber ID.");
+			
 		}
 	}
 

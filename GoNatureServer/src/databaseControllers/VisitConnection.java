@@ -394,7 +394,7 @@ public class VisitConnection extends AbstractDBConnection {
 					handled_by_employee_id,
 					identification_method
 				)
-				VALUES (?, 'occasional', ?, NOW(), ?, ?);
+				VALUES (?, 'unplanned', ?, NOW(), ?, ?);
 				""";
 
 		try (PreparedStatement pstmt =

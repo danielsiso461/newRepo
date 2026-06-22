@@ -1,14 +1,24 @@
 package clientGUI;
 
+import java.io.IOException;
+
 import clientCommon.ParkEntranceObserver;
 import clientController.ClientController;
+import common.Employee;
 import common.ParkEntranceMessage;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+
 /*
  * This controller handles the park entrance control page.
  *
@@ -17,10 +27,31 @@ import javafx.scene.paint.Color;
  * create occasional visits, and view the current number of visitors in the park.
  */
 public class ParkEntranceControlController implements ParkEntranceObserver {
+
+	/*
+	 * Represents the action mode used by the park entrance page.
+	 */
+	public enum EntranceMode {
+		CHECK_IN,
+		OCCASIONAL_VISIT,
+		CHECK_OUT,
+		CURRENT_VISITORS
+	}
+
 	/*
 	 * The client controller used to communicate with the server.
 	 */
 	private ClientController clientController;
+
+	/*
+	 * The employee currently using the park entrance page.
+	 */
+	private Employee loggedInEmployee;
+
+	/*
+	 * The current mode of the park entrance page.
+	 */
+	private EntranceMode entranceMode;
 
 	@FXML // fx:id="confirmationCodeField"
 	private TextField confirmationCodeField; // Value injected by FXMLLoader
@@ -66,6 +97,35 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 	}
 
 	/*
+	 * Sets the logged-in employee and fills the employee and park fields.
+	 * 
+	 * @param loggedInEmployee the employee currently using the page
+	 */
+	public void setLoggedInEmployee(Employee loggedInEmployee) {
+		this.loggedInEmployee = loggedInEmployee;
+
+		if (this.loggedInEmployee != null) {
+			employeeIdField.setText(String.valueOf(this.loggedInEmployee.getEmployeeId()));
+
+			if (this.loggedInEmployee.getParkId() != null) {
+				parkIdField.setText(String.valueOf(this.loggedInEmployee.getParkId()));
+			}
+		}
+
+		applyEntranceMode();
+	}
+
+	/*
+	 * Sets the current entrance mode and updates the page accordingly.
+	 * 
+	 * @param entranceMode the selected entrance action mode
+	 */
+	public void setEntranceMode(EntranceMode entranceMode) {
+		this.entranceMode = entranceMode;
+		applyEntranceMode();
+	}
+
+	/*
 	 * Initializes the park entrance control page.
 	 */
 	@FXML
@@ -84,6 +144,74 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		currentVisitorsLabel.setText("Current visitors: -");
 		messageLabel.setTextFill(Color.BLUE);
 		messageLabel.setText("Use the confirmation code as QR code simulation.");
+	}
+
+	/*
+	 * Applies the selected entrance mode to the page.
+	 * 
+	 * Each dashboard action opens the same page, but enables only the relevant
+	 * action button and fields.
+	 */
+	private void applyEntranceMode() {
+		if (entranceMode == null ||
+				checkInButton == null ||
+				checkOutButton == null ||
+				occasionalVisitButton == null ||
+				currentVisitorsButton == null ||
+				confirmationCodeField == null ||
+				parkIdField == null ||
+				employeeIdField == null ||
+				visitorsField == null ||
+				currentVisitorsLabel == null ||
+				messageLabel == null) {
+			return;
+		}
+
+		checkInButton.setDisable(true);
+		checkOutButton.setDisable(true);
+		occasionalVisitButton.setDisable(true);
+		currentVisitorsButton.setDisable(true);
+
+		confirmationCodeField.setDisable(false);
+		parkIdField.setDisable(false);
+		employeeIdField.setDisable(false);
+		visitorsField.setDisable(false);
+
+		currentVisitorsLabel.setText("Current visitors: -");
+		messageLabel.setTextFill(Color.BLUE);
+
+		switch (entranceMode) {
+		case CHECK_IN:
+			checkInButton.setDisable(false);
+			messageLabel.setText("Check visitor entry using the confirmation code.");
+			break;
+
+		case OCCASIONAL_VISIT:
+			occasionalVisitButton.setDisable(false);
+			confirmationCodeField.clear();
+			confirmationCodeField.setDisable(true);
+			messageLabel.setText("Create an occasional visit for visitors without an order.");
+			break;
+
+		case CHECK_OUT:
+			checkOutButton.setDisable(false);
+			visitorsField.clear();
+			visitorsField.setDisable(true);
+			messageLabel.setText("Record visitor exit using the confirmation code.");
+			break;
+
+		case CURRENT_VISITORS:
+			currentVisitorsButton.setDisable(false);
+			confirmationCodeField.clear();
+			visitorsField.clear();
+			confirmationCodeField.setDisable(true);
+			visitorsField.setDisable(true);
+			messageLabel.setText("View the current number of visitors in the park.");
+			break;
+
+		default:
+			break;
+		}
 	}
 
 	/*
@@ -332,6 +460,38 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 
 			messageLabel.setText(parkEntranceMessage.getResponseMessage());
 		});
+	}
+
+	/*
+	 * Returns the park worker to the park worker home page.
+	 * 
+	 * @param event the button click event
+	 */
+	@FXML
+	private void backButtonClick(ActionEvent event) {
+		try {
+			if (clientController != null) {
+				clientController.removeParkEntranceObserver(this);
+			}
+
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ParkWorkerHomePage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			ParkWorkerHomePageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Park Worker Home Page");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/*
