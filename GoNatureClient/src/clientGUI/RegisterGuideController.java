@@ -2,8 +2,14 @@ package clientGUI;
 
 import java.io.IOException;
 
+import clientCommon.RegisterGuideObserver;
+import clientCommon.SearchSubscriberObserver;
 import clientController.ClientController;
 import common.Employee;
+import common.GuideRegistrationRequest;
+import common.OperationResponse;
+import common.Subscriber;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -15,132 +21,229 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-public class RegisterGuideController {
+/*
+ * This class is the controller for the register guide screen.
+ * 
+ * The service representative can search an existing subscriber
+ * and register that subscriber as a guide.
+ */
+public class RegisterGuideController implements SearchSubscriberObserver, RegisterGuideObserver {
 
 	private ClientController clientController;
 	private Employee loggedInEmployee;
-	
-    @FXML
-    private TextField subscriberIdField;
 
-    @FXML
-    private Label subscriberNameLabel;
+	@FXML
+	private TextField subscriberIdField;
 
-    @FXML
-    private Label subscriberEmailLabel;
+	@FXML
+	private Label subscriberNameLabel;
 
-    @FXML
-    private TextField organizationNameField;
+	@FXML
+	private Label subscriberEmailLabel;
 
-    @FXML
-    private ComboBox<String> guideStatusComboBox;
+	@FXML
+	private TextField organizationNameField;
 
-    @FXML
-    private Label messageLabel;
-    
-    /*
-     * Sets the ClientController used by this screen.
-     * 
-     * @param clientController the active client controller
-     */
-    public void setClientController(ClientController clientController) {
-        this.clientController = clientController;
-    }
+	@FXML
+	private ComboBox<String> guideStatusComboBox;
 
-    /*
-     * Sets the logged-in service representative.
-     * 
-     * @param employee the employee that opened this screen
-     */
-    public void setLoggedInEmployee(Employee employee) {
-        this.loggedInEmployee = employee;
-    }
+	@FXML
+	private Label messageLabel;
 
-    @FXML
-    private void initialize() {
-        guideStatusComboBox.getItems().addAll("active", "revoked");
-        guideStatusComboBox.setValue("active");
+	/*
+	 * Sets the ClientController used by this screen.
+	 * 
+	 * @param clientController the active client controller
+	 */
+	public void setClientController(ClientController clientController) {
+		this.clientController = clientController;
 
-        subscriberNameLabel.setText("-");
-        subscriberEmailLabel.setText("-");
-        messageLabel.setText("");
-    }
+		if (this.clientController != null) {
+			this.clientController.addSearchSubscriberObserver(this);
+			this.clientController.addRegisterGuideObserver(this);
+		}
+	}
 
-    @FXML
-    private void handleSearchSubscriber(ActionEvent event) {
-        String subscriberId = subscriberIdField.getText();
+	/*
+	 * Sets the logged-in service representative.
+	 * 
+	 * @param employee the employee that opened this screen
+	 */
+	public void setLoggedInEmployee(Employee employee) {
+		this.loggedInEmployee = employee;
+	}
 
-        if (subscriberId == null || subscriberId.trim().isEmpty()) {
-            messageLabel.setText("Please enter subscriber ID.");
-            return;
-        }
+	@FXML
+	private void initialize() {
+		guideStatusComboBox.getItems().addAll("active", "revoked");
+		guideStatusComboBox.setValue("active");
 
-        System.out.println("Search subscriber clicked. ID = " + subscriberId);
+		subscriberNameLabel.setText("-");
+		subscriberEmailLabel.setText("-");
+		messageLabel.setText("");
+	}
 
-        // זמני בלבד עד שנחבר לשרת ול-DB
-        subscriberNameLabel.setText("Example Subscriber");
-        subscriberEmailLabel.setText("example@email.com");
-        messageLabel.setText("Subscriber found.");
-    }
+	@FXML
+	private void handleSearchSubscriber(ActionEvent event) {
+		String subscriberIdText = subscriberIdField.getText();
 
-    @FXML
-    private void handleRegisterGuide(ActionEvent event) {
-        String subscriberId = subscriberIdField.getText();
-        String organizationName = organizationNameField.getText();
-        String guideStatus = guideStatusComboBox.getValue();
+		if (subscriberIdText == null || subscriberIdText.trim().isEmpty()) {
+			messageLabel.setText("Please enter subscriber ID.");
+			return;
+		}
 
-        if (subscriberId == null || subscriberId.trim().isEmpty()) {
-            messageLabel.setText("Please search subscriber first.");
-            return;
-        }
+		int subscriberId;
 
-        if (organizationName == null || organizationName.trim().isEmpty()) {
-            messageLabel.setText("Please enter organization name.");
-            return;
-        }
+		try {
+			subscriberId = Integer.parseInt(subscriberIdText.trim());
+		} catch (NumberFormatException e) {
+			messageLabel.setText("Subscriber ID must be a number.");
+			return;
+		}
 
-        System.out.println("Register guide clicked");
-        System.out.println("Subscriber ID = " + subscriberId);
-        System.out.println("Organization Name = " + organizationName);
-        System.out.println("Guide Status = " + guideStatus);
+		if (clientController == null) {
+			messageLabel.setText("Client is not connected to server.");
+			return;
+		}
 
-        // זמני בלבד עד שנחבר לשרת ול-DB
-        messageLabel.setText("Guide registered successfully.");
-    }
+		System.out.println("Search subscriber clicked. ID = " + subscriberId);
 
-    @FXML
-    private void handleClear(ActionEvent event) {
-        subscriberIdField.clear();
-        organizationNameField.clear();
+		messageLabel.setText("Searching subscriber...");
+		subscriberNameLabel.setText("-");
+		subscriberEmailLabel.setText("-");
 
-        guideStatusComboBox.setValue("active");
+		clientController.requestSearchSubscriber(subscriberId);
+	}
 
-        subscriberNameLabel.setText("-");
-        subscriberEmailLabel.setText("-");
-        messageLabel.setText("");
-    }
+	@FXML
+	private void handleRegisterGuide(ActionEvent event) {
+		String subscriberIdText = subscriberIdField.getText();
+		String organizationName = organizationNameField.getText();
+		String guideStatus = guideStatusComboBox.getValue();
 
-    @FXML
-    private void handleBack(ActionEvent event) {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
-            );
+		if (subscriberIdText == null || subscriberIdText.trim().isEmpty()) {
+			messageLabel.setText("Please search subscriber first.");
+			return;
+		}
 
-            Parent root = loader.load();
+		int subscriberId;
 
-            ServiceRepresentativeHomePageController controller = loader.getController();
-            controller.setClientController(clientController);
-            controller.setLoggedInEmployee(loggedInEmployee);
+		try {
+			subscriberId = Integer.parseInt(subscriberIdText.trim());
+		} catch (NumberFormatException e) {
+			messageLabel.setText("Subscriber ID must be a number.");
+			return;
+		}
 
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setTitle("Service Representative Dashboard");
-            stage.setScene(new Scene(root));
-            stage.show();
+		if (organizationName == null || organizationName.trim().isEmpty()) {
+			messageLabel.setText("Please enter organization name.");
+			return;
+		}
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            messageLabel.setText("Could not return to service representative screen.");
-        }
-    }
+		if (guideStatus == null || guideStatus.trim().isEmpty()) {
+			messageLabel.setText("Please select guide status.");
+			return;
+		}
+
+		if (clientController == null) {
+			messageLabel.setText("Client is not connected to server.");
+			return;
+		}
+
+		if (loggedInEmployee == null) {
+			messageLabel.setText("No logged-in employee was found.");
+			return;
+		}
+
+		GuideRegistrationRequest request = new GuideRegistrationRequest(
+				subscriberId,
+				organizationName.trim(),
+				guideStatus,
+				loggedInEmployee.getEmployeeId()
+		);
+
+		messageLabel.setText("Registering guide...");
+
+		clientController.requestRegisterGuide(request);
+	}
+
+	@Override
+	public void onRegisterGuideResult(OperationResponse response) {
+		Platform.runLater(() -> {
+			if (response == null) {
+				messageLabel.setText("No response from server.");
+				return;
+			}
+
+			messageLabel.setText(response.getMessage());
+		});
+	}
+
+	@FXML
+	private void handleClear(ActionEvent event) {
+		subscriberIdField.clear();
+		organizationNameField.clear();
+
+		guideStatusComboBox.setValue("active");
+
+		subscriberNameLabel.setText("-");
+		subscriberEmailLabel.setText("-");
+		messageLabel.setText("");
+	}
+
+	/*
+	 * Receives the search subscriber result from the ClientController.
+	 * 
+	 * @param response the response received from the server
+	 */
+	@Override
+	public void onSearchSubscriberResult(OperationResponse response) {
+		Platform.runLater(() -> {
+			if (response == null) {
+				messageLabel.setText("No response from server.");
+				return;
+			}
+
+			if (response.isSuccess()) {
+				Subscriber subscriber = (Subscriber) response.getData();
+
+				subscriberNameLabel.setText(subscriber.getSubscriberName());
+				subscriberEmailLabel.setText(subscriber.getSubscriberEmail());
+				messageLabel.setText(response.getMessage());
+			} else {
+				subscriberNameLabel.setText("-");
+				subscriberEmailLabel.setText("-");
+				messageLabel.setText(response.getMessage());
+			}
+		});
+	}
+
+	@FXML
+	private void handleBack(ActionEvent event) {
+		try {
+			if (clientController != null) {
+				clientController.removeSearchSubscriberObserver(this);
+				clientController.removeRegisterGuideObserver(this);
+			}
+
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			ServiceRepresentativeHomePageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Service Representative Dashboard");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			messageLabel.setText("Could not return to service representative screen.");
+		}
+	}
 }

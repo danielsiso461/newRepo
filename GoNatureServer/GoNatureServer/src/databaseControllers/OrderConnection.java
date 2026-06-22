@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.Message;
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 
 /**
@@ -100,7 +100,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of the user's orders
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getUserOrders(Message m) throws SQLException {
+	public List<Order> getUserOrders(Message m) throws SQLException {
 		String s = selectByFields(new String[] { "*" }, new String[] { USER_ID });
 		if (s == null) {
 			return null;
@@ -111,11 +111,11 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		ResultSet rs = pstmt.executeQuery();
 
-		List<OrderRow> l = new ArrayList<>();
+		List<Order> l = new ArrayList<>();
 		int i = 1;
 
 		while (rs.next()) {
-			l.add(new OrderRow(i++, rs.getInt(ORDER_NUMBER), rs.getDate(ORDER_DATE).toLocalDate(),
+			l.add(new Order(i++, rs.getInt(ORDER_NUMBER), rs.getDate(ORDER_DATE).toLocalDate(),
 					rs.getInt(VISITOR_NUMBER), rs.getInt(CONF_CODE), rs.getInt(USER_ID),
 					rs.getDate(PLACEMENT_DATE).toLocalDate()));
 		}

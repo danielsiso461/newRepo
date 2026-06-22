@@ -3,13 +3,12 @@ package serverController;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import common.*;
-import java.util.ArrayList;
-
 import databaseControllers.DBConnectionPool;
 import databaseControllers.EmployeeConnection;
 import databaseControllers.GuideConnection;
@@ -18,13 +17,12 @@ import databaseControllers.OrderExceedsParkCapacityCheck;
 import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
 import databaseControllers.SubscriberConnection;
+import databaseControllers.VisitConnection;
 import databaseControllers.WaitingListConnection;
 import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
-import databaseControllers.VisitConnection;
-
 // this class is the controller that connects 
 // the networking part of the server and the UI part of it. 
 // It is also the logic behind it
@@ -58,9 +56,9 @@ public class ServerController implements ServerAndControllerConnection {
 			pcrc = ParkParameterChangeRequestConnection.getInstance();
 			sc = SubscriberConnection.getInstance();
 			gc = GuideConnection.getInstance();
+			ec = EmployeeConnection.getInstance();
 			wlc = WaitingListConnection.getInstance();
 			vc = VisitConnection.getInstance();
-			ec = EmployeeConnection.getInstance();
 			orderChecker = OrderExceedsParkCapacityCheck.getInstance(pc, oc);
 
 			addLog("Order database connection object created.");
@@ -68,10 +66,12 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("Park parameter change request database connection object created.");
 			addLog("Subscriber database connection object created.");
 			addLog("Guide database connection object created.");
+			addLog("Employee database connection object created.");
 			addLog("Waiting list database connection object created.");
+			addLog("Visit database connection object created.");
 			addLog("Order checker object created.");
 			addLog("All database connection objects were created successfully.");
-			addLog("Visit database connection object created.");
+		
 		}catch (SQLException e) {
 			e.printStackTrace();
 			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
@@ -244,13 +244,28 @@ public class ServerController implements ServerAndControllerConnection {
 			return handleRejectParkParameterChangeRequest(m);
 
 		case SEARCH_SUBSCRIBER_REQUEST:
+			addLog("Client requested subscriber search.");
 			return handleSearchSubscriber(m);
 
 		case REGISTER_GUIDE_REQUEST:
+			addLog("Client requested guide registration.");
 			return handleRegisterGuide(m);
 
 		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
+			addLog("Client requested occasional customer access.");
 			return handleOccasionalCustomerAccess(m);
+
+		case EMPLOYEE_LOGIN_REQUEST:
+			addLog("Client requested employee login.");
+			return handleEmployeeLogin(m);
+
+		case EXISTING_CUSTOMER_LOGIN_REQUEST:
+			addLog("Client requested existing customer login.");
+			return handleExistingCustomerLogin(m);
+
+		case REGISTER_SUBSCRIBER_REQUEST:
+			addLog("Client requested subscriber registration.");
+			return handleRegisterSubscriber(m);
 
 		case JOIN_WAITING_LIST_REQUEST:
 			addLog("Client requested to join the waiting list.");
@@ -268,18 +283,6 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("Client requested to accept a waiting list offer.");
 			return handleAcceptWaitingOffer(m);
 
-		case EMPLOYEE_LOGIN_REQUEST:
-			addLog("Client requested employee login.");
-			return handleEmployeeLogin(m);
-
-		case EXISTING_CUSTOMER_LOGIN_REQUEST:
-			addLog("Client requested existing customer login.");
-			return handleExistingCustomerLogin(m);
-
-		case REGISTER_SUBSCRIBER_REQUEST:
-			addLog("Client requested subscriber registration.");
-			return handleRegisterSubscriber(m);
-
 		case CHECK_IN_ORDER_REQUEST:
 			addLog("Client requested park check-in by confirmation code.");
 			return handleCheckInOrder(m);
@@ -295,13 +298,13 @@ public class ServerController implements ServerAndControllerConnection {
 		case GET_CURRENT_VISITORS_REQUEST:
 			addLog("Client requested current visitors count.");
 			return handleGetCurrentVisitors(m);
+
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
 			return null;
 		}
 	}
-
 	/*
 	 * Handles a request to update an existing order.
 	 * 
@@ -634,34 +637,46 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * Handles a client request to search for a subscriber by subscriber ID.
+	/**
+	 * Handles a search subscriber request received from the client.
 	 * 
-	 * @param m the message received from the client, containing the subscriber ID.
+	 * The method receives subscriber id, searches it in the subscriber table,
+	 * and returns the subscriber details if found.
+	 * 
+	 * @param m the message received from the client, containing subscriber id
+	 * @return a Message with an OperationResponse containing the search result
 	 */
 	private Message handleSearchSubscriber(Message m) {
 		int subscriberId = (int) m.getData();
+
+		addLog("Searching subscriber by ID: " + subscriberId);
 
 		try {
 			Subscriber subscriber = sc.findSubscriberById(subscriberId);
 
 			if (subscriber == null) {
 				OperationResponse response =
-						new OperationResponse(false, "Subscriber not found", null);
+						new OperationResponse(false, "Subscriber not found.", null);
+
+				addLog("Subscriber not found. ID: " + subscriberId);
 
 				return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
 			}
 
 			OperationResponse response =
-					new OperationResponse(true, "Subscriber found", subscriber);
+					new OperationResponse(true, "Subscriber found.", subscriber);
+
+			addLog("Subscriber found. ID: " + subscriberId);
 
 			return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 
+			addLog("ERROR - Database error while searching subscriber: " + e.getMessage());
+
 			OperationResponse response =
-					new OperationResponse(false, "Database error while searching subscriber", null);
+					new OperationResponse(false, "Database error while searching subscriber.", null);
 
 			return new Message(response, Protocol.SEARCH_SUBSCRIBER_RESPONSE);
 		}
@@ -675,44 +690,41 @@ public class ServerController implements ServerAndControllerConnection {
 	private Message handleRegisterGuide(Message m) {
 		GuideRegistrationRequest request = (GuideRegistrationRequest) m.getData();
 
+		addLog("Register guide request received. Subscriber ID: " + request.getSubscriberId());
+
 		try {
 			Subscriber subscriber = sc.findSubscriberById(request.getSubscriberId());
 
 			if (subscriber == null) {
 				OperationResponse response =
-						new OperationResponse(false, "Subscriber not found", null);
+						new OperationResponse(false, "Subscriber not found.", null);
 
 				return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 			}
 
-			boolean alreadyGuide = gc.isSubscriberAlreadyGuide(request.getSubscriberId());
-
-			if (alreadyGuide) {
+			if (gc.isSubscriberAlreadyGuide(request.getSubscriberId())) {
 				OperationResponse response =
-						new OperationResponse(false, "Subscriber is already registered as guide", null);
+						new OperationResponse(false, "Subscriber is already registered as a guide.", null);
 
 				return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 			}
 
-			boolean registered = gc.registerGuide(request);
-
-			if (registered) {
-				OperationResponse response =
-						new OperationResponse(true, "Guide registered successfully", null);
-
-				return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
-			}
+			gc.registerGuide(request);
 
 			OperationResponse response =
-					new OperationResponse(false, "Failed to register guide", null);
+					new OperationResponse(true, "Guide registered successfully.", null);
+
+			addLog("Guide registered successfully. Subscriber ID: " + request.getSubscriberId());
 
 			return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 
+			addLog("ERROR - Database error while registering guide: " + e.getMessage());
+
 			OperationResponse response =
-					new OperationResponse(false, "Database error while registering guide", null);
+					new OperationResponse(false, "Database error while registering guide.", null);
 
 			return new Message(response, Protocol.REGISTER_GUIDE_RESPONSE);
 		}
@@ -937,7 +949,7 @@ public class ServerController implements ServerAndControllerConnection {
 			boolean rejected = wlc.rejectWaitingOfferAndOfferNext(waitingListMessage.getWaitingId());
 
 			if (rejected) {
-				waitingListMessage.setWaitingStatus("rejected");
+				waitingListMessage.setWaitingStatus("cancelled");
 
 				addLog("Waiting list offer rejected successfully. Waiting ID: "
 						+ waitingListMessage.getWaitingId());
@@ -982,7 +994,7 @@ public class ServerController implements ServerAndControllerConnection {
 			boolean accepted = wlc.acceptWaitingOffer(waitingListMessage.getWaitingId());
 
 			if (accepted) {
-				waitingListMessage.setWaitingStatus("accepted");
+				waitingListMessage.setWaitingStatus("confirmed");
 
 				addLog("Waiting list offer accepted successfully. Waiting ID: "
 						+ waitingListMessage.getWaitingId());
@@ -1023,21 +1035,21 @@ public class ServerController implements ServerAndControllerConnection {
 	}
 
 	/*
-	 * Handles an occasional customer access request received from the client.
-	 * 
-	 * The occasional customer identifies himself using an ID number.
-	 * The method searches all orders that belong to this ID number and returns
-	 * them to the client.
-	 * 
-	 * @param m the message received from the client, containing customer ID number
-	 * @return a Message with an OperationResponse containing the access result
-	 */
+ * Handles an occasional customer access request received from the client.
+ * 
+ * The occasional customer identifies himself using an ID number.
+ * The method searches all orders that belong to this ID number and returns
+ * them to the client.
+ * 
+ * @param m the message received from the client, containing customer ID number
+ * @return a Message with an OperationResponse containing the access result
+ */
 	private Message handleOccasionalCustomerAccess(Message m) {
-		String customerIdNumber = (String) m.getData();
-
-		addLog("Checking occasional customer ID number: " + customerIdNumber);
-
 		try {
+			String customerIdNumber = (String) m.getData();
+
+			addLog("Checking occasional customer ID number: " + customerIdNumber);
+
 			ArrayList<Order> orders = oc.getOrdersByCustomerIdNumber(customerIdNumber);
 
 			if (orders != null && !orders.isEmpty()) {
@@ -1059,10 +1071,20 @@ public class ServerController implements ServerAndControllerConnection {
 		} catch (SQLException e) {
 			e.printStackTrace();
 
-			addLog("ERROR - Database error while searching orders by ID number: " + e.getMessage());
+			addLog("ERROR - Database error while searching occasional customer orders: " + e.getMessage());
 
 			OperationResponse response =
-					new OperationResponse(false, "Database error while searching orders", null);
+					new OperationResponse(false, "Database error while searching orders.", null);
+
+			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Unexpected error while handling occasional customer access: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Unexpected server error while searching orders.", null);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 		}

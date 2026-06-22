@@ -5,6 +5,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import common.GuideRegistrationRequest;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import common.GuideRegistrationRequest;
 
 /**
  * This class is the DB connector used when working with the guide table
@@ -72,45 +77,41 @@ public class GuideConnection extends AbstractDBConnection {
      * @throws SQLException if the select query fails
      */
     public boolean isSubscriberAlreadyGuide(int subscriberId) throws SQLException {
-        String query = selectByFields(
-            new String[] { GUIDE_ID },
-            new String[] { SUBSCRIBER_ID }
-        );
+    	String query = selectByFields(
+    			new String[] {
+    					GUIDE_ID
+    			},
+    			new String[] {
+    					SUBSCRIBER_ID
+    			}
+    	);
 
-        PreparedStatement pstmt = conn.prepareStatement(query);
-        pstmt.setInt(1, subscriberId);
+    	try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+    		pstmt.setInt(1, subscriberId);
 
-        ResultSet rs = pstmt.executeQuery();
-
-        boolean exists = rs.next();
-
-        rs.close();
-        pstmt.close();
-
-        return exists;
+    		try (ResultSet rs = pstmt.executeQuery()) {
+    			return rs.next();
+    		}
+    	}
     }
 
-    public boolean registerGuide(GuideRegistrationRequest request) throws SQLException {
-        String query =
-            "INSERT INTO `" + getTableName() + "` " +
-            "(" + SUBSCRIBER_ID + ", " +
-                  AUTHORIZED_BY_EMPLOYEE_ID + ", " +
-                  ORGANIZATION_NAME + ", " +
-                  GUIDE_STATUS + ", created_at) " +
-            "VALUES (?, ?, ?, ?, NOW())";
+    public void registerGuide(GuideRegistrationRequest request) throws SQLException {
+    	String sql = "INSERT INTO `" + getTableName() + "` "
+    			+ "("
+    			+ SUBSCRIBER_ID + ", "
+    			+ ORGANIZATION_NAME + ", "
+    			+ GUIDE_STATUS + ", "
+    			+ AUTHORIZED_BY_EMPLOYEE_ID
+    			+ ") VALUES (?, ?, ?, ?);";
 
-        PreparedStatement pstmt = conn.prepareStatement(query);
+    	try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    		pstmt.setInt(1, request.getSubscriberId());
+    		pstmt.setString(2, request.getOrganizationName());
+    		pstmt.setString(3, request.getGuideStatus());
+    		pstmt.setInt(4, request.getAuthorizedByEmployeeId());
 
-        pstmt.setInt(1, request.getSubscriberId());
-        pstmt.setInt(2, request.getAuthorizedByEmployeeId());
-        pstmt.setString(3, request.getOrganizationName());
-        pstmt.setString(4, request.getGuideStatus());
-
-        int rows = pstmt.executeUpdate();
-
-        pstmt.close();
-
-        return rows == 1;
+    		pstmt.executeUpdate();
+    	}
     }
     
     /* This method checks whether a given id is an active, registered guide

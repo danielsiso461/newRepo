@@ -116,6 +116,8 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 
 			if (response.isSuccess()) {
 				Subscriber subscriber = (Subscriber) response.getData();
+				
+				clientController.setLoggedInSubscriberId(subscriber.getSubscriberId());
 
 				messageLabel.setText("Login successful. Welcome " + subscriber.getSubscriberName());
 

@@ -29,10 +29,8 @@ public final class OrderConnection extends AbstractDBConnection {
 	private final String ORDER_DATE = "order_date";
 	private final String VISITOR_NUMBER = "number_of_visitors";
 	private final String CONF_CODE = "confirmation_code";
-	private final String CUSTOMER_ID = "subscriber_id";
 	private final String SUBSCRIBER_ID = "subscriber_id";
 	private final String PLACEMENT_DATE = "date_of_placing_order";
-	private final String CUSTOMER_ID_NUMBER = "customer_id_number";
 	private final String ORDER_HOUR = "order_hour";
 	private final String ORDER_CUSTOMER_ID = "customer_id";
 	private final String EMAIL = "email";
@@ -41,24 +39,13 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * The park id column in the order table.
 	 */
 	private final String PARK_ID = "park_id";
-
-	/**
-	 * The guide id column in the order table.
-	 */
 	private final String GUIDE_ID = "guide_id";
-
-	/**
-	 * The order status column in the order table.
-	 */
 	private final String ORDER_STATUS = "order_status";
-
-	/**
-	 * The order type column in the order table.
-	 */
 	private final String ORDER_TYPE = "order_type";
+
 	/* this is used to generate confirmation codes */
 	private final int CONF_CODE_OFFSET = 100000;
-	
+
 	/**
 	 * Private constructor for Singleton.
 	 * 
@@ -111,7 +98,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return an Order object that represents the current order
 	 * @throws SQLException if reading data from the ResultSet fails
 	 */
-	private Order convertResultSetToOrderRow(int index, ResultSet rs) throws SQLException {
+	private Order convertResultSetToOrder(int index, ResultSet rs) throws SQLException {
 		Integer guideId = rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID);
 
 		return new Order(
@@ -120,7 +107,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				rs.getDate(ORDER_DATE).toLocalDate(),
 				rs.getInt(VISITOR_NUMBER),
 				rs.getInt(CONF_CODE),
-				rs.getInt(CUSTOMER_ID),
+				rs.getInt(ORDER_CUSTOMER_ID),
 				rs.getDate(PLACEMENT_DATE).toLocalDate(),
 				rs.getInt(PARK_ID),
 				guideId,
@@ -190,13 +177,14 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
 
 		return orders;
 	}
+
 	/**
 	 * This method creates a new order in the database.
 	 * 
@@ -218,32 +206,38 @@ public final class OrderConnection extends AbstractDBConnection {
 				INSERT INTO `order`
 				(
 					order_date,
+					order_hour,
 					number_of_visitors,
 					confirmation_code,
 					subscriber_id,
+					customer_id,
+					email,
 					park_id,
 					guide_id,
 					date_of_placing_order,
 					order_status,
 					order_type
 				)
-				VALUES (?, ?, ?, ?, ?, ?, CURDATE(), 'pending', ?);
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), 'pending', ?);
 				""";
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 			pstmt.setDate(1, java.sql.Date.valueOf(orderDate));
-			pstmt.setInt(2, numberOfVisitors);
-			pstmt.setInt(3, confirmationCode);
-			pstmt.setInt(4, subscriberId);
-			pstmt.setInt(5, parkId);
+			pstmt.setInt(2, 0);
+			pstmt.setInt(3, numberOfVisitors);
+			pstmt.setInt(4, confirmationCode);
+			pstmt.setInt(5, subscriberId);
+			pstmt.setInt(6, subscriberId);
+			pstmt.setString(7, "");
+			pstmt.setInt(8, parkId);
 
 			if (guideId == null) {
-				pstmt.setNull(6, java.sql.Types.INTEGER);
+				pstmt.setNull(9, java.sql.Types.INTEGER);
 			} else {
-				pstmt.setInt(6, guideId);
+				pstmt.setInt(9, guideId);
 			}
 
-			pstmt.setString(7, orderType);
+			pstmt.setString(10, orderType);
 
 			int rows = pstmt.executeUpdate();
 
@@ -282,7 +276,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					return convertResultSetToOrderRow(1, rs);
+					return convertResultSetToOrder(1, rs);
 				}
 			}
 		}
@@ -316,7 +310,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -350,7 +344,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -384,7 +378,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -642,7 +636,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -683,6 +677,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return 0;
 	}
+
 	/*
 	 * this method returns the next order number for a new order.
 	 * 
@@ -811,6 +806,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return o;
 	}
+
 	/**
 	 * This method returns all orders that belong to a specific customer id number.
 	 * 
@@ -876,7 +872,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		return orders;
 	}
-	
+
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */

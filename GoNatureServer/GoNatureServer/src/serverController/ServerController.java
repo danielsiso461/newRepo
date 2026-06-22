@@ -124,7 +124,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(m.getData(), typeRet);
 
 		case RETURN_ORDER:
-			List<OrderRow> req = null;
+			List<Order> req = null;
 
 			try {
 				req = oc.getUserOrders(m);
