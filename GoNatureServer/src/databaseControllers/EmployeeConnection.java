@@ -3,16 +3,11 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 import common.Employee;
 
 /**
- * This class is the DB connector used when working with the employee table.
- * 
- * The class is implemented as a Singleton, so the server will use only one
- * database connection object for employees during runtime.
- * 
- * The employee table stores the system workers, including their login details,
- * role, park affiliation, and active status.
+ * DB connector for the employee table.
  */
 public class EmployeeConnection extends AbstractDBConnection {
 
@@ -20,12 +15,12 @@ public class EmployeeConnection extends AbstractDBConnection {
 	 * The single instance of EmployeeConnection.
 	 */
 	private static EmployeeConnection instance;
-	
+
 	private final String EMPLOYEE_ID = "employee_id";
 	private final String EMPLOYEE_NUMBER = "employee_number";
-	private final String EMPLOYEE_FIRST_NAME = "employee_first_name";
-	private final String EMPLOYEE_LAST_NAME = "employee_last_name";
-	private final String EMPLOYEE_EMAIL = "employee_email";
+	private final String FIRST_NAME = "employee_first_name";
+	private final String LAST_NAME = "employee_last_name";
+	private final String EMAIL = "employee_email";
 	private final String USERNAME = "username";
 	private final String PASSWORD = "password";
 	private final String EMPLOYEE_ROLE = "employee_role";
@@ -56,6 +51,7 @@ public class EmployeeConnection extends AbstractDBConnection {
 		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
 			instance = new EmployeeConnection();
 		}
+
 		return instance;
 	}
 
@@ -70,120 +66,32 @@ public class EmployeeConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method checks employee login details.
+	 * Converts the current ResultSet row into an Employee object.
 	 * 
-	 * The method returns an active employee whose username and password match the
-	 * given values.
-	 * 
-	 * @param username the username entered by the employee
-	 * @param password the password entered by the employee
-	 * @return a ResultSet containing the employee data if login succeeds
-	 * @throws SQLException if the select query fails
+	 * @param rs the ResultSet positioned on the current employee row
+	 * @return an Employee object
+	 * @throws SQLException if reading data from the ResultSet fails
 	 */
-	public ResultSet login(String username, String password) throws SQLException {
-		String sql = "SELECT * FROM employee "
-				+ "WHERE username = ? AND password = ? AND is_active = 1;";
+	private Employee convertResultSetToEmployee(ResultSet rs) throws SQLException {
+		Integer parkId = rs.getObject(PARK_ID) == null
+				? null
+				: rs.getInt(PARK_ID);
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setString(1, username);
-		pstmt.setString(2, password);
-
-		return pstmt.executeQuery();
+		return new Employee(
+				rs.getInt(EMPLOYEE_ID),
+				rs.getString(EMPLOYEE_NUMBER),
+				rs.getString(FIRST_NAME),
+				rs.getString(LAST_NAME),
+				rs.getString(EMAIL),
+				rs.getString(USERNAME),
+				rs.getString(EMPLOYEE_ROLE),
+				parkId,
+				rs.getInt(IS_ACTIVE) == 1
+		);
 	}
 
 	/**
-	 * This method returns the role of a specific employee.
-	 * 
-	 * @param employeeId the employee ID
-	 * @return the employee role, or null if the employee was not found
-	 * @throws SQLException if the select query fails
-	 */
-	public String getEmployeeRole(int employeeId) throws SQLException {
-		String sql = "SELECT employee_role FROM employee WHERE employee_id = ?;";
-
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, employeeId);
-
-		ResultSet rs = pstmt.executeQuery();
-
-		if (rs.next()) {
-			return rs.getString("employee_role");
-		}
-
-		return null;
-	}
-
-	/**
-	 * This method checks whether the employee is a park manager.
-	 * 
-	 * @param employeeId the employee ID
-	 * @return true if the employee role is park_manager, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean isParkManager(int employeeId) throws SQLException {
-		return "park_manager".equals(getEmployeeRole(employeeId));
-	}
-
-	/**
-	 * This method checks whether the employee is a department manager.
-	 * 
-	 * @param employeeId the employee ID
-	 * @return true if the employee role is department_manager, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean isDepartmentManager(int employeeId) throws SQLException {
-		return "department_manager".equals(getEmployeeRole(employeeId));
-	}
-
-	/**
-	 * This method checks whether the employee is a service representative.
-	 * 
-	 * @param employeeId the employee ID
-	 * @return true if the employee role is service_representative, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean isServiceRepresentative(int employeeId) throws SQLException {
-		return "service_representative".equals(getEmployeeRole(employeeId));
-	}
-
-	/**
-	 * This method checks whether the employee is a park worker.
-	 * 
-	 * @param employeeId the employee ID
-	 * @return true if the employee role is park_worker, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean isParkWorker(int employeeId) throws SQLException {
-		return "park_worker".equals(getEmployeeRole(employeeId));
-	}
-
-	/**
-	 * This method returns the park ID connected to a specific employee.
-	 * 
-	 * This is useful for checking whether a park manager or park worker belongs to a
-	 * specific park.
-	 * 
-	 * @param employeeId the employee ID
-	 * @return the park ID of the employee, or -1 if the employee was not found
-	 * @throws SQLException if the select query fails
-	 */
-	public int getEmployeeParkId(int employeeId) throws SQLException {
-		String sql = "SELECT park_id FROM employee WHERE employee_id = ?;";
-
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, employeeId);
-
-		ResultSet rs = pstmt.executeQuery();
-
-		if (rs.next()) {
-			return rs.getInt("park_id");
-		}
-
-		return -1;
-	}
-	
-	/**
-	 * This method checks employee login details and returns the matching employee.
+	 * Returns the active employee if login succeeds, otherwise null.
 	 * 
 	 * The method searches for an active employee whose username and password match
 	 * the values entered in the login screen.
@@ -193,17 +101,12 @@ public class EmployeeConnection extends AbstractDBConnection {
 	 * @return an Employee object if login succeeds, otherwise null
 	 * @throws SQLException if the select query fails
 	 */
-	public Employee loginEmployee(String username, String password) throws SQLException {
-		String query = selectByFields(
+	public Employee login(String username, String password) throws SQLException {
+		ensureConnection();
+
+		String sql = selectByFieldsAND(
 				new String[] {
-						EMPLOYEE_ID,
-						EMPLOYEE_NUMBER,
-						EMPLOYEE_FIRST_NAME,
-						EMPLOYEE_LAST_NAME,
-						EMPLOYEE_EMAIL,
-						USERNAME,
-						EMPLOYEE_ROLE,
-						PARK_ID
+						"*"
 				},
 				new String[] {
 						USERNAME,
@@ -212,29 +115,148 @@ public class EmployeeConnection extends AbstractDBConnection {
 				}
 		);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, username);
 			pstmt.setString(2, password);
 			pstmt.setInt(3, 1);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					Integer parkId = rs.getObject(PARK_ID) == null ? null : rs.getInt(PARK_ID);
-
-					return new Employee(
-							rs.getInt(EMPLOYEE_ID),
-							rs.getInt(EMPLOYEE_NUMBER),
-							rs.getString(EMPLOYEE_FIRST_NAME),
-							rs.getString(EMPLOYEE_LAST_NAME),
-							rs.getString(EMPLOYEE_EMAIL),
-							rs.getString(USERNAME),
-							rs.getString(EMPLOYEE_ROLE),
-							parkId
-					);
+					return convertResultSetToEmployee(rs);
 				}
 			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * Checks employee login details and returns the matching employee.
+	 * 
+	 * This method is kept for compatibility with older code that already calls
+	 * loginEmployee instead of login.
+	 * 
+	 * @param username the username entered by the employee
+	 * @param password the password entered by the employee
+	 * @return an Employee object if login succeeds, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Employee loginEmployee(String username, String password) throws SQLException {
+		return login(username, password);
+	}
+
+	/**
+	 * Returns the role of an employee.
+	 * 
+	 * @param employeeId the employee ID
+	 * @return the employee role, or null if the employee does not exist
+	 * @throws SQLException if the select query fails
+	 */
+	public String getEmployeeRole(int employeeId) throws SQLException {
+		ensureConnection();
+
+		String sql = selectByFields(
+				new String[] {
+						EMPLOYEE_ROLE
+				},
+				new String[] {
+						EMPLOYEE_ID
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, employeeId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getString(EMPLOYEE_ROLE);
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Checks whether the employee is a park manager.
+	 * 
+	 * @param employeeId the employee ID
+	 * @return true if the employee is a park manager, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
+	public boolean isParkManager(int employeeId) throws SQLException {
+		return "park_manager".equals(getEmployeeRole(employeeId));
+	}
+
+	/**
+	 * Checks whether the employee is a department manager.
+	 * 
+	 * @param employeeId the employee ID
+	 * @return true if the employee is a department manager, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
+	public boolean isDepartmentManager(int employeeId) throws SQLException {
+		return "department_manager".equals(getEmployeeRole(employeeId));
+	}
+
+	/**
+	 * Checks whether the employee is a service representative.
+	 * 
+	 * @param employeeId the employee ID
+	 * @return true if the employee is a service representative, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
+	public boolean isServiceRepresentative(int employeeId) throws SQLException {
+		return "service_representative".equals(getEmployeeRole(employeeId));
+	}
+
+	/**
+	 * Checks whether the employee is a park worker.
+	 * 
+	 * @param employeeId the employee ID
+	 * @return true if the employee is a park worker, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
+	public boolean isParkWorker(int employeeId) throws SQLException {
+		return "park_worker".equals(getEmployeeRole(employeeId));
+	}
+
+	/**
+	 * Returns the park ID assigned to the employee.
+	 * 
+	 * If the employee does not have a park, or if the employee was not found, the
+	 * method returns -1.
+	 * 
+	 * @param employeeId the employee ID
+	 * @return the employee park ID, or -1 if there is no assigned park
+	 * @throws SQLException if the select query fails
+	 */
+	public int getEmployeeParkId(int employeeId) throws SQLException {
+		ensureConnection();
+
+		String sql = selectByFields(
+				new String[] {
+						PARK_ID
+				},
+				new String[] {
+						EMPLOYEE_ID
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, employeeId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					if (rs.getObject(PARK_ID) == null) {
+						return -1;
+					}
+
+					return rs.getInt(PARK_ID);
+				}
+			}
+		}
+
+		return -1;
 	}
 }

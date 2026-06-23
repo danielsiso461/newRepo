@@ -1,69 +1,100 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.PieChart?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/25"
+            fx:controller="clientGUI.ReportsPageController"
+            stylesheets="@gonature-theme.css"
+            styleClass="root-pane">
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25" fx:controller="clientGUI.ReportsPageController">
-   <children>
-      <BorderPane prefHeight="600.0" prefWidth="800.0">
-         <top>
-            <VBox prefWidth="100.0" spacing="15.0" BorderPane.alignment="CENTER">
-               <children>
-                  <Label alignment="CENTER" prefHeight="75.0" prefWidth="293.0" text="Reports and Data Analysis" textAlignment="CENTER">
-                     <VBox.margin>
-                        <Insets left="270.0" top="50.0" />
-                     </VBox.margin>
-                     <font>
-                        <Font size="24.0" />
-                     </font>
-                  </Label>
-                  <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="15.0">
-                     <children>
-                        <HBox prefHeight="455.0" prefWidth="0.0" />
-                        <Label text="Report type:" />
-                        <ComboBox fx:id="reportTypeComboBox" prefWidth="150.0" />
-                        <Label text="Visitor Type: " />
-                        <ComboBox fx:id="visitorTypeComboBox" prefWidth="150.0" />
-                        <Button fx:id="showReportButton" mnemonicParsing="false" onAction="#handleShowReport" text="Show Report" />
-                     </children>
-                  </HBox>
-               </children>
-               <padding>
-                  <Insets top="20.0" />
-               </padding>
-            </VBox>
-         </top>
-         <center>
-            <TableView fx:id="reportsTableView" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-              <columns>
-                <TableColumn fx:id="visitorIdColumn" minWidth="30.0" prefWidth="160.0" text="Visitor ID" />
-                <TableColumn fx:id="visitorNameColumn" minWidth="30.0" prefWidth="160.0" text="Visitor Name" />
-                  <TableColumn fx:id="visitorTypeColumn" minWidth="30.0" prefWidth="160.0" text="Visitor Type" />
-                  <TableColumn fx:id="entryTimeColumn" minWidth="30.0" prefWidth="160.0" text="Entry Time" />
-                  <TableColumn fx:id="exitTimeColumn" minWidth="30.0" prefWidth="160.0" text="Exit Time" />
-              </columns>
-            </TableView>
-         </center>
-         <bottom>
-            <HBox alignment="CENTER" prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-               <children>
-                  <Label fx:id="statusLabel" alignment="TOP_CENTER" text="Status: Ready" />
-               </children>
-               <padding>
-                  <Insets top="5.0" />
-               </padding>
-            </HBox>
-         </bottom>
-      </BorderPane>
-   </children>
+    <children>
+        <BorderPane prefHeight="760.0"
+                    prefWidth="1150.0"
+                    minHeight="620.0"
+                    minWidth="900.0"
+                    AnchorPane.topAnchor="0.0"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0">
+
+            <center>
+                <VBox alignment="CENTER" spacing="22.0" styleClass="page-container">
+                    <children>
+
+                        <VBox alignment="CENTER" spacing="10.0">
+                            <children>
+                                <Label text="Reports and Data Analysis" styleClass="page-title"/>
+                                <Label text="Select report type, park and date filters"
+                                       styleClass="page-subtitle"/>
+                            </children>
+                        </VBox>
+
+                        <HBox alignment="CENTER" spacing="12.0" maxWidth="980.0" styleClass="card">
+                            <children>
+                                <Label text="Report type:" styleClass="field-label"/>
+                                <ComboBox fx:id="reportTypeComboBox" prefWidth="210.0"/>
+
+                                <Label text="Park:" styleClass="field-label"/>
+                                <ComboBox fx:id="parkComboBox" prefWidth="220.0"/>
+
+                                <Label text="Month:" styleClass="field-label"/>
+                                <ComboBox fx:id="monthComboBox" prefWidth="90.0"/>
+
+                                <Label text="Year:" styleClass="field-label"/>
+                                <ComboBox fx:id="yearComboBox" prefWidth="100.0"/>
+
+                                <Button fx:id="showReportButton"
+                                        text="Show Report"
+                                        prefWidth="130.0"
+                                        styleClass="primary-button"
+                                        onAction="#handleShowReport"/>
+                            </children>
+                        </HBox>
+
+                        <VBox spacing="14.0" maxWidth="1050.0" styleClass="card">
+                            <children>
+                                <PieChart fx:id="reportPieChart"
+                                          prefHeight="300.0"
+                                          visible="false"
+                                          managed="false"/>
+
+                                <BarChart fx:id="reportBarChart"
+                                          prefHeight="300.0"
+                                          visible="false"
+                                          managed="false">
+                                    <xAxis>
+                                        <CategoryAxis fx:id="barChartXAxis"/>
+                                    </xAxis>
+                                    <yAxis>
+                                        <NumberAxis fx:id="barChartYAxis"/>
+                                    </yAxis>
+                                </BarChart>
+
+                                <TableView fx:id="reportsTableView"
+                                           prefHeight="230.0"/>
+                            </children>
+                        </VBox>
+
+                        <Label fx:id="statusLabel"
+                               text="Status: Ready"
+                               styleClass="status-label"/>
+
+                    </children>
+                </VBox>
+            </center>
+
+        </BorderPane>
+    </children>
 </AnchorPane>

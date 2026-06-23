@@ -58,7 +58,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 
 	@FXML // URL location of the FXML file that was given to the FXMLLoader
 	private URL location;
-
+ 
 	@FXML // fx:id="orderTable"
 	private TableView<Order> orderTable; // Value injected by FXMLLoader
 	/* the table data */
@@ -278,6 +278,14 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		updateButton.setDisable(true);
 		cancelButton.setDisable(true);
 		
+		orderTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+		
+		notifLabel.textProperty().addListener((observable, oldText, newText) -> {
+		    updateNotifLabelVisibility();
+		});
+
+		updateNotifLabelVisibility();
+		
 		// sets where the table columns get their data from (of the given object) 
 		orderNumber.setCellValueFactory(new PropertyValueFactory<>("orderNumber"));
 		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
@@ -293,6 +301,14 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		orderTable.setItems(data);
 		// adds listener to row selection
 		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);		
+	}
+	
+	private void updateNotifLabelVisibility() {
+	    boolean hasMessage = notifLabel.getText() != null
+	            && !notifLabel.getText().isBlank();
+
+	    notifLabel.setVisible(hasMessage);
+	    notifLabel.setManaged(hasMessage);
 	}
 	
 	/* 

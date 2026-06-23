@@ -31,7 +31,7 @@ public class NotificationConnection extends AbstractDBConnection {
 	private NotificationConnection() throws SQLException {
 		connect();
 	}
-
+ 
 	/**
 	 * Returns the single instance of NotificationConnection.
 	 * 

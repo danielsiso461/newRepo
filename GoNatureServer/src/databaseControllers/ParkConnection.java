@@ -1,474 +1,736 @@
 package databaseControllers;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import common.Order;
+import common.order;
 import common.Park;
-import common.ParkInfo;
+import common.ParkVisitorCounterSnapshot;
+import common.ParkVisitorCounterUpdateRequest;
 
 /**
- * This class is the DB connector used when working with the park table.
- * 
- * The class is implemented as a Singleton, so the server will use only one
- * database connection object for parks during runtime.
- * 
- * The park table stores park information such as park name, maximum capacity,
- * number of reserved places for unplanned visitors, estimated visit duration,
- * full entry price, active status, and promotions.
+ * DB connector for the park table.
  */
 public class ParkConnection extends AbstractDBConnection {
-	/* park table columns */
-	private final String
-					PARK_NAME_COLUMN = "park_name",
-					PARK_ID_COLUMN = "park_id",
-					PARK_IS_ACTIVE_COLUMN = "is_active";
-	/* indicator that a park is active */
-	private final int
-					PARK_IS_ACTIVE_TRUE = 1;
-	
-	/**
-	 * The single instance of ParkConnection.
-	 */
-	private static ParkConnection instance;
 
-	/**
-	 * Private constructor for Singleton.
-	 * 
-	 * It creates the database connection once.
-	 * 
-	 * @throws SQLException if the connection to the database fails
-	 */
-	private ParkConnection() throws SQLException {
-		connect();
-	}
+    /*
+     * Park table columns.
+     */
+    private static final String PARK_ID = "park_id";
+    private static final String PARK_NAME = "park_name";
+    private static final String MAX_CAPACITY = "max_capacity";
+    private static final String CURRENT_VISITORS = "current_visitors";
+    private static final String PLACES_FOR_UNPLANNED_VISITORS = "places_for_unplanned_visitors";
+    private static final String ESTIMATED_VISIT_DURATION_HOURS = "estimated_visit_duration_hours";
+    private static final String FULL_ENTRY_PRICE = "full_entry_price";
+    private static final String IS_ACTIVE = "is_active";
+    private static final String PROMOTIONS = "promotions";
 
-	/**
-	 * Returns the single instance of ParkConnection.
-	 * 
-	 * If no instance exists, or if the existing database connection is closed, a new
-	 * instance is created.
-	 * 
-	 * @return the only ParkConnection instance
-	 * @throws SQLException if creating the database connection fails
-	 */
-	public static ParkConnection getInstance() throws SQLException {
-		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
-			instance = new ParkConnection();
-		}
-		return instance;
-	}
+    /*
+     * Visitor counter log table.
+     */
+    private static final String PARK_VISITOR_COUNTER_LOG = "park_visitor_counter_log";
+    private static final String EMPLOYEE_ID = "employee_id";
+    private static final String ACTION_TYPE = "action_type";
+    private static final String AMOUNT = "amount";
+    private static final String VISITORS_BEFORE = "visitors_before";
+    private static final String VISITORS_AFTER = "visitors_after";
 
-	/**
-	 * Returns the table name used by this DB connector.
-	 * 
-	 * @return the park table name
-	 */
-	@Override
-	protected String getTableName() {
-		return ConstantsDBTableNames.PARK;
-	}
+    /*
+     * Parameter names used by park_parameter_change_request.
+     * full_entry_price is intentionally not here because it is not allowed
+     * to be updated by park managers.
+     */
+    private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
+    private static final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
+            "places_for_unplanned_visitors";
+    private static final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
+            "estimated_visit_duration_hours";
+    private static final String PARAMETER_PROMOTIONS = "promotions";
 
-	/**
-	 * This method checks that the database connection is open.
-	 * 
-	 * @throws SQLException if reconnecting to the database fails
-	 */
-	private void ensureConnection() throws SQLException {
-		if (conn == null || conn.isClosed()) {
-			connect();
-		}
-	}
+    private static final int ACTIVE_TRUE = 1;
 
-	/**
-	 * This method converts the current row of a ResultSet into a full Park object.
-	 * 
-	 * @param rs the ResultSet positioned on the current park row
-	 * @return a Park object that represents the current park
-	 * @throws SQLException if reading data from the ResultSet fails
-	 */
-	private Park convertResultSetToPark(ResultSet rs) throws SQLException {
-		return new Park(
-				rs.getInt("park_id"),
-				rs.getString("park_name"),
-				rs.getInt("max_capacity"),
-				rs.getInt("places_for_unplanned_visitors"),
-				rs.getDouble("estimated_visit_duration_hours"),
-				rs.getDouble("full_entry_price"),
-				rs.getInt("is_active") == 1,
-				rs.getInt("promotions") == 1
-		);
-	}
+    private static final int MIN_COUNTER_UPDATE_AMOUNT = 1;
+    private static final int MAX_COUNTER_UPDATE_AMOUNT = 15;
 
-	/**
-	 * This method returns all active parks as full Park objects.
-	 * 
-	 * The returned objects are intended for server-side use only, because they
-	 * include internal management data such as capacity and reserved places for
-	 * unplanned visitors.
-	 * 
-	 * @return a list of active full Park objects
-	 * @throws SQLException if the select query fails
-	 */
-	public List<Park> getAllActiveParks() throws SQLException {
-		ensureConnection();
+    private static ParkConnection instance;
 
-		String sql = """
-				SELECT *
-				FROM park
-				WHERE is_active = 1
-				ORDER BY park_name;
-				""";
+    private ParkConnection() throws SQLException {
+        connect();
+    }
 
-		List<Park> parks = new ArrayList<>();
+    public static ParkConnection getInstance() throws SQLException {
+        if (instance == null || instance.conn == null || instance.conn.isClosed()) {
+            instance = new ParkConnection();
+        }
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql);
-				ResultSet rs = pstmt.executeQuery()) {
+        return instance;
+    }
 
-			while (rs.next()) {
-				parks.add(convertResultSetToPark(rs));
-			}
-		}
+    @Override
+    protected String getTableName() {
+        return ConstantsDBTableNames.PARK;
+    }
 
-		return parks;
-	}
+    /**
+     * Converts a database row into a Park object.
+     */
+    private Park convertResultSetToPark(ResultSet rs) throws SQLException {
+        return new Park(
+                rs.getInt(PARK_ID),
+                rs.getString(PARK_NAME),
+                rs.getInt(MAX_CAPACITY),
+                rs.getInt(CURRENT_VISITORS),
+                rs.getInt(PLACES_FOR_UNPLANNED_VISITORS),
+                rs.getDouble(ESTIMATED_VISIT_DURATION_HOURS),
+                rs.getDouble(FULL_ENTRY_PRICE),
+                rs.getInt(IS_ACTIVE) == ACTIVE_TRUE,
+                rs.getDouble(PROMOTIONS)
+        );
+    }
 
-	/**
-	 * This method returns all parks as full Park objects.
-	 * 
-	 * The returned objects are intended for server-side use, such as management
-	 * screens, capacity checks, and internal calculations.
-	 * 
-	 * @return a list of all full Park objects
-	 * @throws SQLException if the select query fails
-	 */
-	public List<Park> getAllFullParks() throws SQLException {
-		ensureConnection();
+    /**
+     * Converts a database row into a park visitor counter snapshot.
+     */
+    private ParkVisitorCounterSnapshot convertResultSetToCounterSnapshot(ResultSet rs)
+            throws SQLException {
 
-		String sql = """
-				SELECT *
-				FROM park
-				ORDER BY park_id;
-				""";
+        return new ParkVisitorCounterSnapshot(
+                rs.getInt(PARK_ID),
+                rs.getString(PARK_NAME),
+                rs.getInt(MAX_CAPACITY),
+                rs.getInt(CURRENT_VISITORS)
+        );
+    }
 
-		List<Park> parks = new ArrayList<>();
+    /**
+     * Returns all active parks.
+     */
+    public List<Park> getAllActiveParks() throws SQLException {
+        ensureConnection();
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql);
-				ResultSet rs = pstmt.executeQuery()) {
+        String sql = selectByFields(
+                new String[] { "*" },
+                new String[] { IS_ACTIVE }
+        );
 
-			while (rs.next()) {
-				parks.add(convertResultSetToPark(rs));
-			}
-		}
+        List<Park> parks = new ArrayList<>();
 
-		return parks;
-	}
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, ACTIVE_TRUE);
 
-	/**
-	 * This method returns a full park object by park ID.
-	 * 
-	 * The returned object is intended for server-side logic only, because it contains
-	 * internal management data.
-	 * 
-	 * @param parkId the park ID
-	 * @return a full Park object if the park exists, otherwise null
-	 * @throws SQLException if the select query fails
-	 */
-	public Park getFullParkById(int parkId) throws SQLException {
-		ensureConnection();
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    parks.add(convertResultSetToPark(rs));
+                }
+            }
+        }
 
-		String sql = """
-				SELECT *
-				FROM park
-				WHERE park_id = ?;
-				""";
+        return parks;
+    }
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, parkId);
+    /**
+     * Returns all parks.
+     */
+    public List<Park> getAllFullParks() throws SQLException {
+        ensureConnection();
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					return convertResultSetToPark(rs);
-				}
-			}
-		}
+        String sql = "SELECT * FROM `" + getTableName() + "`;";
 
-		return null;
-	}
+        List<Park> parks = new ArrayList<>();
 
-	/**
-	 * This method returns public information about all active parks.
-	 * 
-	 * The method converts full Park objects into ParkInfo objects before sending
-	 * them to the client, so internal management data is not exposed.
-	 * 
-	 * @return a list of public park information objects
-	 * @throws SQLException if the select query fails
-	 */
-	public List<ParkInfo> getAllActiveParksInfo() throws SQLException {
-		List<ParkInfo> parkInfoList = new ArrayList<>();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
 
-		for (Park park : getAllActiveParks()) {
-			parkInfoList.add(new ParkInfo(
-					park.getParkId(),
-					park.getParkName(),
-					park.getEstimatedVisitDurationHours(),
-					park.getFullEntryPrice()
-			));
-		}
+            while (rs.next()) {
+                parks.add(convertResultSetToPark(rs));
+            }
+        }
 
-		return parkInfoList;
-	}
-	
+        return parks;
+    }
 
-	/**
-	 * This method returns public park information by park ID.
-	 * 
-	 * The returned object is intended to be sent to the client, so it does not
-	 * include internal management data.
-	 * 
-	 * @param parkId the park ID
-	 * @return a Park object if the park exists, otherwise null
-	 * @throws SQLException if the select query fails
-	 */
-	public Park getParkById(int parkId) throws SQLException {
-		Park park = getFullParkById(parkId);
+    /**
+     * Returns a park by id.
+     */
+    public Park getFullParkById(int parkId) throws SQLException {
+        ensureConnection();
 
-		if (park == null) {
-			return null;
-		}
+        String sql = selectByFields(
+                new String[] { "*" },
+                new String[] { PARK_ID }
+        );
 
-		return park;
-	}
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
 
-	/**
-	 * This method returns the full entry price of a specific park.
-	 * 
-	 * The full entry price is the base price before applying discounts such as
-	 * ordered visit discounts, group discounts, subscriber discounts, or promotion
-	 * discounts.
-	 * 
-	 * @param parkId the park ID
-	 * @return the full entry price of the park, or -1 if the park was not found
-	 * @throws SQLException if the select query fails
-	 */
-	public double getFullEntryPrice(int parkId) throws SQLException {
-		ensureConnection();
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return convertResultSetToPark(rs);
+                }
+            }
+        }
 
-		String sql = """
-				SELECT full_entry_price
-				FROM park
-				WHERE park_id = ?;
-				""";
+        return null;
+    }
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, parkId);
+    /**
+     * Returns active parks for client display.
+     */
+    public List<Park> getAllActiveParksInfo() throws SQLException {
+        return getAllActiveParks();
+    }
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					return rs.getDouble("full_entry_price");
-				}
-			}
-		}
+    /**
+     * Returns a park for client display.
+     */
+    public Park getParkById(int parkId) throws SQLException {
+        return getFullParkById(parkId);
+    }
 
-		return -1;
-	}
+    /**
+     * Returns the full entry price of a park.
+     * This value is read-only from the park manager flow.
+     */
+    public double getFullEntryPrice(int parkId) throws SQLException {
+        ensureConnection();
 
-	/**
-	 * This method checks whether a specific park currently has a promotion.
-	 * 
-	 * @param parkId the park ID
-	 * @return true if the park has an active promotion, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean hasPromotion(int parkId) throws SQLException {
-		ensureConnection();
+        String sql = selectByFields(
+                new String[] { FULL_ENTRY_PRICE },
+                new String[] { PARK_ID }
+        );
 
-		String sql = """
-				SELECT promotions
-				FROM park
-				WHERE park_id = ?;
-				""";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, parkId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble(FULL_ENTRY_PRICE);
+                }
+            }
+        }
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					return rs.getInt("promotions") == 1;
-				}
-			}
-		}
+        return -1;
+    }
 
-		return false;
-	}
+    /**
+     * Returns the promotion discount percent of a park.
+     */
+    public double getPromotionPercent(int parkId) throws SQLException {
+        ensureConnection();
 
-	/**
-	 * This method checks whether a park has enough available capacity for the
-	 * requested number of visitors at the current time.
-	 * 
-	 * This method is used for actual entrance control. It checks the number of
-	 * visitors currently inside the park, according to visits that have not been
-	 * closed yet. A visit is considered open if its exit_time is null.
-	 * 
-	 * @param parkId            the park ID
-	 * @param requestedVisitors the number of visitors that want to enter the park
-	 * @return true if the park has enough available capacity, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean hasAvailableCapacity(int parkId, int requestedVisitors) throws SQLException {
-		ensureConnection();
+        String sql = selectByFields(
+                new String[] { PROMOTIONS },
+                new String[] { PARK_ID }
+        );
 
-		String sql = """
-				SELECT
-					p.max_capacity,
-					COALESCE(SUM(v.actual_number_of_visitors), 0) AS current_visitors
-				FROM park p
-				LEFT JOIN visit v
-					ON p.park_id = v.park_id
-					AND v.exit_time IS NULL
-				WHERE p.park_id = ?
-				GROUP BY p.max_capacity;
-				""";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, parkId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble(PROMOTIONS);
+                }
+            }
+        }
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (!rs.next()) {
-					return false;
-				}
+        return 0;
+    }
 
-				int maxCapacity = rs.getInt("max_capacity");
-				int currentVisitors = rs.getInt("current_visitors");
+    /**
+     * Checks whether a park has a promotion discount.
+     */
+    public boolean hasPromotion(int parkId) throws SQLException {
+        return getPromotionPercent(parkId) > 0;
+    }
 
-				return currentVisitors + requestedVisitors <= maxCapacity;
-			}
-		}
-	}
+    /**
+     * Checks available capacity for visitors entering now.
+     */
+    public boolean hasAvailableCapacity(int parkId, int requestedVisitors) throws SQLException {
+        ensureConnection();
 
-	/**
-	 * This method checks whether a park has enough available places for ordered
-	 * visitors on a specific date, while keeping reserved places for unplanned
-	 * visitors.
-	 * 
-	 * This method is useful when creating an order in advance, because the system
-	 * should not use all park capacity for orders if some places are reserved for
-	 * unplanned visitors.
-	 * 
-	 * The check is done for a specific park and a specific order date, because
-	 * orders from different dates should not affect each other.
-	 * 
-	 * @param parkId            the park ID
-	 * @param orderDate         the requested order date
-	 * @param requestedVisitors the number of visitors requested in the order
-	 * @return true if there is enough order capacity for the given date, false
-	 *         otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean hasAvailableOrderCapacity(int parkId, java.time.LocalDate orderDate, int requestedVisitors)
-			throws SQLException {
-		ensureConnection();
+        String sql = selectByFields(
+                new String[] { MAX_CAPACITY, CURRENT_VISITORS },
+                new String[] { PARK_ID }
+        );
 
-		String sql = """
-				SELECT
-					p.max_capacity,
-					p.places_for_unplanned_visitors,
-					COALESCE(SUM(o.number_of_visitors), 0) AS ordered_visitors
-				FROM park p
-				LEFT JOIN `order` o
-					ON p.park_id = o.park_id
-					AND o.order_status = 'approved'
-					AND o.order_date = ?
-				WHERE p.park_id = ?
-				GROUP BY p.max_capacity, p.places_for_unplanned_visitors;
-				""";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setDate(1, java.sql.Date.valueOf(orderDate));
-			pstmt.setInt(2, parkId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return false;
+                }
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (!rs.next()) {
-					return false;
-				}
+                int maxCapacity = rs.getInt(MAX_CAPACITY);
+                int currentVisitors = rs.getInt(CURRENT_VISITORS);
 
-				int maxCapacity = rs.getInt("max_capacity");
-				int reservedForUnplanned = rs.getInt("places_for_unplanned_visitors");
-				int orderedVisitors = rs.getInt("ordered_visitors");
+                return currentVisitors + requestedVisitors <= maxCapacity;
+            }
+        }
+    }
 
-				int allowedOrderedVisitors = maxCapacity - reservedForUnplanned;
+    /**
+     * Checks available capacity for future orders.
+     */
+    public boolean hasAvailableOrderCapacity(int parkId, java.time.LocalDate orderDate,
+            int requestedVisitors) throws SQLException {
 
-				return orderedVisitors + requestedVisitors <= allowedOrderedVisitors;
-			}
-		}
-	}
+        ensureConnection();
 
-	/**
-	 * This method checks whether a park is active.
-	 * 
-	 * @param parkId the park ID
-	 * @return true if the park is active, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	public boolean isParkActive(int parkId) throws SQLException {
-		Park park = getFullParkById(parkId);
+        String sql = """
+                SELECT
+                    p.max_capacity,
+                    p.places_for_unplanned_visitors,
+                    COALESCE(SUM(o.number_of_visitors), 0) AS ordered_visitors
+                FROM park p
+                LEFT JOIN `order` o
+                    ON p.park_id = o.park_id
+                    AND o.order_status = 'approved'
+                    AND o.order_date = ?
+                WHERE p.park_id = ?
+                GROUP BY p.max_capacity, p.places_for_unplanned_visitors;
+                """;
 
-		return park != null && park.isActive();
-	}
-	
-	/*
-	 * this method returns a list of names of all active parks
-	 * 
-	 * @return list of names of all active parks
-	 * @throws SQLException if the query failed
-	 */
-	public List<String> getActiveParksNames() throws SQLException {
-		ensureConnection();
-		
-		String sql = selectByFields(new String[] {PARK_NAME_COLUMN}, new String[] {PARK_IS_ACTIVE_COLUMN});
-		
-		List<String> activeParkNames = new ArrayList<>();
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setDate(1, java.sql.Date.valueOf(orderDate));
+            pstmt.setInt(2, parkId);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, PARK_IS_ACTIVE_TRUE);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return false;
+                }
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				while (rs.next()) {
-					activeParkNames.add(rs.getString(PARK_NAME_COLUMN));
-				}
-			}
-		}
+                int maxCapacity = rs.getInt("max_capacity");
+                int reservedForUnplanned = rs.getInt("places_for_unplanned_visitors");
+                int orderedVisitors = rs.getInt("ordered_visitors");
 
-		return activeParkNames;
-	}
-	
-	/*
-	 * this method returns the id of the park corresponding to the given name
-	 * 
-	 * @param name of relevant park
-	 * @return id of relevant park
-	 * @throws SQLException if the query failed
-	 */
-	public int getParkIdByName(String parkName) throws SQLException {
-		ensureConnection();
-		
-		String sql = selectByFields(new String[] {PARK_ID_COLUMN}, new String[] {PARK_NAME_COLUMN});
-		int parkId = -1;
-		
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setString(1, parkName);
+                int allowedOrderedVisitors = maxCapacity - reservedForUnplanned;
 
-			try (ResultSet rs = pstmt.executeQuery()) {
-				while (rs.next()) {
-					parkId = rs.getInt(PARK_ID_COLUMN);
-				}
-			}
-		}
-		
-		return parkId;
-	}
+                return orderedVisitors + requestedVisitors <= allowedOrderedVisitors;
+            }
+        }
+    }
+
+    /**
+     * Checks whether a park is active.
+     */
+    public boolean isParkActive(int parkId) throws SQLException {
+        Park park = getFullParkById(parkId);
+
+        return park != null && park.isActive();
+    }
+
+    /**
+     * Returns names of all active parks.
+     */
+    public List<String> getActiveParksNames() throws SQLException {
+        ensureConnection();
+
+        String sql = selectByFields(
+                new String[] { PARK_NAME },
+                new String[] { IS_ACTIVE }
+        );
+
+        List<String> activeParkNames = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, ACTIVE_TRUE);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    activeParkNames.add(rs.getString(PARK_NAME));
+                }
+            }
+        }
+
+        return activeParkNames;
+    }
+
+    /**
+     * Returns the id of a park by its name.
+     */
+    public int getParkIdByName(String parkName) throws SQLException {
+        ensureConnection();
+
+        String sql = selectByFields(
+                new String[] { PARK_ID },
+                new String[] { PARK_NAME }
+        );
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, parkName);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(PARK_ID);
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Returns visitor counter snapshots for all active parks.
+     * Used by department manager.
+     */
+    public List<ParkVisitorCounterSnapshot> getAllParkVisitorCounters()
+            throws SQLException {
+
+        ensureConnection();
+
+        String sql = "SELECT "
+                + PARK_ID + ", "
+                + PARK_NAME + ", "
+                + MAX_CAPACITY + ", "
+                + CURRENT_VISITORS + " "
+                + "FROM `" + getTableName() + "` "
+                + "WHERE " + IS_ACTIVE + " = ? "
+                + "ORDER BY " + PARK_NAME + ";";
+
+        List<ParkVisitorCounterSnapshot> counters = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, ACTIVE_TRUE);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    counters.add(convertResultSetToCounterSnapshot(rs));
+                }
+            }
+        }
+
+        return counters;
+    }
+
+    /**
+     * Returns visitor counter snapshot for one park.
+     * Used by park manager.
+     */
+    public ParkVisitorCounterSnapshot getParkVisitorCounter(int parkId)
+            throws SQLException {
+
+        ensureConnection();
+
+        String sql = "SELECT "
+                + PARK_ID + ", "
+                + PARK_NAME + ", "
+                + MAX_CAPACITY + ", "
+                + CURRENT_VISITORS + " "
+                + "FROM `" + getTableName() + "` "
+                + "WHERE " + PARK_ID + " = ? "
+                + "AND " + IS_ACTIVE + " = ?;";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, ACTIVE_TRUE);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return convertResultSetToCounterSnapshot(rs);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Updates the real-time visitor counter of a park.
+     * 
+     * Entry increases current_visitors.
+     * Exit decreases current_visitors.
+     * 
+     * The update is transactional and also writes a log row.
+     */
+    public boolean updateCurrentVisitors(int parkId, int employeeId,
+            String actionType, int amount) throws SQLException {
+
+        ensureConnection();
+
+        validateCounterUpdateRequest(actionType, amount);
+
+        boolean oldAutoCommit = conn.getAutoCommit();
+
+        try {
+            conn.setAutoCommit(false);
+
+            CounterData counterData = loadCounterDataForUpdate(parkId);
+
+            if (counterData == null) {
+                throw new SQLException("Park was not found or is not active.");
+            }
+
+            int visitorsBefore = counterData.currentVisitors;
+            int visitorsAfter = calculateVisitorsAfterUpdate(
+                    visitorsBefore,
+                    counterData.maxCapacity,
+                    actionType,
+                    amount
+            );
+
+            updateCurrentVisitorsValue(parkId, visitorsAfter);
+
+            insertCounterUpdateLog(
+                    parkId,
+                    employeeId,
+                    actionType,
+                    amount,
+                    visitorsBefore,
+                    visitorsAfter
+            );
+
+            conn.commit();
+            return true;
+
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+
+        } finally {
+            conn.setAutoCommit(oldAutoCommit);
+        }
+    }
+
+    /**
+     * Validates counter update request.
+     */
+    private void validateCounterUpdateRequest(String actionType, int amount)
+            throws SQLException {
+
+        if (!ParkVisitorCounterUpdateRequest.ACTION_ENTRY.equals(actionType)
+                && !ParkVisitorCounterUpdateRequest.ACTION_EXIT.equals(actionType)) {
+            throw new SQLException("Unknown visitor counter action: " + actionType);
+        }
+
+        if (amount < MIN_COUNTER_UPDATE_AMOUNT || amount > MAX_COUNTER_UPDATE_AMOUNT) {
+            throw new SQLException("Visitors amount must be between 1 and 15.");
+        }
+    }
+
+    /**
+     * Loads current visitors and max capacity with row lock.
+     */
+    private CounterData loadCounterDataForUpdate(int parkId) throws SQLException {
+        String sql = "SELECT "
+                + CURRENT_VISITORS + ", "
+                + MAX_CAPACITY + " "
+                + "FROM `" + getTableName() + "` "
+                + "WHERE " + PARK_ID + " = ? "
+                + "AND " + IS_ACTIVE + " = ? "
+                + "FOR UPDATE;";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, ACTIVE_TRUE);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    CounterData data = new CounterData();
+
+                    data.currentVisitors = rs.getInt(CURRENT_VISITORS);
+                    data.maxCapacity = rs.getInt(MAX_CAPACITY);
+
+                    return data;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Calculates the counter value after entry or exit.
+     */
+    private int calculateVisitorsAfterUpdate(int visitorsBefore, int maxCapacity,
+            String actionType, int amount) throws SQLException {
+
+        if (ParkVisitorCounterUpdateRequest.ACTION_ENTRY.equals(actionType)) {
+            int visitorsAfter = visitorsBefore + amount;
+
+            if (visitorsAfter > maxCapacity) {
+                throw new SQLException("Cannot enter visitors. Park capacity exceeded.");
+            }
+
+            return visitorsAfter;
+        }
+
+        int visitorsAfter = visitorsBefore - amount;
+
+        if (visitorsAfter < 0) {
+            throw new SQLException("Cannot exit more visitors than currently inside the park.");
+        }
+
+        return visitorsAfter;
+    }
+
+    /**
+     * Updates current_visitors value.
+     */
+    private void updateCurrentVisitorsValue(int parkId, int visitorsAfter)
+            throws SQLException {
+
+        String sql = "UPDATE `" + getTableName() + "` "
+                + "SET " + CURRENT_VISITORS + " = ? "
+                + "WHERE " + PARK_ID + " = ?;";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, visitorsAfter);
+            pstmt.setInt(2, parkId);
+
+            int rows = pstmt.executeUpdate();
+
+            if (rows == 0) {
+                throw new SQLException("Failed to update park visitor counter.");
+            }
+        }
+    }
+
+    /**
+     * Inserts counter update log row.
+     */
+    private void insertCounterUpdateLog(int parkId, int employeeId,
+            String actionType, int amount, int visitorsBefore,
+            int visitorsAfter) throws SQLException {
+
+        String sql = "INSERT INTO `" + PARK_VISITOR_COUNTER_LOG + "` ("
+                + PARK_ID + ", "
+                + EMPLOYEE_ID + ", "
+                + ACTION_TYPE + ", "
+                + AMOUNT + ", "
+                + VISITORS_BEFORE + ", "
+                + VISITORS_AFTER
+                + ") VALUES (?, ?, ?, ?, ?, ?);";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, employeeId);
+            pstmt.setString(3, actionType);
+            pstmt.setInt(4, amount);
+            pstmt.setInt(5, visitorsBefore);
+            pstmt.setInt(6, visitorsAfter);
+
+            pstmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Updates one park parameter after a department manager approves a request.
+     */
+    public boolean updateParkParameter(int parkId, String parameterName, String newValue)
+            throws SQLException {
+
+        ensureConnection();
+
+        if (parameterName == null || parameterName.isBlank()
+                || newValue == null || newValue.isBlank()) {
+            throw new SQLException("Invalid park parameter update request.");
+        }
+
+        String columnName = getParkColumnByParameterName(parameterName);
+
+        if (columnName == null) {
+            throw new SQLException("Unknown park parameter: " + parameterName);
+        }
+
+        Object convertedValue = convertParkParameterValue(parameterName, newValue);
+
+        return updateFields(
+                new String[] { columnName },
+                List.of(convertedValue),
+                new String[] { PARK_ID },
+                List.of(parkId)
+        );
+    }
+
+    /**
+     * Converts a request parameter name to a real park table column name.
+     */
+    private String getParkColumnByParameterName(String parameterName) {
+        switch (parameterName) {
+
+        case PARAMETER_MAX_CAPACITY:
+            return MAX_CAPACITY;
+
+        case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
+            return PLACES_FOR_UNPLANNED_VISITORS;
+
+        case PARAMETER_ESTIMATED_VISIT_DURATION_HOURS:
+            return ESTIMATED_VISIT_DURATION_HOURS;
+
+        case PARAMETER_PROMOTIONS:
+            return PROMOTIONS;
+
+        default:
+            return null;
+        }
+    }
+
+    /**
+     * Converts the new value from String to the correct DB value type.
+     */
+    private Object convertParkParameterValue(String parameterName, String newValue)
+            throws SQLException {
+
+        String cleanValue = newValue.trim();
+
+        try {
+            switch (parameterName) {
+
+            case PARAMETER_MAX_CAPACITY:
+            case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
+            case PARAMETER_ESTIMATED_VISIT_DURATION_HOURS:
+                return convertPositiveInteger(cleanValue, parameterName);
+
+            case PARAMETER_PROMOTIONS:
+                return convertPromotionPercent(cleanValue);
+
+            default:
+                throw new SQLException("Unknown park parameter: " + parameterName);
+            }
+
+        } catch (NumberFormatException e) {
+            throw new SQLException("Invalid numeric value for parameter: " + parameterName, e);
+        }
+    }
+
+    /**
+     * Converts a numeric parameter to a positive integer.
+     */
+    private int convertPositiveInteger(String value, String parameterName) throws SQLException {
+        int number = Integer.parseInt(value);
+
+        if (number <= 0) {
+            throw new SQLException("Parameter " + parameterName + " must be positive.");
+        }
+
+        return number;
+    }
+
+    /**
+     * Converts promotions to a discount percent between 0 and 100.
+     */
+    private BigDecimal convertPromotionPercent(String value) throws SQLException {
+        BigDecimal percent = new BigDecimal(value);
+
+        if (percent.compareTo(BigDecimal.ZERO) < 0
+                || percent.compareTo(new BigDecimal("100")) > 0) {
+            throw new SQLException("Promotion percent must be between 0 and 100.");
+        }
+
+        return percent;
+    }
+
+    /**
+     * Holds counter data during transactional update.
+     */
+    private static class CounterData {
+        private int currentVisitors;
+        private int maxCapacity;
+    }
 }
