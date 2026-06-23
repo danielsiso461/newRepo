@@ -20,7 +20,7 @@ public class OrderRow implements Serializable {
 	/*
 	 * stores the order information
 	 */
-	private int orderNumber, orderId, visitorNumber, confCode, userId;
+	private int orderNumber, orderId, visitorNumber, confCode, userId, numberOfVisitors, subscriberId;
 
 	/*
 	 * stores the park id of the order
@@ -74,6 +74,25 @@ public class OrderRow implements Serializable {
 		this.confCode = confCode;
 		this.userId = userId;
 		this.placementDate = placementDate;
+	}
+	
+	public OrderRow(int orderNumber, LocalDate orderDate, int numberOfVisitors,
+			int confirmationCode, int subscriberId, LocalDate dateOfPlacingOrder,
+			int parkId, Integer guideId, String orderStatus, String orderType) {
+
+		this.orderNumber = orderNumber;
+		this.orderId = orderNumber;
+		this.orderDate = orderDate;
+		this.visitorNumber = numberOfVisitors;
+		this.numberOfVisitors = numberOfVisitors;
+		this.confCode = confirmationCode;
+		this.userId = subscriberId;
+		this.subscriberId = subscriberId;
+		this.placementDate = dateOfPlacingOrder;
+		this.parkId = parkId;
+		this.guideId = guideId;
+		this.orderStatus = orderStatus;
+		this.orderType = orderType;
 	}
 
 	/*
@@ -205,6 +224,10 @@ public class OrderRow implements Serializable {
 	 */
 	public LocalDate getPlacementDate() {
 		return placementDate;
+	}
+	
+	public Integer getSubscriberId() {
+		return subscriberId;
 	}
 
 	/*

@@ -2,11 +2,11 @@ package clientGUI;
 
 import java.io.IOException;
 
+import clientController.ClientController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import clientController.ClientController;
 
 /**
  * This class is responsible for loading and switching between client GUI screens.

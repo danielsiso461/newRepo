@@ -11,9 +11,6 @@ import java.io.Serializable;
  */
 public class ParkInfo implements Serializable {
 
-	/**
-	 * Serial version UID for serialization.
-	 */
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -51,49 +48,22 @@ public class ParkInfo implements Serializable {
 		this.fullEntryPrice = fullEntryPrice;
 	}
 
-	/**
-	 * Returns the park ID.
-	 * 
-	 * @return the park ID
-	 */
 	public int getParkId() {
 		return parkId;
 	}
 
-	/**
-	 * Returns the park name.
-	 * 
-	 * @return the park name
-	 */
 	public String getParkName() {
 		return parkName;
 	}
 
-	/**
-	 * Returns the estimated visit duration in hours.
-	 * 
-	 * @return the estimated visit duration in hours
-	 */
 	public double getEstimatedVisitDurationHours() {
 		return estimatedVisitDurationHours;
 	}
 
-	/**
-	 * Returns the full entry price before discounts.
-	 * 
-	 * @return the full entry price
-	 */
 	public double getFullEntryPrice() {
 		return fullEntryPrice;
 	}
 
-	/**
-	 * Returns the park name.
-	 * 
-	 * This is useful when displaying ParkInfo objects in ComboBox or ListView.
-	 * 
-	 * @return the park name
-	 */
 	@Override
 	public String toString() {
 		return parkName;

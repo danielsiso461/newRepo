@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import common.Message;
-import common.OrderRow;
+import common.Order;
 import common.UpdateMessage;
 
 /**
@@ -29,28 +29,22 @@ public final class OrderConnection extends AbstractDBConnection {
 	private final String ORDER_DATE = "order_date";
 	private final String VISITOR_NUMBER = "number_of_visitors";
 	private final String CONF_CODE = "confirmation_code";
-	private final String USER_ID = "subscriber_id";
+	private final String SUBSCRIBER_ID = "subscriber_id";
 	private final String PLACEMENT_DATE = "date_of_placing_order";
+	private final String ORDER_HOUR = "order_hour";
+	private final String ORDER_CUSTOMER_ID = "customer_id";
+	private final String EMAIL = "email";
 
 	/**
 	 * The park id column in the order table.
 	 */
 	private final String PARK_ID = "park_id";
-
-	/**
-	 * The guide id column in the order table.
-	 */
 	private final String GUIDE_ID = "guide_id";
-
-	/**
-	 * The order status column in the order table.
-	 */
 	private final String ORDER_STATUS = "order_status";
-
-	/**
-	 * The order type column in the order table.
-	 */
 	private final String ORDER_TYPE = "order_type";
+
+	/* this is used to generate confirmation codes */
+	private final int CONF_CODE_OFFSET = 100000;
 
 	/**
 	 * Private constructor for Singleton.
@@ -97,23 +91,23 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method converts the current row of a ResultSet into an OrderRow object.
+	 * This method converts the current row of a ResultSet into an Order object.
 	 * 
 	 * @param index the row index used for display in the client table
 	 * @param rs    the ResultSet positioned on the current order row
-	 * @return an OrderRow object that represents the current order
+	 * @return an Order object that represents the current order
 	 * @throws SQLException if reading data from the ResultSet fails
 	 */
-	private OrderRow convertResultSetToOrderRow(int index, ResultSet rs) throws SQLException {
+	private Order convertResultSetToOrder(int index, ResultSet rs) throws SQLException {
 		Integer guideId = rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID);
 
-		return new OrderRow(
+		return new Order(
 				index,
 				rs.getInt(ORDER_NUMBER),
 				rs.getDate(ORDER_DATE).toLocalDate(),
 				rs.getInt(VISITOR_NUMBER),
 				rs.getInt(CONF_CODE),
-				rs.getInt(USER_ID),
+				rs.getInt(ORDER_CUSTOMER_ID),
 				rs.getDate(PLACEMENT_DATE).toLocalDate(),
 				rs.getInt(PARK_ID),
 				guideId,
@@ -154,18 +148,27 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method returns all the orders made by a client.
+	 * This method returns all visible orders made by a client.
+	 * 
+	 * Cancelled orders are kept in the database for reports and history,
+	 * but they are not displayed in the visitor's order table.
 	 * 
 	 * @param m the Message received from client
-	 * @return a list of the user's orders
+	 * @return a list of the user's visible orders
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getUserOrders(Message m) throws SQLException {
+	public List<Order> getUserOrders(Message m) throws SQLException {
 		ensureConnection();
 
-		String sql = selectByFields(new String[] { "*" }, new String[] { USER_ID });
+		String sql = """
+				SELECT *
+				FROM `order`
+				WHERE subscriber_id = ?
+				  AND order_status <> 'cancelled'
+				ORDER BY order_date;
+				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, Integer.parseInt((String) m.getData()));
@@ -174,7 +177,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -203,32 +206,38 @@ public final class OrderConnection extends AbstractDBConnection {
 				INSERT INTO `order`
 				(
 					order_date,
+					order_hour,
 					number_of_visitors,
 					confirmation_code,
 					subscriber_id,
+					customer_id,
+					email,
 					park_id,
 					guide_id,
 					date_of_placing_order,
 					order_status,
 					order_type
 				)
-				VALUES (?, ?, ?, ?, ?, ?, CURDATE(), 'pending', ?);
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), 'pending', ?);
 				""";
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 			pstmt.setDate(1, java.sql.Date.valueOf(orderDate));
-			pstmt.setInt(2, numberOfVisitors);
-			pstmt.setInt(3, confirmationCode);
-			pstmt.setInt(4, subscriberId);
-			pstmt.setInt(5, parkId);
+			pstmt.setInt(2, 0);
+			pstmt.setInt(3, numberOfVisitors);
+			pstmt.setInt(4, confirmationCode);
+			pstmt.setInt(5, subscriberId);
+			pstmt.setInt(6, subscriberId);
+			pstmt.setString(7, "");
+			pstmt.setInt(8, parkId);
 
 			if (guideId == null) {
-				pstmt.setNull(6, java.sql.Types.INTEGER);
+				pstmt.setNull(9, java.sql.Types.INTEGER);
 			} else {
-				pstmt.setInt(6, guideId);
+				pstmt.setInt(9, guideId);
 			}
 
-			pstmt.setString(7, orderType);
+			pstmt.setString(10, orderType);
 
 			int rows = pstmt.executeUpdate();
 
@@ -250,10 +259,10 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * This method returns one order by its order number.
 	 * 
 	 * @param orderNumber the order number
-	 * @return an OrderRow object if the order exists, otherwise null
+	 * @return an Order object if the order exists, otherwise null
 	 * @throws SQLException if the select query fails
 	 */
-	public OrderRow getOrderByNumber(int orderNumber) throws SQLException {
+	public Order getOrderByNumber(int orderNumber) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -267,7 +276,7 @@ public final class OrderConnection extends AbstractDBConnection {
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					return convertResultSetToOrderRow(1, rs);
+					return convertResultSetToOrder(1, rs);
 				}
 			}
 		}
@@ -282,7 +291,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders that belong to the given park
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByPark(int parkId) throws SQLException {
+	public List<Order> getOrdersByPark(int parkId) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -292,7 +301,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -301,7 +310,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -316,7 +325,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders with the given status
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByStatus(String orderStatus) throws SQLException {
+	public List<Order> getOrdersByStatus(String orderStatus) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -326,7 +335,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, orderStatus);
@@ -335,7 +344,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -350,7 +359,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of orders with the given type
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getOrdersByType(String orderType) throws SQLException {
+	public List<Order> getOrdersByType(String orderType) throws SQLException {
 		ensureConnection();
 
 		String sql = """
@@ -360,7 +369,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_date;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, orderType);
@@ -369,7 +378,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -604,7 +613,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * @return a list of approved orders for the given park and date
 	 * @throws SQLException if the select query fails
 	 */
-	public List<OrderRow> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
+	public List<Order> getApprovedOrdersByParkAndDate(int parkId, java.time.LocalDate orderDate)
 			throws SQLException {
 		ensureConnection();
 
@@ -617,7 +626,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				ORDER BY order_number;
 				""";
 
-		List<OrderRow> orders = new ArrayList<>();
+		List<Order> orders = new ArrayList<>();
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -627,7 +636,7 @@ public final class OrderConnection extends AbstractDBConnection {
 				int index = 1;
 
 				while (rs.next()) {
-					orders.add(convertResultSetToOrderRow(index++, rs));
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}
@@ -667,6 +676,201 @@ public final class OrderConnection extends AbstractDBConnection {
 		}
 
 		return 0;
+	}
+
+	/*
+	 * this method returns the next order number for a new order.
+	 * 
+	 * The order_number column is not AUTO_INCREMENT in the database, so the value
+	 * is calculated manually.
+	 * 
+	 * @return the next available order number
+	 * @throws SQLException if the query failed
+	 */
+	private int getNextOrderNumber() throws SQLException {
+		ensureConnection();
+
+		String sql = "SELECT COALESCE(MAX(order_number), 0) + 1 AS next_order_number FROM `order`;";
+
+		try (PreparedStatement ps = conn.prepareStatement(sql);
+				ResultSet rs = ps.executeQuery()) {
+
+			if (rs.next()) {
+				return rs.getInt("next_order_number");
+			}
+		}
+
+		return 1;
+	}
+
+	/*
+	 * this method adds an order to the order table
+	 * 
+	 * @param o the order to add
+	 * @return the complete order including order ID and confirmation code
+	 * @throws SQLException if the process fails
+	 */
+	public Order bookOrder(Order o) throws SQLException {
+		ensureConnection();
+
+		if (o == null) {
+			throw new SQLException("Order is missing.");
+		}
+
+		if (o.getOrderDate() == null) {
+			throw new SQLException("Order date is missing.");
+		}
+
+		if (o.getVisitorNumber() == null) {
+			throw new SQLException("Number of visitors is missing.");
+		}
+
+		if (o.getUserId() == null) {
+			throw new SQLException("User ID is missing.");
+		}
+
+		if (o.getParkId() == null) {
+			throw new SQLException("Park ID is missing.");
+		}
+
+		if (o.getPlacementDate() == null) {
+			o.setPlacementDate(java.time.LocalDate.now());
+		}
+
+		if (o.getOrderStatus() == null || o.getOrderStatus().isBlank()) {
+			o.setOrderStatus(Order.ORDER_STATUS_PENDING);
+		}
+
+		if (o.getOrderType() == null || o.getOrderType().isBlank()) {
+			if (o.getGuideId() == null) {
+				o.setOrderType(Order.ORDER_TYPE_PRIVATE);
+			} else {
+				o.setOrderType(Order.ORDER_TYPE_ORGANIZED);
+			}
+		}
+
+		int newOrderNumber = getNextOrderNumber();
+
+		// create confirmation code
+		int code = newOrderNumber % CONF_CODE_OFFSET + CONF_CODE_OFFSET;
+
+		String sql = "INSERT INTO `order` ("
+				+ ORDER_NUMBER + ", "
+				+ ORDER_DATE + ", "
+				+ VISITOR_NUMBER + ", "
+				+ CONF_CODE + ", "
+				+ SUBSCRIBER_ID + ", "
+				+ PLACEMENT_DATE + ", "
+				+ PARK_ID + ", "
+				+ GUIDE_ID + ", "
+				+ ORDER_STATUS + ", "
+				+ ORDER_TYPE + ", "
+				+ ORDER_HOUR + ", "
+				+ ORDER_CUSTOMER_ID + ", "
+				+ EMAIL
+				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			ps.setInt(1, newOrderNumber);
+			ps.setDate(2, java.sql.Date.valueOf(o.getOrderDate()));
+			ps.setInt(3, o.getVisitorNumber());
+			ps.setInt(4, code);
+
+			if (o.getIsSubscribed()) {
+				ps.setInt(5, o.getUserId());
+			} else {
+				ps.setNull(5, java.sql.Types.INTEGER);
+			}
+
+			ps.setDate(6, java.sql.Date.valueOf(o.getPlacementDate()));
+			ps.setInt(7, o.getParkId());
+
+			if (o.getGuideId() == null) {
+				ps.setNull(8, java.sql.Types.INTEGER);
+			} else {
+				ps.setInt(8, o.getGuideId());
+			}
+
+			ps.setString(9, o.getOrderStatus());
+			ps.setString(10, o.getOrderType());
+			ps.setInt(11, o.getOrderHour());
+			ps.setInt(12, o.getUserId());
+			ps.setString(13, o.getEmail() == null ? "" : o.getEmail());
+
+			ps.executeUpdate();
+
+			o.setOrderNumber(newOrderNumber);
+			o.setOrderId(newOrderNumber);
+			o.setConfirmationCode(code);
+		}
+
+		return o;
+	}
+
+	/**
+	 * This method returns all orders that belong to a specific customer id number.
+	 * 
+	 * The method receives an ID number and returns the matching orders.
+	 * It supports both subscribers and occasional customers.
+	 * 
+	 * @param customerIdNumber the ID number entered by the customer
+	 * @return a list of Order objects that belong to the given ID number
+	 * @throws SQLException if the select query fails
+	 */
+	public ArrayList<Order> getOrdersByCustomerIdNumber(String customerIdNumber) throws SQLException {
+		ensureConnection();
+
+		ArrayList<Order> orders = new ArrayList<>();
+
+		String sql = """
+				SELECT
+				    o.order_number,
+				    o.order_date,
+				    o.number_of_visitors,
+				    o.confirmation_code,
+				    o.subscriber_id,
+				    o.date_of_placing_order,
+				    o.park_id,
+				    o.guide_id,
+				    o.order_status,
+				    o.order_type,
+				    o.order_hour,
+				    o.customer_id,
+				    o.email
+				FROM `order` o
+				LEFT JOIN subscriber s
+				    ON o.subscriber_id = s.subscriber_id
+				WHERE (CAST(o.customer_id AS CHAR) = ?
+				       OR s.subscriber_id_number = ?)
+				  AND o.order_status <> 'cancelled'
+				ORDER BY o.order_date;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, customerIdNumber);
+			pstmt.setString(2, customerIdNumber);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					Order order = new Order(
+							rs.getInt(ORDER_NUMBER),
+							rs.getDate(ORDER_DATE).toLocalDate(),
+							rs.getInt(VISITOR_NUMBER),
+							rs.getInt(CONF_CODE),
+							rs.getInt(ORDER_CUSTOMER_ID),
+							rs.getDate(PLACEMENT_DATE).toLocalDate(),
+							rs.getInt(PARK_ID),
+							rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID),
+							rs.getString(ORDER_STATUS),
+							rs.getString(ORDER_TYPE)
+					);
+
+					orders.add(order);
+				}
+			}
+		}
+
+		return orders;
 	}
 
 	/**

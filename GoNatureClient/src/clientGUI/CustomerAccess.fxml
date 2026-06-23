@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25" fx:controller="clientGUI.CustomerAccessController">
+   <children>
+      <AnchorPane layoutX="-8.0" layoutY="-4.0" prefHeight="400.0" prefWidth="700.0">
+         <children>
+            <Label layoutX="241.0" layoutY="74.0" text="Customer Access">
+               <font>
+                  <Font name="System Bold Italic" size="28.0" />
+               </font>
+            </Label>
+            <Button layoutX="169.0" layoutY="225.0" mnemonicParsing="false" onAction="#handleExistingCustomerLogin" text="Existing Customer Login" />
+            <Button layoutX="376.0" layoutY="225.0" mnemonicParsing="false" onAction="#handleOccasionalCustomerAccess" text="Occasional Customer Access" />
+            <Button layoutX="324.0" layoutY="302.0" mnemonicParsing="false" onAction="#handleBack" text="Back" />
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>

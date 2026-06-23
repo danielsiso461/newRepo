@@ -3,6 +3,7 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import common.Employee;
 
 /**
  * This class is the DB connector used when working with the employee table.
@@ -19,6 +20,17 @@ public class EmployeeConnection extends AbstractDBConnection {
 	 * The single instance of EmployeeConnection.
 	 */
 	private static EmployeeConnection instance;
+	
+	private final String EMPLOYEE_ID = "employee_id";
+	private final String EMPLOYEE_NUMBER = "employee_number";
+	private final String EMPLOYEE_FIRST_NAME = "employee_first_name";
+	private final String EMPLOYEE_LAST_NAME = "employee_last_name";
+	private final String EMPLOYEE_EMAIL = "employee_email";
+	private final String USERNAME = "username";
+	private final String PASSWORD = "password";
+	private final String EMPLOYEE_ROLE = "employee_role";
+	private final String PARK_ID = "park_id";
+	private final String IS_ACTIVE = "is_active";
 
 	/**
 	 * Private constructor for Singleton.
@@ -168,5 +180,61 @@ public class EmployeeConnection extends AbstractDBConnection {
 		}
 
 		return -1;
+	}
+	
+	/**
+	 * This method checks employee login details and returns the matching employee.
+	 * 
+	 * The method searches for an active employee whose username and password match
+	 * the values entered in the login screen.
+	 * 
+	 * @param username the username entered by the employee
+	 * @param password the password entered by the employee
+	 * @return an Employee object if login succeeds, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Employee loginEmployee(String username, String password) throws SQLException {
+		String query = selectByFields(
+				new String[] {
+						EMPLOYEE_ID,
+						EMPLOYEE_NUMBER,
+						EMPLOYEE_FIRST_NAME,
+						EMPLOYEE_LAST_NAME,
+						EMPLOYEE_EMAIL,
+						USERNAME,
+						EMPLOYEE_ROLE,
+						PARK_ID
+				},
+				new String[] {
+						USERNAME,
+						PASSWORD,
+						IS_ACTIVE
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			pstmt.setString(2, password);
+			pstmt.setInt(3, 1);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					Integer parkId = rs.getObject(PARK_ID) == null ? null : rs.getInt(PARK_ID);
+
+					return new Employee(
+							rs.getInt(EMPLOYEE_ID),
+							rs.getInt(EMPLOYEE_NUMBER),
+							rs.getString(EMPLOYEE_FIRST_NAME),
+							rs.getString(EMPLOYEE_LAST_NAME),
+							rs.getString(EMPLOYEE_EMAIL),
+							rs.getString(USERNAME),
+							rs.getString(EMPLOYEE_ROLE),
+							parkId
+					);
+				}
+			}
+		}
+
+		return null;
 	}
 }

@@ -4,6 +4,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import common.RegisterSubscriberRequest;
+import common.Subscriber;
+
 /**
  * This class is the DB connector used when working with the subscriber table.
  * 
@@ -20,6 +23,17 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * The single instance of SubscriberConnection.
 	 */
 	private static SubscriberConnection instance;
+
+	private final String SUBSCRIBER_ID = "subscriber_id";
+	private final String SUBSCRIBER_NAME = "subscriber_name";
+	private final String SUBSCRIBER_ID_NUMBER = "subscriber_id_number";
+	private final String SUBSCRIBER_PHONE = "subscriber_phone";
+	private final String SUBSCRIBER_EMAIL = "subscriber_email";
+	private final String FAMILY_MEMBERS_COUNT = "family_members_count";
+	private final String PAYMENT_METHOD = "payment_method";
+	private final String CREDIT_CARD_LAST4 = "credit_card_last4";
+	private final String USERNAME = "username";
+	private final String PASSWORD = "password";
 
 	/**
 	 * Private constructor for Singleton.
@@ -59,25 +73,6 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method returns a subscriber by subscriber ID.
-	 * 
-	 * The subscriber ID is used by visitors to identify themselves in the system and
-	 * to make orders.
-	 * 
-	 * @param subscriberId the subscriber ID
-	 * @return a ResultSet containing the subscriber data if the subscriber exists
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getSubscriberById(int subscriberId) throws SQLException {
-		String sql = "SELECT * FROM subscriber WHERE subscriber_id = ?;";
-
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, subscriberId);
-
-		return pstmt.executeQuery();
-	}
-
-	/**
 	 * This method checks whether a subscriber exists in the database.
 	 * 
 	 * @param subscriberId the subscriber ID to check
@@ -87,12 +82,53 @@ public class SubscriberConnection extends AbstractDBConnection {
 	public boolean subscriberExists(int subscriberId) throws SQLException {
 		String sql = "SELECT subscriber_id FROM subscriber WHERE subscriber_id = ?;";
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, subscriberId);
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, subscriberId);
 
-		ResultSet rs = pstmt.executeQuery();
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
 
-		return rs.next();
+	/**
+	 * This method searches for a subscriber by subscriber ID and returns it as a
+	 * Subscriber object.
+	 * 
+	 * The method uses selectByFields in order to build the SELECT query according
+	 * to the shared DB connection structure.
+	 * 
+	 * @param subscriberId the subscriber ID to search for
+	 * @return a Subscriber object if found, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Subscriber findSubscriberById(int subscriberId) throws SQLException {
+		String query = selectByFields(
+				new String[] {
+						SUBSCRIBER_ID,
+						SUBSCRIBER_NAME,
+						SUBSCRIBER_EMAIL
+				},
+				new String[] {
+						SUBSCRIBER_ID
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setInt(1, subscriberId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return new Subscriber(
+							rs.getInt(SUBSCRIBER_ID),
+							rs.getString(SUBSCRIBER_NAME),
+							rs.getString(SUBSCRIBER_EMAIL)
+					);
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -129,17 +165,185 @@ public class SubscriberConnection extends AbstractDBConnection {
 				+ "subscriber_email, family_members_count, payment_method, credit_card_last4) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, subscriberId);
+			pstmt.setString(2, subscriberName);
+			pstmt.setString(3, idNumber);
+			pstmt.setString(4, phone);
+			pstmt.setString(5, email);
+			pstmt.setInt(6, familyMembersCount);
+			pstmt.setString(7, paymentMethod);
+			pstmt.setString(8, creditCardLast4);
 
-		pstmt.setInt(1, subscriberId);
-		pstmt.setString(2, subscriberName);
-		pstmt.setString(3, idNumber);
-		pstmt.setString(4, phone);
-		pstmt.setString(5, email);
-		pstmt.setInt(6, familyMembersCount);
-		pstmt.setString(7, paymentMethod);
-		pstmt.setString(8, creditCardLast4);
+			return pstmt.executeUpdate() > 0;
+		}
+	}
 
-		return pstmt.executeUpdate() > 0;
+	/**
+	 * This method checks existing customer login details and returns the matching
+	 * subscriber.
+	 * 
+	 * The method searches for a subscriber whose username and password match the
+	 * values entered in the login screen.
+	 * 
+	 * @param username the username entered by the customer
+	 * @param password the password entered by the customer
+	 * @return a Subscriber object if login succeeds, otherwise null
+	 * @throws SQLException if the select query fails
+	 */
+	public Subscriber loginSubscriber(String username, String password) throws SQLException {
+		String query = selectByFields(
+				new String[] {
+						SUBSCRIBER_ID,
+						SUBSCRIBER_NAME,
+						SUBSCRIBER_EMAIL
+				},
+				new String[] {
+						USERNAME,
+						PASSWORD
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, username);
+			pstmt.setString(2, password);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return new Subscriber(
+							rs.getInt(SUBSCRIBER_ID),
+							rs.getString(SUBSCRIBER_NAME),
+							rs.getString(SUBSCRIBER_EMAIL)
+					);
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Checks whether a username already exists in the subscriber table.
+	 * 
+	 * @param username the username to check
+	 * @return true if the username already exists, otherwise false
+	 * @throws SQLException if the query fails
+	 */
+	public boolean isUsernameExists(String username) throws SQLException {
+		String query = selectByFields(
+				new String[] {
+						USERNAME
+				},
+				new String[] {
+						USERNAME
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, username);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
+
+	/**
+	 * Checks whether an ID number already exists in the subscriber table.
+	 * 
+	 * @param idNumber the ID number to check
+	 * @return true if the ID number already exists, otherwise false
+	 * @throws SQLException if the query fails
+	 */
+	public boolean isIdNumberExists(String idNumber) throws SQLException {
+		String query = selectByFields(
+				new String[] {
+						SUBSCRIBER_ID_NUMBER
+				},
+				new String[] {
+						SUBSCRIBER_ID_NUMBER
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+			pstmt.setString(1, idNumber);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next();
+			}
+		}
+	}
+
+	/**
+	 * Registers a new subscriber in the subscriber table.
+	 * 
+	 * The method assumes that duplicate checks were already performed before
+	 * calling it.
+	 * 
+	 * @param request the subscriber registration details
+	 * @throws SQLException if the insert query fails
+	 */
+	public void registerSubscriber(RegisterSubscriberRequest request) throws SQLException {
+		String sql = "INSERT INTO `" + getTableName() + "` "
+				+ "("
+				+ SUBSCRIBER_ID + ", "
+				+ SUBSCRIBER_NAME + ", "
+				+ SUBSCRIBER_ID_NUMBER + ", "
+				+ SUBSCRIBER_PHONE + ", "
+				+ SUBSCRIBER_EMAIL + ", "
+				+ FAMILY_MEMBERS_COUNT + ", "
+				+ PAYMENT_METHOD + ", "
+				+ CREDIT_CARD_LAST4 + ", "
+				+ USERNAME + ", "
+				+ PASSWORD
+				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			String fullName = request.getFirstName() + " " + request.getLastName();
+
+			int subscriberId = Integer.parseInt(request.getIdNumber());
+
+			pstmt.setInt(1, subscriberId);
+			pstmt.setString(2, fullName);
+			pstmt.setString(3, request.getIdNumber());
+			pstmt.setString(4, request.getPhone());
+			pstmt.setString(5, request.getEmail());
+			pstmt.setInt(6, request.getFamilyMembersCount());
+			pstmt.setString(7, request.getPaymentMethod());
+
+			if (request.getCreditCardLast4() == null || request.getCreditCardLast4().trim().isEmpty()) {
+				pstmt.setNull(8, java.sql.Types.VARCHAR);
+			} else {
+				pstmt.setString(8, request.getCreditCardLast4());
+			}
+
+			pstmt.setString(9, request.getUsername());
+			pstmt.setString(10, request.getPassword());
+
+			pstmt.executeUpdate();
+		}
+	}
+
+	/*
+	 * this method gets the subscriber's phone by their ID
+	 * 
+	 * @param id the user's id
+	 * @return the phone number
+	 * @throws SQLException if the query failed
+	 */
+	public String getPhoneNumberById(int id) throws SQLException {
+		String sql = selectByFields(new String[] { SUBSCRIBER_PHONE }, new String[] { SUBSCRIBER_ID });
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, id);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getString(SUBSCRIBER_PHONE);
+				}
+			}
+		}
+
+		return null;
 	}
 }
