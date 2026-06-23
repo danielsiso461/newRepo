@@ -140,7 +140,8 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		assert currentVisitorsButton != null : "fx:id=\"currentVisitorsButton\" was not injected.";
 		assert currentVisitorsLabel != null : "fx:id=\"currentVisitorsLabel\" was not injected.";
 		assert messageLabel != null : "fx:id=\"messageLabel\" was not injected.";
-
+		parkIdField.setEditable(false);
+		employeeIdField.setEditable(false);
 		currentVisitorsLabel.setText("Current visitors: -");
 		messageLabel.setTextFill(Color.BLUE);
 		messageLabel.setText("Use the confirmation code as QR code simulation.");
@@ -172,12 +173,20 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		occasionalVisitButton.setDisable(true);
 		currentVisitorsButton.setDisable(true);
 
+		currentVisitorsButton.setText("Current Visitors");
+		currentVisitorsButton.setVisible(true);
+		currentVisitorsButton.setManaged(true);
+
 		confirmationCodeField.setDisable(false);
+		confirmationCodeField.setPromptText("Confirmation Code / QR Code");
 		parkIdField.setDisable(false);
 		employeeIdField.setDisable(false);
 		visitorsField.setDisable(false);
 
 		currentVisitorsLabel.setText("Current visitors: -");
+		currentVisitorsLabel.setVisible(false);
+		currentVisitorsLabel.setManaged(false);
+
 		messageLabel.setTextFill(Color.BLUE);
 
 		switch (entranceMode) {
@@ -195,18 +204,30 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 
 		case CHECK_OUT:
 			checkOutButton.setDisable(false);
+			confirmationCodeField.setPromptText("Confirmation Code / Visit ID");
 			visitorsField.clear();
 			visitorsField.setDisable(true);
-			messageLabel.setText("Record visitor exit using the confirmation code.");
+			messageLabel.setText("Record visitor exit using a confirmation code or occasional visit ID.");
 			break;
 
 		case CURRENT_VISITORS:
-			currentVisitorsButton.setDisable(false);
+			currentVisitorsButton.setDisable(true);
+			currentVisitorsButton.setVisible(false);
+			currentVisitorsButton.setManaged(false);
+
 			confirmationCodeField.clear();
 			visitorsField.clear();
+
 			confirmationCodeField.setDisable(true);
 			visitorsField.setDisable(true);
-			messageLabel.setText("View the current number of visitors in the park.");
+
+			currentVisitorsLabel.setVisible(true);
+			currentVisitorsLabel.setManaged(true);
+			currentVisitorsLabel.setText("Current visitors: -");
+
+			messageLabel.setText("Loading the current number of visitors in the park.");
+
+			currentVisitorsButtonClick();
 			break;
 
 		default:
@@ -265,17 +286,18 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 
 		try {
-			int confirmationCode = Integer.parseInt(confirmationCodeField.getText().trim());
+			int exitCode = Integer.parseInt(confirmationCodeField.getText().trim());
 			int parkId = Integer.parseInt(parkIdField.getText().trim());
 			int employeeId = Integer.parseInt(employeeIdField.getText().trim());
 
-			if (confirmationCode <= 0 || parkId <= 0 || employeeId <= 0) {
-				showError("Confirmation code, park ID and employee ID must be positive numbers.");
+			if (exitCode <= 0 || parkId <= 0 || employeeId <= 0) {
+				showError("Confirmation code / visit ID, park ID and employee ID must be positive numbers.");
 				return;
 			}
 
 			ParkEntranceMessage message = new ParkEntranceMessage();
-			message.setConfirmationCode(confirmationCode);
+			message.setConfirmationCode(exitCode);
+			message.setVisitId(exitCode);
 			message.setParkId(parkId);
 			message.setEmployeeId(employeeId);
 			message.setIdentificationMethod("confirmation_code");
@@ -286,7 +308,7 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			clientController.requestCheckOutVisit(message);
 
 		} catch (NumberFormatException e) {
-			showError("Confirmation code, park ID and employee ID must be numbers.");
+			showError("Confirmation code / visit ID, park ID and employee ID must be numbers.");
 		}
 	}
 
@@ -505,3 +527,4 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		});
 	}
 }
+

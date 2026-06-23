@@ -40,7 +40,7 @@
             <!-- Confirmation code used as QR simulation. -->
             <TextField fx:id="confirmationCodeField"
                        maxWidth="350.0"
-                       promptText="Confirmation Code / QR Code" />
+                       promptText="Confirmation Code / Visit ID" />
 
             <!-- Park ID where the action is performed. -->
             <TextField fx:id="parkIdField"

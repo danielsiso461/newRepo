@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * This class is the DB connector used when working with the visit table.
@@ -104,14 +106,38 @@ public class VisitConnection extends AbstractDBConnection {
 	 * Creates a new park visit using an order confirmation code.
 	 *
 	 * The confirmation code is used as a QR code simulation. The method checks that
-	 * the order exists, belongs to the selected park, and is not cancelled, expired,
-	 * completed or marked as no-show.
+	 * the order exists, belongs to the selected park, is approved, and is valid for
+	 * the current date and entrance time window.
 	 *
 	 * Return values:
 	 * - positive number: created visit ID
 	 * - -1: no valid order was found
 	 * - -2: the order already has an open visit
 	 * - -3: invalid actual number of visitors
+	 *
+	 * @param confirmationCode       the order confirmation code used as QR simulation
+	 * @param parkId                 the park ID where the visitor entered
+	 * @param actualNumberOfVisitors the actual number of visitors entering
+	 * @param handledByEmployeeId    the employee ID that handled the entrance
+	 * @param identificationMethod   the identification method used at the entrance
+	 * @return the created visit ID, or a negative value if the visit cannot be created
+	 * @throws SQLException if the select or insert query fails
+	 */
+	/**
+	 * Creates a new park visit using an order confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. The method checks the
+	 * order step by step so the server can return a specific failure message.
+	 *
+	 * Return values:
+	 * - positive number: created visit ID
+	 * - -1: no order was found for this confirmation code
+	 * - -2: the order already has an open visit
+	 * - -3: invalid actual number of visitors
+	 * - -4: the order belongs to another park
+	 * - -5: the order is not approved
+	 * - -6: the order has already been completed
+	 * - -7: the order is not valid for the current date and time
 	 *
 	 * @param confirmationCode       the order confirmation code used as QR simulation
 	 * @param parkId                 the park ID where the visitor entered
@@ -130,17 +156,24 @@ public class VisitConnection extends AbstractDBConnection {
 		ensureConnection();
 
 		String orderSql = """
-				SELECT order_number, park_id, subscriber_id, number_of_visitors
-				FROM `order`
-				WHERE confirmation_code = ?
-				  AND park_id = ?
-				  AND order_status NOT IN ('cancelled', 'expired', 'completed', 'no_show')
+				SELECT
+				    o.order_number,
+				    o.park_id,
+				    o.subscriber_id,
+				    o.number_of_visitors,
+				    o.order_status,
+				    o.order_date,
+				    o.order_hour,
+				    p.estimated_visit_duration_hours
+				FROM `order` o
+				JOIN park p
+				    ON o.park_id = p.park_id
+				WHERE o.confirmation_code = ?
 				LIMIT 1;
 				""";
 
 		try (PreparedStatement orderStmt = conn.prepareStatement(orderSql)) {
 			orderStmt.setInt(1, confirmationCode);
-			orderStmt.setInt(2, parkId);
 
 			try (ResultSet orderRs = orderStmt.executeQuery()) {
 				if (!orderRs.next()) {
@@ -148,8 +181,22 @@ public class VisitConnection extends AbstractDBConnection {
 				}
 
 				int orderNumber = orderRs.getInt("order_number");
+				int orderParkId = orderRs.getInt("park_id");
 				int subscriberId = orderRs.getInt("subscriber_id");
 				int orderedVisitors = orderRs.getInt("number_of_visitors");
+				String orderStatus = orderRs.getString("order_status");
+
+				if (orderParkId != parkId) {
+					return -4;
+				}
+
+				if ("completed".equalsIgnoreCase(orderStatus)) {
+					return -6;
+				}
+
+				if (!"approved".equalsIgnoreCase(orderStatus)) {
+					return -5;
+				}
 
 				if (actualNumberOfVisitors <= 0 || actualNumberOfVisitors > orderedVisitors) {
 					return -3;
@@ -157,6 +204,38 @@ public class VisitConnection extends AbstractDBConnection {
 
 				if (hasOpenVisitForOrder(orderNumber)) {
 					return -2;
+				}
+
+				if (orderRs.getDate("order_date") == null) {
+					return -7;
+				}
+
+				LocalDate orderDate = orderRs.getDate("order_date").toLocalDate();
+				LocalDate currentDate = LocalDate.now();
+
+				if (!orderDate.equals(currentDate)) {
+					return -7;
+				}
+
+				int orderHour = orderRs.getInt("order_hour");
+				double estimatedVisitDuration = orderRs.getDouble("estimated_visit_duration_hours");
+
+				if (orderRs.wasNull() || estimatedVisitDuration <= 0) {
+					estimatedVisitDuration = 4.0;
+				}
+
+				LocalTime currentTime = LocalTime.now();
+
+				double currentHour =
+						currentTime.getHour()
+						+ (currentTime.getMinute() / 60.0)
+						+ (currentTime.getSecond() / 3600.0);
+
+				double visitStartHour = orderHour;
+				double visitEndHour = orderHour + estimatedVisitDuration;
+
+				if (currentHour < visitStartHour || currentHour > visitEndHour) {
+					return -7;
 				}
 
 				String insertSql = """
@@ -191,7 +270,14 @@ public class VisitConnection extends AbstractDBConnection {
 
 					try (ResultSet keys = pstmt.getGeneratedKeys()) {
 						if (keys.next()) {
-							return keys.getInt(1);
+							int visitId = keys.getInt(1);
+
+							/*
+							 * After a successful entrance, the order is considered fulfilled.
+							 */
+							OrderConnection.getInstance().completeOrder(orderNumber, handledByEmployeeId);
+
+							return visitId;
 						}
 					}
 				}
@@ -411,9 +497,11 @@ public class VisitConnection extends AbstractDBConnection {
 			}
 
 			try (ResultSet keys = pstmt.getGeneratedKeys()) {
-				if (keys.next()) {
-					return keys.getInt(1);
-				}
+			    if (keys.next()) {
+			        int visitId = keys.getInt(1);
+
+			        return visitId;
+			    }
 			}
 		}
 
@@ -434,15 +522,55 @@ public class VisitConnection extends AbstractDBConnection {
 	 * @throws SQLException if the update query fails
 	 */
 	public boolean closeVisit(int visitId, int exitHandledByEmployeeId) throws SQLException {
+		ensureConnection();
+
 		String sql = "UPDATE visit "
 				+ "SET exit_time = NOW(), exit_handled_by_employee_id = ? "
-				+ "WHERE visit_id = ?;";
+				+ "WHERE visit_id = ? AND exit_time IS NULL;";
 
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		pstmt.setInt(1, exitHandledByEmployeeId);
 		pstmt.setInt(2, visitId);
 
 		return pstmt.executeUpdate() > 0;
+	}
+
+	/**
+	 * Closes an open visit using the visit ID.
+	 *
+	 * This method is mainly used for occasional visitors, because they do not have an
+	 * order confirmation code. The generated visit ID is given to the visitor at
+	 * entrance and is used again when the visitor leaves the park.
+	 *
+	 * @param visitId                 the visit ID that was created at entrance
+	 * @param parkId                  the park ID where the exit is performed
+	 * @param exitHandledByEmployeeId the employee ID that handled the exit
+	 * @return the closed visit ID, or -1 if no open visit was found
+	 * @throws SQLException if the update query fails
+	 */
+	public int closeVisitByVisitId(int visitId, int parkId, int exitHandledByEmployeeId) throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				UPDATE visit
+				SET exit_time = NOW(),
+				    exit_handled_by_employee_id = ?
+				WHERE visit_id = ?
+				  AND park_id = ?
+				  AND exit_time IS NULL;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, exitHandledByEmployeeId);
+			pstmt.setInt(2, visitId);
+			pstmt.setInt(3, parkId);
+
+			if (pstmt.executeUpdate() > 0) {
+				return visitId;
+			}
+		}
+
+		return -1;
 	}
 
 	/**

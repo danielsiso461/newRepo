@@ -1364,20 +1364,44 @@ public class ServerController implements ServerAndControllerConnection {
 			);
 
 			if (visitId == -1) {
-				entranceMessage.setResponseMessage("No valid order was found for this confirmation code.");
-				addLog("Check-in failed. No valid order was found.");
+				entranceMessage.setResponseMessage("No order was found for this confirmation code.");
+				addLog("Check-in failed. No order was found for this confirmation code.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -4) {
+				entranceMessage.setResponseMessage("This order does not belong to the park assigned to the logged-in employee.");
+				addLog("Check-in failed. Order belongs to another park.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -5) {
+				entranceMessage.setResponseMessage("This order is not approved and cannot be used for park entrance.");
+				addLog("Check-in failed. Order is not approved.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -6) {
+				entranceMessage.setResponseMessage("This order has already been completed.");
+				addLog("Check-in failed. Order has already been completed.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -7) {
+				entranceMessage.setResponseMessage("This order is not valid for the current date and time.");
+				addLog("Check-in failed. Order is not valid for the current date and time.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -3) {
+				entranceMessage.setResponseMessage("The entered number of visitors is greater than the number in the order.");
+				addLog("Check-in failed. Invalid number of visitors.");
 				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
 			}
 
 			if (visitId == -2) {
 				entranceMessage.setResponseMessage("This order already has an open visit.");
 				addLog("Check-in failed. The order already has an open visit.");
-				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
-			}
-
-			if (visitId == -3) {
-				entranceMessage.setResponseMessage("Invalid number of visitors for this order.");
-				addLog("Check-in failed. Invalid number of visitors.");
 				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
 			}
 
@@ -1425,7 +1449,15 @@ public class ServerController implements ServerAndControllerConnection {
 			);
 
 			if (visitId == -1) {
-				entranceMessage.setResponseMessage("No open visit was found for this confirmation code.");
+				visitId = vc.closeVisitByVisitId(
+						entranceMessage.getVisitId(),
+						entranceMessage.getParkId(),
+						entranceMessage.getEmployeeId()
+				);
+			}
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("No open visit was found for this confirmation code or visit ID.");
 				addLog("Check-out failed. No open visit was found.");
 				return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_FAILURE);
 			}
