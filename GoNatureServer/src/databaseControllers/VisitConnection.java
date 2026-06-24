@@ -159,7 +159,7 @@ public class VisitConnection extends AbstractDBConnection {
 				SELECT
 				    o.order_number,
 				    o.park_id,
-				    o.subscriber_id,
+				    o.customer_id,
 				    o.number_of_visitors,
 				    o.order_status,
 				    o.order_date,
@@ -182,7 +182,7 @@ public class VisitConnection extends AbstractDBConnection {
 
 				int orderNumber = orderRs.getInt("order_number");
 				int orderParkId = orderRs.getInt("park_id");
-				int subscriberId = orderRs.getInt("subscriber_id");
+				int customerId = orderRs.getInt("customer_id");
 				int orderedVisitors = orderRs.getInt("number_of_visitors");
 				String orderStatus = orderRs.getString("order_status");
 
@@ -243,7 +243,7 @@ public class VisitConnection extends AbstractDBConnection {
 						(
 							order_number,
 							park_id,
-							subscriber_id,
+							customer_id,
 							visit_type,
 							actual_number_of_visitors,
 							entry_time,
@@ -257,7 +257,7 @@ public class VisitConnection extends AbstractDBConnection {
 						conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
 					pstmt.setInt(1, orderNumber);
 					pstmt.setInt(2, parkId);
-					pstmt.setInt(3, subscriberId);
+					pstmt.setInt(3, customerId);
 					pstmt.setInt(4, actualNumberOfVisitors);
 					pstmt.setInt(5, handledByEmployeeId);
 					pstmt.setString(6, identificationMethod);
