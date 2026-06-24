@@ -993,8 +993,11 @@ public class ServerController implements ServerAndControllerConnection {
 				return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 			}
 
-			OperationResponse response =
-					new OperationResponse(false, "No orders found for this ID number", null);
+			OperationResponse response = new OperationResponse(
+			        true,
+			        "No existing orders were found. You can create a new order.",
+			        orders
+			);
 
 			addLog("Occasional customer access denied. No orders found for ID number: "
 					+ customerIdNumber);
