@@ -161,22 +161,6 @@ public class WelcomePageController {
     		return;
     	}
 
-    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
-
-    	Parent root = null;
-
-    	try {
-    		root = loader.load();
-
-    		OpeningScreenController controller = loader.getController();
-    		controller.setClientController(clientController);
-    		
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    		Platform.exit();
-    		System.exit(1);
-    	}
-
     	Scene scene = new Scene(root);
     	stage.setScene(scene);
     	stage.setTitle("GoNature");

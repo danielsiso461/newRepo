@@ -3,7 +3,7 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import common.Employee;
+import common.*;
 
 /**
  * This class is the DB connector used when working with the employee table.

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="clientGUI.ParkVisitorCounterUpdatePageController"
+            stylesheets="@gonature-theme.css">
+
+    <styleClass>
+        <String fx:value="root-pane"/>
+    </styleClass>
+
+    <children>
+        <BorderPane AnchorPane.topAnchor="0.0"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0">
+
+            <center>
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      maxWidth="780.0">
+
+                    <styleClass>
+                        <String fx:value="page-container"/>
+                    </styleClass>
+
+                    <padding>
+                        <Insets top="30.0" right="40.0" bottom="30.0" left="40.0"/>
+                    </padding>
+
+                    <children>
+
+                        <VBox alignment="CENTER" spacing="8.0">
+                            <children>
+                                <Label text="Update Park Visitor Counter">
+                                    <styleClass>
+                                        <String fx:value="page-title"/>
+                                    </styleClass>
+                                </Label>
+
+                                <Label text="Update group entry or exit from the park">
+                                    <styleClass>
+                                        <String fx:value="page-subtitle"/>
+                                    </styleClass>
+                                </Label>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="22.0"
+                              maxWidth="620.0">
+
+                            <styleClass>
+                                <String fx:value="card"/>
+                            </styleClass>
+
+                            <padding>
+                                <Insets top="28.0" right="32.0" bottom="28.0" left="32.0"/>
+                            </padding>
+
+                            <children>
+
+                                <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                    <children>
+                                        <Label text="Park ID" minWidth="130.0">
+                                            <styleClass>
+                                                <String fx:value="field-label"/>
+                                            </styleClass>
+                                        </Label>
+
+                                        <Label fx:id="parkIdLabel" text="-">
+                                            <styleClass>
+                                                <String fx:value="value-label"/>
+                                            </styleClass>
+                                        </Label>
+                                    </children>
+                                </HBox>
+
+                                <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                    <children>
+                                        <Label text="Action" minWidth="130.0">
+                                            <styleClass>
+                                                <String fx:value="field-label"/>
+                                            </styleClass>
+                                        </Label>
+
+                                        <ComboBox fx:id="actionComboBox"
+                                                  prefWidth="220.0"/>
+                                    </children>
+                                </HBox>
+
+                                <VBox spacing="8.0">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                            <children>
+                                                <Label text="Group Size" minWidth="130.0">
+                                                    <styleClass>
+                                                        <String fx:value="field-label"/>
+                                                    </styleClass>
+                                                </Label>
+
+                                                <Label fx:id="amountLabel" text="1">
+                                                    <styleClass>
+                                                        <String fx:value="value-label"/>
+                                                    </styleClass>
+                                                </Label>
+                                            </children>
+                                        </HBox>
+
+                                        <Slider fx:id="amountSlider"
+                                                min="1.0"
+                                                max="15.0"
+                                                value="1.0"
+                                                majorTickUnit="1.0"
+                                                minorTickCount="0"
+                                                blockIncrement="1.0"
+                                                showTickLabels="true"
+                                                showTickMarks="true"
+                                                snapToTicks="true"/>
+                                    </children>
+                                </VBox>
+							<HBox alignment="CENTER" spacing="16.0">
+                                <Button fx:id="updateButton"
+                                        text="Update Counter"
+                                        prefWidth="180.0"
+                                        onAction="#handleUpdateCounter">
+                                    <styleClass>
+                                        <String fx:value="primary-button"/>
+                                    </styleClass>
+                                </Button>
+                                
+                                <Button text="Back"
+        								prefWidth="120.0"
+        								onAction="#handleBack">
+    								<styleClass>
+       									 <String fx:value="secondary-button"/>
+  								  </styleClass>
+								</Button>
+							</HBox>
+
+                            </children>
+                        </VBox>
+
+                        <Label fx:id="statusLabel"
+                               text="Status: Ready">
+                            <styleClass>
+                                <String fx:value="status-label"/>
+                                <String fx:value="status-info"/>
+                            </styleClass>
+                        </Label>
+
+                    </children>
+                </VBox>
+            </center>
+
+        </BorderPane>
+    </children>
+</AnchorPane>
