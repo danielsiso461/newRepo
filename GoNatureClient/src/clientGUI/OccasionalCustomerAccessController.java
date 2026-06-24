@@ -102,8 +102,11 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			messageLabel.setText("Client is not connected to server.");
 			return;
 		}
+		
+		clientController.setLoggedInSubscriberId(Integer.parseInt(customerIdNumber));
+		
 		messageLabel.setText("Checking orders...");
-
+		
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);
 	}
 

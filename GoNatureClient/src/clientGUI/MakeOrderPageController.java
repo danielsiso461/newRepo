@@ -203,15 +203,16 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			return;
 		}
 
+		if (clientController.getLoggedInSubscriberId() == null) {
+			warningMessage("No logged-in customer was found.");
+			System.out.println("No logged-in customer was found.");
+			return;
+		}
+
 		makeOrderButton.setDisable(true);
 
 		// we lock order details in
 		disableFields();
-
-		if (clientController.getLoggedInSubscriberId() == null) {
-			System.out.println("No logged-in subscriber was found.");
-			return;
-		}
 
 		Order o = new Order(
 				datePicker.getValue(),
