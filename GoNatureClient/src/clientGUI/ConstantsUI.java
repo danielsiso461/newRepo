@@ -41,12 +41,17 @@ public final class ConstantsUI {
 	protected static final String parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
 
 	/**
-	 * Constants for visitor number picker.
+	 * Constants for visitor number and hour pickers.
 	 */
+	protected static final int MIN_VISITORS = 1;
+	protected static final int MAX_VISITORS = 15;
 	protected static final int START_VISITORS = 1;
+	protected static final int MIN_HOUR = 0;
+	protected static final int MAX_HOUR = 23;
 
 	/**
 	 * Empty private constructor so this class cannot be instantiated.
 	 */
-	private ConstantsUI() {}
+	private ConstantsUI() {
+	}
 }

@@ -6,7 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-/**
+/*
  * this class is the main class for launching the server application
  * 
  * the class loads the DB password GUI first
@@ -14,14 +14,14 @@ import javafx.stage.Stage;
  */
 public class ServerMain extends Application {
 
-	/**
+	/*
 	 * default constructor for JavaFX
 	 */
 	public ServerMain() {
 		// for javafx
 	}
 
-	/**
+	/*
 	 * this function starts the server GUI application
 	 * 
 	 * loads the DB password FXML file
@@ -30,7 +30,6 @@ public class ServerMain extends Application {
 	 * after the user enters the DB password
 	 * 
 	 * @param stage the primary stage of the application
-	 * @throws Exception in case of failure to load the GUI
 	 */
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -46,7 +45,7 @@ public class ServerMain extends Application {
 		stage.show();
 	}
 
-	/**
+	/*
 	 * main function that launches the server application
 	 * 
 	 * @param args command line arguments

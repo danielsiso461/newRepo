@@ -20,7 +20,7 @@ import javafx.stage.WindowEvent;
 import serverCommon.User;
 import serverController.ServerController;
 
-/**
+/*
  * This class is the UI controller for the server window.
  * 
  * It manages the connected users table,
@@ -30,78 +30,53 @@ import serverController.ServerController;
 
 public class ClientConnectionTableController {
 
-	/**
+	/*
 	 * The controller that connects the GUI with the server logic.
 	 */
 	private ServerController serverController;
 
-	/**
+	/*
 	 * The text area that displays server log messages.
 	 */
 	@FXML
 	private TextArea serverLogArea;
-	/**
-	 * resource bundle of the fxml loader
-	 */
+
 	@FXML // ResourceBundle that was given to the FXMLLoader
 	private ResourceBundle resources;
-	/**
-	 * location of the file of the fxml loader
-	 */
+
 	@FXML // URL location of the FXML file that was given to the FXMLLoader
 	private URL location;
-	/**
-	 * label that displays the server's hostname
-	 */
+
 	@FXML // fx:id="hostNameLabel"
 	private Label hostNameLabel; // Value injected by FXMLLoader
-	/**
-	 * label that displays the server's ip address
-	 */
+
 	@FXML // fx:id="ipAddressLabel"
 	private Label ipAddressLabel; // Value injected by FXMLLoader
-	/**
-	 * column that displays the users' hostnames
-	 */
+
 	@FXML // fx:id="hostName"
 	private TableColumn<User, String> hostName; // Value injected by FXMLLoader
-	
-	/**
-	 * column that displays the users' status
-	 */
+
 	@FXML // fx:id="status"
 	private TableColumn<User, String> status; // Value injected by FXMLLoader
-	
-	/**
-	 * column that displays the users' id
-	 */
+
 	@FXML // fx:id="userId"
 	private TableColumn<User, String> userId; // Value injected by FXMLLoader
-	
-	/**
-	 * column that displays the users' ip
-	 */
+
 	@FXML // fx:id="userIp"
 	private TableColumn<User, String> userIp; // Value injected by FXMLLoader
-	
-	/**
-	 * column that displays the users' number
-	 */
+
 	@FXML // fx:id="userNumber"
 	private TableColumn<User, Integer> userNumber; // Value injected by FXMLLoader
-	
-	/**
-	 * the table that display all of the above columns
-	 */
+
 	@FXML // fx:id="userTable"
 	private TableView<User> userTable; // Value injected by FXMLLoader
 
-	/**
+	/*
 	 * The observable list that stores the users displayed in the table.
 	 */
 	private ObservableList<User> data = FXCollections.observableArrayList();
 
-	/**
+	/*
 	 * This method is called automatically by the FXMLLoader.
 	 * 
 	 * It initializes the table columns,
@@ -169,7 +144,7 @@ public class ClientConnectionTableController {
 		});
 	}
 
-	/**
+	/*
 	 * This method handles adding a new connected user to the user table.
 	 * 
 	 * It also adds a log message that describes the connected user.
@@ -185,7 +160,7 @@ public class ClientConnectionTableController {
 					+ ", Host = " + u.getHostName());
 		});
 	}
-	/**
+	/*
 	 * This method handles updating the data of a disconnected user.
 	 * 
 	 * It updates the user row in the table
@@ -207,7 +182,7 @@ public class ClientConnectionTableController {
 					+ ", Host = " + u.getHostName());
 		});
 	}
-	/**
+	/*
 	 * This method adds a new message to the server log area.
 	 * 
 	 * The message is shown with the current time.
@@ -229,7 +204,7 @@ public class ClientConnectionTableController {
 		});
 	}
 
-	/**
+	/*
 	 * This method connects the ServerController to the UI controller.
 	 * 
 	 * @param serverController the controller to connect
@@ -240,7 +215,7 @@ public class ClientConnectionTableController {
 		addLog("Server controller connected to GUI.");
 	}
 
-	/**
+	/*
 	 * This method updates the labels with server data.
 	 * 
 	 * It also writes the server host and IP details to the log area.

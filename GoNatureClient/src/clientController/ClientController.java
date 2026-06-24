@@ -17,7 +17,6 @@ import javafx.application.Platform;
  * controllers when new data or operation results arrive.
  */
 public class ClientController implements ChatIF {
-
 	private Client client;
 	private String id;
 	private boolean userIssuedDisconnect = false;
@@ -878,6 +877,13 @@ public class ClientController implements ChatIF {
 	}
 
 	/**
+	 * Sends logout request to the server for the currently connected user.
+	 */
+	public void logoutCurrentUserFromServer() {
+		sendMessageToServer(new Message(null, Protocol.CLIENT_LOGOUT_USER));
+	}
+
+	/**
 	 * Handles messages received from the server.
 	 *
 	 * @param message the message received from the server
@@ -1080,6 +1086,10 @@ public class ClientController implements ChatIF {
 
 		case PARK_VISITOR_COUNTERS_UPDATED:
 			notifyParkVisitorCountersUpdated();
+			break;
+
+		case CLIENT_LOGOUT_USER_SUCCESS:
+			System.out.println("User logged out successfully from server.");
 			break;
 
 		default:

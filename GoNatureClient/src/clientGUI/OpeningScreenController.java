@@ -30,7 +30,7 @@ public class OpeningScreenController {
 		this.clientController = clientController;
 	}
 
-	/**
+	/*
 	 * Handles the click on the Employee Login button.
 	 * 
 	 * This method navigates the user to the employee login screen.
@@ -69,6 +69,8 @@ public class OpeningScreenController {
 	@FXML
 	private void handleCustomerAccess(ActionEvent event) {
 		try {
+			System.out.println("OpeningScreen clientController = " + clientController);
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/CustomerAccess.fxml")
 			);
@@ -77,6 +79,8 @@ public class OpeningScreenController {
 
 			CustomerAccessController controller = loader.getController();
 			controller.setClientController(clientController);
+
+			System.out.println("CustomerAccessController received clientController = " + clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("Customer Access");
