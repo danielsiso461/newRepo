@@ -23,25 +23,68 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
-// this class is the controller that connects 
-// the networking part of the server and the UI part of it. 
-// It is also the logic behind it
+/**
+ * this class is the controller that connects 
+ * the networking part of the server and the UI part of it. 
+ * It is also the logic behind it
+ */ 
 public class ServerController implements ServerAndControllerConnection {
-
+	/**
+	 * the server instance
+	 */
 	private Server server;
+	/**
+	 * set of users on the server
+	 */
 	private Set<User> users = new HashSet<>();
+	/**
+	 * connection to the order table
+	 */
 	private OrderConnection oc;
+	/**
+	 * connection to the park table
+	 */
 	private ParkConnection pc;
+	/**
+	 * connection to the subsriber table 
+	 */
 	private SubscriberConnection sc;
+	/**
+	 * connection to the visit table 
+	 */
 	private VisitConnection vc;
+	/**
+	 * connection to the guide table 
+	 */
 	private GuideConnection gc;
+	/**
+	 * connection to the employee table 
+	 */
 	private EmployeeConnection ec;
+	/**
+	 * connection to the park parameter change requests table 
+	 */
 	private ParkParameterChangeRequestConnection pcrc;
+	/**
+	 * the instance of the order checker for making new orders 
+	 */
 	private OrderExceedsParkCapacityCheck orderChecker;
+	/**
+	 * the all time user count since server startup
+	 */
 	private int allTimeUserCount = 1;
+	/**
+	 * the client connection table controller
+	 */
 	private ClientConnectionTableController serverGUIController;
+	/**
+	 * connection to the waiting list table 
+	 */
 	private WaitingListConnection wlc;
-
+	/**
+	 * constructor for the serverController
+	 * @param serverGUIController the GUI to update
+	 */
 	public ServerController(ClientConnectionTableController serverGUIController) {
 		this.serverGUIController = serverGUIController;
 
@@ -86,7 +129,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * this method adds a message to the server log area in the GUI
 	 * 
 	 * @param message the message to add to the server log
@@ -97,7 +140,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * this method presents the connection details of the server
 	 * 
 	 * @param hostName 	the server's hostName
@@ -109,7 +152,7 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("Server connection details updated. Host: " + hostName + ", IP: " + ip);
 	}
 
-	/*
+	/**
 	 * this method adds a user to the set of users on the server if this user is not
 	 * already in the set, it sets the userNumber then it calls the UI handler for
 	 * new User on the server
@@ -133,7 +176,7 @@ public class ServerController implements ServerAndControllerConnection {
 		return userIdNotConnected;
 	}
 
-	/*
+	/**
 	 * this method removes a user from the set of users on the server if this user
 	 * has a userNumber it sets their status to false = disconnected then it calls
 	 * the UI handler for updating User data
@@ -159,7 +202,7 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("User removed from connected users set.");
 	}
 
-	/*
+	/**
 	 * this method prints all connected users to the console
 	 * 
 	 * @param s the message to print before the users list
@@ -174,7 +217,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * This method notifies all connected clients that the public park data was
 	 * updated.
 	 */
@@ -196,7 +239,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * this method parses the request received by server and handles it accordingly
 	 * 
 	 * @param m an instance Message from the client
@@ -305,7 +348,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return null;
 		}
 	}
-	/*
+	/**
 	 * Handles a request to update an existing order.
 	 * 
 	 * @param m the client message
@@ -327,7 +370,7 @@ public class ServerController implements ServerAndControllerConnection {
 		return new Message(m.getData(), typeRet);
 	}
 
-	/*
+	/**
 	 * Handles a request for returning user orders.
 	 * 
 	 * @param m the client message
@@ -355,7 +398,7 @@ public class ServerController implements ServerAndControllerConnection {
 		return null;
 	}
 
-	/*
+	/**
 	 * Handles a request for getting park names.
 	 * 
 	 * @param m the client message
@@ -385,7 +428,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a request for making order.
 	 * 
 	 * @param m the client message
@@ -527,7 +570,7 @@ public class ServerController implements ServerAndControllerConnection {
 		return new Message(o, Protocol.MAKE_ORDER_SUCCESS);
 	}
 
-	/*
+	/**
 	 * Handles a request for all active parks.
 	 * 
 	 * @return a message containing active parks, or a failure message
@@ -553,7 +596,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles approval of a park parameter change request.
 	 * 
 	 * @param m the client message
@@ -597,7 +640,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles rejection of a park parameter change request.
 	 * 
 	 * @param m the client message
@@ -682,10 +725,11 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to register an existing subscriber as a guide.
 	 * 
 	 * @param m the message received from the client, containing a guide registration request.
+	 * @return the response message
 	 */
 	private Message handleRegisterGuide(Message m) {
 		GuideRegistrationRequest request = (GuideRegistrationRequest) m.getData();
@@ -730,7 +774,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to cancel an existing order.
 	 *
 	 * The order is not deleted from the database. Instead, its order_status is
@@ -814,7 +858,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to join the waiting list.
 	 *
 	 * The request data is received as a WaitingListMessage.
@@ -889,7 +933,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
 		}
 	}
-	/*
+	/**
 	 * Handles a client request to get all offered waiting list requests for a
 	 * specific subscriber.
 	 *
@@ -925,7 +969,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
 		}
 	}
-	/*
+	/**
 	 * Handles a client request to reject an offered waiting list request.
 	 *
 	 * The request data is received as a WaitingListMessage that contains the waiting
@@ -970,7 +1014,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to accept an offered waiting list request.
 	 *
 	 * The request data is received as a WaitingListMessage that contains the waiting
@@ -1015,7 +1059,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Expires old waiting list offers before handling waiting list actions.
 	 *
 	 * This keeps the waiting list updated by moving expired offers to "expired" and
@@ -1034,7 +1078,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
  * Handles an occasional customer access request received from the client.
  * 
  * The occasional customer identifies himself using an ID number.
@@ -1090,7 +1134,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 	
-	/*
+	/**
 	 * Handles an employee login request received from the client.
 	 * 
 	 * The method receives username and password from the client, checks them
@@ -1135,7 +1179,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 	
-	/*
+	/**
 	 * Handles an existing customer login request received from the client.
 	 * 
 	 * The method receives username and password from the client, checks them
@@ -1179,7 +1223,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 	
-	/*
+	/**
 	 * Handles a register subscriber request received from the client.
 	 * 
 	 * The method checks that the username and ID number are not already used.
@@ -1233,7 +1277,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * this method checks if the details of a given order are valid
 	 * 
 	 * @param o the order to check
@@ -1313,7 +1357,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * this method takes care to close all relevant parts of the server properly
 	 */
 	@Override
@@ -1337,7 +1381,7 @@ public class ServerController implements ServerAndControllerConnection {
 			closeDBConnection();
 		}
 	}
-	/*
+	/**
 	 * Handles a park check-in request using a confirmation code.
 	 *
 	 * The confirmation code is used as a QR code simulation. If the order is valid,
@@ -1424,7 +1468,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a park check-out request using a confirmation code.
 	 *
 	 * The confirmation code is used as a QR code simulation. If an open visit exists,
@@ -1481,7 +1525,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles an occasional visit request.
 	 *
 	 * Occasional visitors do not have an order. The server checks whether the park has
@@ -1542,7 +1586,7 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a request for the current number of visitors inside a park.
 	 *
 	 * @param m the client message containing ParkEntranceMessage

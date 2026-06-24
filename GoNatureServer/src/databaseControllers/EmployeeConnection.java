@@ -20,16 +20,45 @@ public class EmployeeConnection extends AbstractDBConnection {
 	 * The single instance of EmployeeConnection.
 	 */
 	private static EmployeeConnection instance;
-	
+	/**
+	 * the employee table's employee id column
+	 */
 	private final String EMPLOYEE_ID = "employee_id";
+	/**
+	 * the employee table's employee number column
+	 */
 	private final String EMPLOYEE_NUMBER = "employee_number";
+	/**
+	 * the employee table's employee first name column
+	 */
 	private final String EMPLOYEE_FIRST_NAME = "employee_first_name";
+	/**
+	 * the employee table's employee last name column
+	 */
 	private final String EMPLOYEE_LAST_NAME = "employee_last_name";
+	/**
+	 * the employee table's employee email column
+	 */
 	private final String EMPLOYEE_EMAIL = "employee_email";
+	/**
+	 * the employee table's employee username column
+	 */
 	private final String USERNAME = "username";
+	/**
+	 * the employee table's employee password column
+	 */
 	private final String PASSWORD = "password";
+	/**
+	 * the employee table's employee role column
+	 */
 	private final String EMPLOYEE_ROLE = "employee_role";
+	/**
+	 * the employee table's employee park id column
+	 */
 	private final String PARK_ID = "park_id";
+	/**
+	 * the employee table's employee activity status column
+	 */
 	private final String IS_ACTIVE = "is_active";
 
 	/**

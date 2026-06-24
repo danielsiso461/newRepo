@@ -24,16 +24,30 @@ public class GuideConnection extends AbstractDBConnection {
      */
     private static GuideConnection INSTANCE = new GuideConnection();
 
-    /**
+    /*
      * Table column names used by this DB connector
      */
-    private final String 
-    					GUIDE_ID = "guide_id",
-    					SUBSCRIBER_ID = "subscriber_id",
-    					AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id",
-    					ORGANIZATION_NAME = "organization_name",
-    					GUIDE_STATUS = "guide_status";
-    /* this holds the active status of a guide*/    
+    /**
+     * the guide table's guide id column's name
+     */
+    private final String GUIDE_ID = "guide_id";
+    /**
+     * the guide table's subscriber id column's name
+     */
+    private final String SUBSCRIBER_ID = "subscriber_id";
+    /**
+     * the guide table's employee id column's name
+     */
+    private final String AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id";
+    /**
+     * the guide table's organization name column's name
+     */
+    private final String ORGANIZATION_NAME = "organization_name";
+    /**
+     * the guide table's guide status column's name
+     */
+    private final String GUIDE_STATUS = "guide_status";
+    /** this holds the active status of a guide*/    
     private final String GUIDE_STATUS_ACTIVE = "active";
     
     /**
@@ -69,7 +83,7 @@ public class GuideConnection extends AbstractDBConnection {
         return ConstantsDBTableNames.GUIDE;
     }
     
-    /*
+    /**
      * This method checks whether a subscriber is already registered as a guide
      * 
      * @param subscriberId the id of the subscriber to check
@@ -94,7 +108,11 @@ public class GuideConnection extends AbstractDBConnection {
     		}
     	}
     }
-
+    /**
+     * this method handles registering a guide
+     * @param request the guide registration request
+     * @throws SQLException in case of sql error
+     */
     public void registerGuide(GuideRegistrationRequest request) throws SQLException {
     	String sql = "INSERT INTO `" + getTableName() + "` "
     			+ "("
@@ -114,7 +132,8 @@ public class GuideConnection extends AbstractDBConnection {
     	}
     }
     
-    /* This method checks whether a given id is an active, registered guide
+    /** 
+    * This method checks whether a given id is an active, registered guide
     * 
     * @param id the id to check
     * @return the id of the guide if true, null otherwise
@@ -141,6 +160,9 @@ public class GuideConnection extends AbstractDBConnection {
        return exists;
     }
     
+    /**
+	 * Prevents cloning of the Singleton instance.
+	 */
     @Override
     protected Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();

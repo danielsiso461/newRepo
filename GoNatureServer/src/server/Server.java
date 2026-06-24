@@ -18,10 +18,17 @@ import serverCommon.User;
  * during runtime.
  */
 public final class Server extends AbstractServer {
-
+	/**
+	 * the server instance
+	 */
 	private static Server instance = null;
-
+	/**
+	 * the servercontroller instance
+	 */
 	private ServerAndControllerConnection serverController;
+	/**
+	 * a map that maps the user's id to the user's connection
+	 */
 	private Map<String, ConnectionToClient> currIdConnection = new HashMap<>();
 
 	/**
@@ -98,7 +105,7 @@ public final class Server extends AbstractServer {
 			System.out.println(e.getMessage());
 		}
 	}
-	/*
+	/**
 	 * Registers the client in the server user table once an identifying value is
 	 * available in the received message.
 	 *
@@ -140,7 +147,7 @@ public final class Server extends AbstractServer {
 		return true;
 	}
 
-	/*
+	/**
 	 * Extracts a user identifier from a client message.
 	 *
 	 * The server table should show the user once the client enters the system,

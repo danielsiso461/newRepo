@@ -25,25 +25,61 @@ public final class OrderConnection extends AbstractDBConnection {
 	private static final OrderConnection INSTANCE = new OrderConnection();
 
 	// table columns
+	/**
+	 * the order id column's name
+	 */
 	private final String ORDER_NUMBER = "order_number";
+	/**
+	 * the order date column's name
+	 */
 	private final String ORDER_DATE = "order_date";
+	/**
+	 * the order's visitor number column's name
+	 */
 	private final String VISITOR_NUMBER = "number_of_visitors";
+	/**
+	 * the order's confirmation code column's name
+	 */
 	private final String CONF_CODE = "confirmation_code";
+	/**
+	 * the order's subscriber id column's name
+	 */
 	private final String SUBSCRIBER_ID = "subscriber_id";
+	/**
+	 * the order's placement date column's name
+	 */
 	private final String PLACEMENT_DATE = "date_of_placing_order";
+	/**
+	 * the order's order hour column's name
+	 */
 	private final String ORDER_HOUR = "order_hour";
+	/**
+	 * the order's customer id column's name
+	 */
 	private final String ORDER_CUSTOMER_ID = "customer_id";
+	/**
+	 * the order's email column's name
+	 */
 	private final String EMAIL = "email";
 
 	/**
 	 * The park id column in the order table.
 	 */
 	private final String PARK_ID = "park_id";
+	/**
+	 * the order's guide id  column's name
+	 */
 	private final String GUIDE_ID = "guide_id";
+	/**
+	 * the order's order status column's name
+	 */
 	private final String ORDER_STATUS = "order_status";
+	/**
+	 * the order's order type column's name
+	 */
 	private final String ORDER_TYPE = "order_type";
 
-	/* this is used to generate confirmation codes */
+	/** this is used to generate confirmation codes */
 	private final int CONF_CODE_OFFSET = 100000;
 
 	/**
@@ -678,7 +714,7 @@ public final class OrderConnection extends AbstractDBConnection {
 		return 0;
 	}
 
-	/*
+	/**
 	 * this method returns the next order number for a new order.
 	 * 
 	 * The order_number column is not AUTO_INCREMENT in the database, so the value
@@ -703,7 +739,7 @@ public final class OrderConnection extends AbstractDBConnection {
 		return 1;
 	}
 
-	/*
+	/**
 	 * this method adds an order to the order table
 	 * 
 	 * @param o the order to add

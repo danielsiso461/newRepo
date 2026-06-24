@@ -23,16 +23,45 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * The single instance of SubscriberConnection.
 	 */
 	private static SubscriberConnection instance;
-
+	/**
+	 * the subsriber id column name
+	 */
 	private final String SUBSCRIBER_ID = "subscriber_id";
+	/**
+	 * the subsriber name column name
+	 */
 	private final String SUBSCRIBER_NAME = "subscriber_name";
+	/**
+	 * the subsriber id number column name
+	 */
 	private final String SUBSCRIBER_ID_NUMBER = "subscriber_id_number";
+	/**
+	 * the subsriber phone column name
+	 */
 	private final String SUBSCRIBER_PHONE = "subscriber_phone";
+	/**
+	 * the subsriber email column name
+	 */
 	private final String SUBSCRIBER_EMAIL = "subscriber_email";
+	/**
+	 * the subsriber family member count column name
+	 */
 	private final String FAMILY_MEMBERS_COUNT = "family_members_count";
+	/**
+	 * the subsriber payment method column name
+	 */
 	private final String PAYMENT_METHOD = "payment_method";
+	/**
+	 * the subsriber's credit card's 4 last digits column name
+	 */
 	private final String CREDIT_CARD_LAST4 = "credit_card_last4";
+	/**
+	 * the subsriber username column name
+	 */
 	private final String USERNAME = "username";
+	/**
+	 * the subsriber password column name
+	 */
 	private final String PASSWORD = "password";
 
 	/**
@@ -324,7 +353,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 		}
 	}
 
-	/*
+	/**
 	 * this method gets the subscriber's phone by their ID
 	 * 
 	 * @param id the user's id

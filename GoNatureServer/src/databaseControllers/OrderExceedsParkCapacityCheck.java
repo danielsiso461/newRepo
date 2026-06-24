@@ -6,24 +6,27 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 
 import common.Order;
-
+/**
+ * this class is in charge of calculating whether an order can be booked at the given details
+ */
 public class OrderExceedsParkCapacityCheck {
 	/**
 	 * The single instance of OrderExceedsParkCapacityCheck.
 	 */
 	private static OrderExceedsParkCapacityCheck instance;
-	/* holds the park connection */
+	/** holds the park connection */
 	private ParkConnection pc;
-	/* holds the order connection */
+	/** holds the order connection */
 	private OrderConnection oc;
 	
-	/* holds the order status of approved and which return column we want */
-	private final String ORDER_STATUS_APPROVED = "'approved'",
-							returnColumn = "exceeds_capacity";
-	/* holds the number of hours in a day*/
+	/** holds the order status of approved */
+	private final String ORDER_STATUS_APPROVED = "'approved'";
+	/** holds which return column we want */
+	private final String returnColumn = "exceeds_capacity";
+	/** holds the number of hours in a day*/
 	private final int NUMBER_OF_HOURS_IN_A_DAY = 24;
 
-	/*
+	/**
 	 * the constructor of OrderExceedsParkCapacityCheck
 	 * receives connections for ParkConnection, OrderConnection
 	 * 
@@ -39,7 +42,8 @@ public class OrderExceedsParkCapacityCheck {
 	 * Returns the single instance of OrderExceedsParkCapacityCheck.
 	 * 
 	 * If no instance exists, a new instance is created.
-	 * 
+	 * @param pc the park table connection
+	 * @param oc the order table connection
 	 * @return the only OrderExceedsParkCapacityCheck instance
 	 */
 	public static OrderExceedsParkCapacityCheck getInstance(
@@ -49,7 +53,7 @@ public class OrderExceedsParkCapacityCheck {
 		}
 		return instance;
 	}
-	/*
+	/**
 	 * this method calculates if a given order can be booked
 	 * based on the park and date.
 	 * 

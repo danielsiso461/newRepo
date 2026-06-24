@@ -21,14 +21,22 @@ import common.ParkInfo;
  * full entry price, active status, and promotions.
  */
 public class ParkConnection extends AbstractDBConnection {
-	/* park table columns */
-	private final String
-					PARK_NAME_COLUMN = "park_name",
-					PARK_ID_COLUMN = "park_id",
-					PARK_IS_ACTIVE_COLUMN = "is_active";
-	/* indicator that a park is active */
-	private final int
-					PARK_IS_ACTIVE_TRUE = 1;
+	/**
+	 * the park name column's name
+	 */
+	private final String PARK_NAME_COLUMN = "park_name";
+	/**
+	 * the park id column's name
+	 */
+	private final String PARK_ID_COLUMN = "park_id";
+	/**
+	 * the park activity status column's name
+	 */
+	private final String PARK_IS_ACTIVE_COLUMN = "is_active";
+	/**
+	 * indicator that the park is active
+	 */
+	private final int PARK_IS_ACTIVE_TRUE = 1;
 	
 	/**
 	 * The single instance of ParkConnection.
@@ -420,7 +428,7 @@ public class ParkConnection extends AbstractDBConnection {
 		return park != null && park.isActive();
 	}
 	
-	/*
+	/**
 	 * this method returns a list of names of all active parks
 	 * 
 	 * @return list of names of all active parks
@@ -446,10 +454,10 @@ public class ParkConnection extends AbstractDBConnection {
 		return activeParkNames;
 	}
 	
-	/*
+	/**
 	 * this method returns the id of the park corresponding to the given name
 	 * 
-	 * @param name of relevant park
+	 * @param parkName of relevant park
 	 * @return id of relevant park
 	 * @throws SQLException if the query failed
 	 */

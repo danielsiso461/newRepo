@@ -7,19 +7,23 @@ import java.util.ArrayList;
 import java.util.List;
 import common.WaitingListMessage;
 
-/*
+/**
  * This class handles all database operations related to the waiting_list table.
  *
  * The waiting list is used when a visitor cannot immediately create an order
  * because the requested park/date does not have enough available capacity.
  */
 public class WaitingListConnection extends AbstractDBConnection {
-
+	/**
+	 * the connection's instance
+	 */
 	private static WaitingListConnection instance = null;
-
+	/**
+	 * the table's name
+	 */
 	private static final String TABLE_NAME = "waiting_list";
 
-	/*
+	/**
 	 * Private constructor for Singleton usage.
 	 *
 	 * @throws SQLException if the database connection cannot be created
@@ -28,7 +32,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		connect();
 	}
 
-	/*
+	/**
 	 * Returns the single instance of WaitingListConnection.
 	 *
 	 * @return the WaitingListConnection instance
@@ -42,7 +46,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return instance;
 	}
 
-	/*
+	/**
 	 * Returns the table name used by this database connector.
 	 *
 	 * @return the waiting_list table name
@@ -52,7 +56,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return TABLE_NAME;
 	}
 
-	/*
+	/**
 	 * Makes sure the database connection is open before running a query.
 	 *
 	 * @throws SQLException if the connection cannot be opened
@@ -63,7 +67,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Calculates the next queue position for a specific park and requested date.
 	 *
 	 * The next position is calculated by taking the current maximum queue_position
@@ -98,7 +102,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return 1;
 	}
-	/*
+	/**
 	 * Checks whether the subscriber already has an active waiting list request for
 	 * the same park, date, time and number of visitors.
 	 *
@@ -137,7 +141,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 			}
 		}
 	}
-	/*
+	/**
 	 * Adds a visitor request to the waiting list.
 	 *
 	 * The request is inserted with waiting_status = "waiting".
@@ -193,7 +197,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return queuePosition;
 	}
-	/*
+	/**
 	 * Offers the newly available place to the first matching visitor in the waiting list.
 	 *
 	 * The method searches for the first visitor waiting for the same park and date.
@@ -256,7 +260,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 			return pstmt.executeUpdate() > 0;
 		}
 	}
-	/*
+	/**
 	 * Rejects an offered waiting list request and offers the available place to the
 	 * next matching visitor in the waiting list.
 	 *
@@ -327,7 +331,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return true;
 	}
-	/*
+	/**
 	 * Expires all waiting list offers whose expiration time has passed and offers
 	 * the available places to the next matching visitors in the waiting list.
 	 *
@@ -391,7 +395,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return expiredCount;
 	}
-	/*
+	/**
 	 * Accepts an offered waiting list request.
 	 *
 	 * The method changes the waiting_status from "offered" to "accepted".
@@ -419,7 +423,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		}
 	}
 	
-	/*
+	/**
 	 * Returns all active waiting list requests for a specific subscriber.
 	 *
 	 * The method returns requests with status "waiting" and "offered".
@@ -484,7 +488,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return offers;
 	}
-	/*
+	/**
 	 * Prevents cloning of the Singleton instance.
 	 */
 	@Override
