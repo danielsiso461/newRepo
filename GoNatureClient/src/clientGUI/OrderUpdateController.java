@@ -23,7 +23,7 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 @SuppressWarnings("deprecation")
 public class OrderUpdateController {
- 
+
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
 
@@ -180,14 +180,6 @@ public class OrderUpdateController {
             prevStage.show();
         }
     }
-    
-    private void updateUpdateLabelVisibility() {
-        boolean hasMessage = updateLabel.getText() != null
-                && !updateLabel.getText().isBlank();
-
-        updateLabel.setVisible(hasMessage);
-        updateLabel.setManaged(hasMessage);
-    }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
@@ -198,12 +190,6 @@ public class OrderUpdateController {
         assert OrderUpdatePageDateCheckBox != null : "fx:id=\"OrderUpdatePageDateCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert OrderUpdatePageVisitorsCheckBox != null : "fx:id=\"OrderUpdatePageVisitorsCheckBox\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
         assert updateLabel != null : "fx:id=\"updateLabel\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
-        
-        updateLabel.textProperty().addListener((observable, oldText, newText) -> {
-            updateUpdateLabelVisibility();
-        });
-
-        updateUpdateLabelVisibility();
         
         // setting up the spinner
         OrderUpdatePageSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(

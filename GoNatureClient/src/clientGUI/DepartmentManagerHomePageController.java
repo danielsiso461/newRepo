@@ -16,25 +16,37 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import clientCommon.ClientSession;
 
-/*
+/**
  * This class is the controller for the department manager home page.
  * 
  * The department manager is responsible for central management actions,
  * such as approving park manager requests and viewing department-level reports.
  */
 public class DepartmentManagerHomePageController {
-
+	/**
+	 * the client controller instance
+	 */
 	private ClientController clientController;
-
+	/**
+	 * the employee entity
+	 */
 	private Employee loggedInEmployee;
-
+	/**
+	 * label to welcome the user
+	 */
 	@FXML
 	private Label welcomeLabel;
-
+	/**
+	 * method that sets the client controller for this controller
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
-
+	/**
+	 * method that sets the current logged in employee
+	 * @param employee the employee to set
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -42,96 +54,48 @@ public class DepartmentManagerHomePageController {
 			welcomeLabel.setText("Welcome " + employee.getFirstName() + " " + employee.getLastName());
 		}
 	}
-
-	/*
+	/**
 	 * Handles click on the reports button.
 	 * 
-	 * This screen allows the department manager to view department-level reports,
+	 * This screen will allow the department manager to view department-level reports,
 	 * such as visit reports and cancellation reports.
 	 */
 	@FXML
-	private void handleViewReports(ActionEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(
-					getClass().getResource("/clientGUI/ReportsPage.fxml")
-			);
+	private void handleViewReports() {
+		System.out.println("View Reports clicked");
 
-			Parent root = loader.load();
-
-			ReportsPageController controller = loader.getController();
-			controller.setClientController(clientController);
-			controller.setLoggedInEmployee(loggedInEmployee);
-
-			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-			stage.setTitle("Reports");
-			stage.setScene(new Scene(root));
-			stage.show();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		/*
+		 * Later:
+		 * Open DepartmentManagerReports.fxml
+		 */
 	}
-
-	/*
-	 * Handles click on the approve park requests button.
-	 * 
-	 * This screen allows the department manager to review, approve, and reject
-	 * pending park parameter change requests.
+	/**
+	 * method that let's you know approve park requests was clicked
 	 */
 	@FXML
-	private void handleApproveParkRequests(ActionEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(
-					getClass().getResource("/clientGUI/ParkParameterApprovalPage.fxml")
-			);
-
-			Parent root = loader.load();
-
-			ParkParameterApprovalPageController controller = loader.getController();
-			controller.setClientController(clientController);
-			controller.setLoggedInEmployee(loggedInEmployee);
-
-			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-			stage.setTitle("Approve Park Requests");
-			stage.setScene(new Scene(root));
-			stage.show();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	private void handleApproveParkRequests() {
+		System.out.println("Approve Park Requests clicked");
 	}
 
-	/*
+	
+	/**
 	 * Handles click on the park occupancy button.
 	 * 
-	 * This screen shows the current occupancy of parks,
+	 * This screen will show the current occupancy of parks,
 	 * including current visitors, capacity, and available space.
 	 */
 	@FXML
-	private void handleViewParksOccupancy(ActionEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(
-					getClass().getResource("/clientGUI/ParkVisitorCounterViewPage.fxml")
-			);
+	private void handleViewParkOccupancy() {
+		System.out.println("View Park Occupancy clicked");
 
-			Parent root = loader.load();
-
-			ParkVisitorCounterViewPageController controller = loader.getController();
-			controller.setClientController(clientController);
-			controller.setLoggedInEmployee(loggedInEmployee);
-
-			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-			stage.setTitle("Parks Occupancy");
-			stage.setScene(new Scene(root));
-			stage.show();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		/*
+		 * Later:
+		 * Open DepartmentManagerParkOccupancy.fxml
+		 */
 	}
 
-	/*
-	 * Handles logout from the department manager screen.
+	/**
+	 * Handles logout from the park worker screen.
 	 * 
 	 * For now, this returns the user to the opening screen.
 	 * 
@@ -151,9 +115,6 @@ public class DepartmentManagerHomePageController {
 			);
 
 			Parent root = loader.load();
-
-			OpeningScreenController controller = loader.getController();
-			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("GoNature");

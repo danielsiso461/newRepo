@@ -124,6 +124,18 @@ public class WelcomePageController {
     private void launchOpeningScreen() {
     	Stage stage = (Stage) inputField.getScene().getWindow();
 
+    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
+
+    	Parent root = null;
+
+    	try {
+    		root = loader.load();
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		Platform.exit();
+    		System.exit(1);
+    	}
+
     	ClientController clientController;
 
     	try {
@@ -133,13 +145,13 @@ public class WelcomePageController {
     		 */
     		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, "");
 
-    		// Gives the occasional customer access screen the active ClientController.
+    		// Gives the occasional customer access screen the active ClientController, so it can send requests to the server.
     		OccasionalCustomerAccessController.setClientController(clientController);
-
-    		// Gives the employee login screen the active ClientController.
+    		
+    		// Gives the employee login screen the active ClientController, so it can send login requests to the server.
     		EmployeeLoginController.setClientController(clientController);
-
-    		// Gives the registered customer login screen the active ClientController.
+    		
+    		// Gives the registered customer login screen the active ClientController, so it can send requests to the server.
     		ExistingCustomerLoginController.setClientController(clientController);
 
     	} catch (IOException e) {

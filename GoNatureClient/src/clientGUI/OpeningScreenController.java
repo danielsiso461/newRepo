@@ -10,17 +10,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import clientController.ClientController;
-
+/**
+ * controller for the opening screen welcoming the user
+ */
 public class OpeningScreenController {
-	
-	private ClientController clientController;
 
-	public void setClientController(ClientController clientController) {
-		this.clientController = clientController;
-	}
-
-	/*
+	/**
 	 * Handles the click on the Employee Login button.
 	 * 
 	 * This method navigates the user to the employee login screen.
@@ -49,7 +44,7 @@ public class OpeningScreenController {
 		}
 	}
 
-    /*
+    /**
      * Handles the click on the Customer Access button.
      * 
      * This method navigates the user to the customer access selection screen.

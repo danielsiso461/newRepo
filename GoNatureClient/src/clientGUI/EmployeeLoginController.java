@@ -8,7 +8,6 @@ import java.io.IOException;
 import javafx.scene.Node;
 
 import clientCommon.EmployeeLoginObserver;
-import clientCommon.ClientSession;
 import clientController.ClientController;
 import common.Employee;
 import common.OperationResponse;
@@ -20,7 +19,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
 
-/*
+/**
  * This class is the controller for the employee login screen.
  * 
  * The screen allows an employee to enter a username and password.
@@ -29,21 +28,28 @@ import javafx.stage.Stage;
  */
 public class EmployeeLoginController implements EmployeeLoginObserver {
 
-	/*
+	/**
 	 * The client controller used for communication with the server.
 	 */
 	private static ClientController clientController;
-
+	
+	/**
+	 * the username text field
+	 */
 	@FXML
 	private TextField usernameField;
-
+	/**
+	 * the password passwordField
+	 */
 	@FXML
 	private PasswordField passwordField;
-
+	/**
+	 * message label for feedback to the user
+	 */
 	@FXML
 	private Label messageLabel;
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param controller the client controller instance
@@ -52,7 +58,7 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 		clientController = controller;
 	}
 
-	/*
+	/**
 	 * Initializes the screen.
 	 * 
 	 * This method registers the screen as an observer so it can receive the server
@@ -65,7 +71,7 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Login button.
 	 * 
 	 * The method validates that the username and password fields are not empty.
@@ -98,7 +104,7 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 		clientController.requestEmployeeLogin(username.trim(), password.trim());
 	}
 
-	/*
+	/**
 	 * Receives the employee login result from the ClientController.
 	 * 
 	 * @param response the response received from the server
@@ -113,14 +119,6 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 
 			if (response.isSuccess()) {
 				Employee employee = (Employee) response.getData();
-				
-				int parkId = employee.getParkId() == null ? -1 : employee.getParkId();
-
-				ClientSession.setLoggedEmployee(
-						employee.getEmployeeId(),
-						employee.getRole(),
-						parkId
-				);
 
 				messageLabel.setText("Login successful. Welcome " + employee.getFirstName());
 
@@ -132,7 +130,7 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 		});
 	}
 	
-	/*
+	/**
 	 * Opens the correct employee home screen according to the employee role.
 	 * 
 	 * @param employee the employee that logged in successfully
@@ -214,7 +212,7 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Back button.
 	 * 
 	 * This method removes this screen from the observer list and navigates the user

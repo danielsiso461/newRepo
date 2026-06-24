@@ -4,8 +4,8 @@ import java.util.Scanner;
 public class OrderConnection extends AbstractDBConnection {
 
     // Return the table name
-	@Override
-	public String getTableName() {
+    @Override
+    protected String getTableName() {
         return "order";
     }
 

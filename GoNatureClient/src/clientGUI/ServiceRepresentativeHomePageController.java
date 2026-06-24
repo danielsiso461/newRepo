@@ -104,28 +104,8 @@ public class ServiceRepresentativeHomePageController {
 	}
 
 	@FXML
-	private void handleViewCustomerOrders(ActionEvent event) {
-		try {
-			FXMLLoader loader = new FXMLLoader(
-					getClass().getResource("/clientGUI/OrderTableDisplayPage.fxml")
-			);
-
-			Parent root = loader.load();
-
-			OrderTableDisplayController controller = loader.getController();
-			controller.setClientController(clientController);
-			controller.setLoggedInEmployee(loggedInEmployee);
-			controller.configureForServiceRepresentativeView();
-			controller.loadAllOrdersForServiceRepresentative();
-
-			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-			stage.setTitle("Customer Orders");
-			stage.setScene(new Scene(root));
-			stage.show();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	private void handleViewCustomerOrders() {
+		System.out.println("View Customer Orders clicked");
 	}
 
 	/*
@@ -149,9 +129,6 @@ public class ServiceRepresentativeHomePageController {
 			);
 
 			Parent root = loader.load();
-
-			OpeningScreenController controller = loader.getController();
-			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("GoNature");
