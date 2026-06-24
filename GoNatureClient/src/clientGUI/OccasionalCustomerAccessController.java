@@ -19,7 +19,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 
-/*
+/**
  * This class is the controller for the occasional customer access screen.
  * 
  * The screen allows an occasional customer to identify using an order number.
@@ -28,29 +28,29 @@ import javafx.stage.Stage;
  */
 public class OccasionalCustomerAccessController implements OccasionalCustomerAccessObserver {
 
-	/*
+	/**
 	 * The client controller used for communication with the server.
 	 */
 	private static ClientController clientController;
 	
-	/*
+	/**
 	 * The current stage of the occasional customer access screen.
 	 */
 	private Stage currentStage;
 
-	/*
+	/**
 	 * Text field used for entering the order number.
 	 */
 	@FXML
 	private TextField idNumberField;
 
-	/*
+	/**
 	 * Label used for showing validation messages or access result messages.
 	 */
 	@FXML
 	private Label messageLabel;
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param controller the client controller instance
@@ -59,7 +59,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		clientController = controller;
 	}
 
-	/*
+	/**
 	 * Initializes the screen.
 	 * 
 	 * This method registers the screen as an observer so it can receive the server
@@ -72,7 +72,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Continue button.
 	 * 
 	 * The method validates the entered customer ID number and sends a request
@@ -112,7 +112,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);
 	}
 
-	/*
+	/**
 	 * Receives the occasional customer access result from the ClientController.
 	 * 
 	 * If orders were found, the method opens the order table screen and displays
@@ -179,7 +179,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		}
 	}*/
 	
-	/*
+	/**
 	 * Opens the order table screen and displays all orders that belong to the
 	 * occasional customer.
 	 * 
@@ -216,7 +216,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Back button.
 	 * 
 	 * This method navigates the user back to the Customer Access screen.

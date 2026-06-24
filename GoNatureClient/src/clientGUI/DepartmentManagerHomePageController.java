@@ -15,24 +15,37 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-/*
+/**
  * This class is the controller for the department manager home page.
  * 
  * The department manager is responsible for central management actions,
  * such as approving park manager requests and viewing department-level reports.
  */
 public class DepartmentManagerHomePageController {
-
+	/**
+	 * the client controller instance
+	 */
 	private ClientController clientController;
+	/**
+	 * the employee entity
+	 */
 	private Employee loggedInEmployee;
-
+	/**
+	 * label to welcome the user
+	 */
 	@FXML
 	private Label welcomeLabel;
-
+	/**
+	 * method that sets the client controller for this controller
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
-
+	/**
+	 * method that sets the current logged in employee
+	 * @param employee the employee to set
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -40,7 +53,7 @@ public class DepartmentManagerHomePageController {
 			welcomeLabel.setText("Welcome " + employee.getFirstName() + " " + employee.getLastName());
 		}
 	}
-	/*
+	/**
 	 * Handles click on the reports button.
 	 * 
 	 * This screen will allow the department manager to view department-level reports,
@@ -55,14 +68,16 @@ public class DepartmentManagerHomePageController {
 		 * Open DepartmentManagerReports.fxml
 		 */
 	}
-
+	/**
+	 * method that let's you know approve park requests was clicked
+	 */
 	@FXML
 	private void handleApproveParkRequests() {
 		System.out.println("Approve Park Requests clicked");
 	}
 
 	
-	/*
+	/**
 	 * Handles click on the park occupancy button.
 	 * 
 	 * This screen will show the current occupancy of parks,
@@ -78,7 +93,7 @@ public class DepartmentManagerHomePageController {
 		 */
 	}
 
-	/*
+	/**
 	 * Handles logout from the park worker screen.
 	 * 
 	 * For now, this returns the user to the opening screen.

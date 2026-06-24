@@ -9,92 +9,91 @@ import clientCommon.*;
 import common.*;
 import javafx.application.Platform;
 
-/*
+/**
  * This class connects the client networking side to the UI side.
  * 
  * It sends requests from the UI to the server and receives responses from
  * the server. It also uses the Observer pattern to notify the relevant UI
  * controllers when new data or operation results arrive.
  */
-@SuppressWarnings("deprecation")
 public class ClientController implements ChatIF {
 
-	/*
+	/**
 	 * The client object responsible for handling the connection with the server.
 	 */
 	private Client client;
 
-	/*
+	/**
 	 * The ID of the currently connected user.
 	 */
 	private String id = null;
 
-	/*
+	/**
 	 * Indicates whether the disconnection was initiated by the user.
 	 */
 	private boolean userIssuedDisconnect = false;
 
-	/*
+	/**
 	 * The logged-in subscriber ID.
 	 */
 	private Integer loggedInSubscriberId;
 
-	/*
+	/**
 	 * Observers for order-related screens.
 	 */
 	private List<OrderObserver> observers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for park-related screens.
 	 */
 	private List<ParkObserver> parkObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for occasional customer access screens.
 	 */
 	private List<OccasionalCustomerAccessObserver> occasionalCustomerAccessObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for waiting-list screens.
 	 */
 	private List<WaitingListObserver> waitingListObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for park entrance control screens.
 	 */
 	private List<ParkEntranceObserver> parkEntranceObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for make-order screens.
 	 */
 	private List<MakeOrderObserver> makeOrderObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for employee login screens.
 	 */
 	private List<EmployeeLoginObserver> employeeLoginObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for existing customer login screens.
 	 */
 	private List<ExistingCustomerLoginObserver> existingCustomerLoginObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for subscriber registration screens.
 	 */
 	private List<RegisterSubscriberObserver> registerSubscriberObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for guide registration screens.
 	 */
 	private List<RegisterGuideObserver> registerGuideObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Observers for subscriber search screens.
 	 */
 	private List<SearchSubscriberObserver> searchSubscriberObservers = new ArrayList<>();
 
-	/*
+	/**
 	 * Constructs a new ClientController and opens a connection to the server.
 	 *
 	 * @param host the server host address
@@ -112,7 +111,7 @@ public class ClientController implements ChatIF {
 		this.id = id;
 	}
 
-	/*
+	/**
 	 * Sets the logged-in subscriber ID.
 	 * 
 	 * @param subscriberId the logged-in subscriber ID
@@ -121,7 +120,7 @@ public class ClientController implements ChatIF {
 		this.loggedInSubscriberId = subscriberId;
 	}
 
-	/*
+	/**
 	 * Returns the logged-in subscriber ID.
 	 * 
 	 * @return the logged-in subscriber ID
@@ -130,7 +129,7 @@ public class ClientController implements ChatIF {
 		return loggedInSubscriberId;
 	}
 
-	/*
+	/**
 	 * Returns the ID of the currently connected user.
 	 * 
 	 * @return the current user ID
@@ -139,7 +138,7 @@ public class ClientController implements ChatIF {
 		return id;
 	}
 
-	/*
+	/**
 	 * Updates the ID of the currently connected user.
 	 * 
 	 * @param id the current user's ID
@@ -148,7 +147,7 @@ public class ClientController implements ChatIF {
 		this.id = id;
 	}
 
-	/*
+	/**
 	 * Adds an order observer.
 	 *
 	 * @param observer the order observer to add
@@ -159,7 +158,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes an order observer.
 	 *
 	 * @param observer the order observer to remove
@@ -168,7 +167,7 @@ public class ClientController implements ChatIF {
 		observers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all order observers that orders were received from the server.
 	 *
 	 * @param rows the list of received orders
@@ -179,7 +178,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all order observers that a new order was created.
 	 *
 	 * @param order the newly created order
@@ -190,7 +189,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all order observers about the result of an order update request.
 	 *
 	 * @param success       true if the update succeeded, false otherwise
@@ -202,7 +201,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all order observers about the result of an order cancellation request.
 	 *
 	 * @param success            true if the cancellation succeeded, false otherwise
@@ -214,7 +213,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a park observer.
 	 *
 	 * @param observer the park observer to add
@@ -225,7 +224,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a park observer.
 	 *
 	 * @param observer the park observer to remove
@@ -234,7 +233,7 @@ public class ClientController implements ChatIF {
 		parkObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all park observers that park information was received.
 	 *
 	 * @param parks the list of parks received from the server
@@ -245,7 +244,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds an occasional customer access observer.
 	 *
 	 * @param observer the occasional customer access observer to add
@@ -256,7 +255,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes an occasional customer access observer.
 	 *
 	 * @param observer the occasional customer access observer to remove
@@ -265,7 +264,7 @@ public class ClientController implements ChatIF {
 		occasionalCustomerAccessObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all occasional customer access observers about the server response.
 	 *
 	 * @param response the response received from the server
@@ -276,7 +275,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a waiting-list observer.
 	 *
 	 * @param observer the waiting-list observer to add
@@ -287,7 +286,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a waiting-list observer.
 	 *
 	 * @param observer the waiting-list observer to remove
@@ -296,7 +295,7 @@ public class ClientController implements ChatIF {
 		waitingListObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all waiting-list observers about the result of a join waiting-list request.
 	 *
 	 * @param success            true if the request succeeded, false otherwise
@@ -308,7 +307,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all waiting-list observers about loaded waiting-list offers.
 	 *
 	 * @param success true if the offers were loaded successfully
@@ -320,7 +319,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all waiting-list observers about the result of a reject waiting offer request.
 	 *
 	 * @param success            true if the request succeeded, false otherwise
@@ -332,7 +331,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all waiting-list observers about the result of an accept waiting offer request.
 	 *
 	 * @param success            true if the request succeeded, false otherwise
@@ -344,7 +343,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a park entrance observer.
 	 *
 	 * @param observer the observer to add
@@ -355,7 +354,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a park entrance observer.
 	 *
 	 * @param observer the observer to remove
@@ -364,7 +363,7 @@ public class ClientController implements ChatIF {
 		parkEntranceObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all park entrance observers about a check-in result.
 	 *
 	 * @param success             true if check-in succeeded
@@ -376,7 +375,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all park entrance observers about a check-out result.
 	 *
 	 * @param success             true if check-out succeeded
@@ -388,7 +387,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all park entrance observers about an occasional visit result.
 	 *
 	 * @param success             true if the occasional visit was created successfully
@@ -400,7 +399,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all park entrance observers about the current visitors count.
 	 *
 	 * @param success             true if the current visitors count was loaded successfully
@@ -412,7 +411,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a make-order observer.
 	 *
 	 * @param observer the make-order observer to add
@@ -423,7 +422,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a make-order observer.
 	 *
 	 * @param observer the make-order observer to remove
@@ -432,7 +431,7 @@ public class ClientController implements ChatIF {
 		makeOrderObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all make-order observers that park names were received from the server.
 	 *
 	 * @param parkNames the list of park names received from the server
@@ -443,7 +442,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Notifies all make-order observers about a make-order server response.
 	 *
 	 * @param message the message received from the server
@@ -454,7 +453,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds an employee login observer.
 	 *
 	 * @param observer the employee login observer to add
@@ -465,7 +464,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes an employee login observer.
 	 *
 	 * @param observer the employee login observer to remove
@@ -474,7 +473,7 @@ public class ClientController implements ChatIF {
 		employeeLoginObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all employee login observers about the login result.
 	 *
 	 * @param response the employee login response received from the server
@@ -485,7 +484,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds an existing customer login observer.
 	 *
 	 * @param observer the existing customer login observer to add
@@ -496,7 +495,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes an existing customer login observer.
 	 *
 	 * @param observer the existing customer login observer to remove
@@ -505,7 +504,7 @@ public class ClientController implements ChatIF {
 		existingCustomerLoginObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all existing customer login observers about the login result.
 	 *
 	 * @param response the existing customer login response received from the server
@@ -516,7 +515,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a register subscriber observer.
 	 *
 	 * @param observer the register subscriber observer to add
@@ -527,7 +526,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a register subscriber observer.
 	 *
 	 * @param observer the register subscriber observer to remove
@@ -536,7 +535,7 @@ public class ClientController implements ChatIF {
 		registerSubscriberObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all register subscriber observers about the registration result.
 	 *
 	 * @param response the registration response received from the server
@@ -547,7 +546,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a register guide observer.
 	 *
 	 * @param observer the register guide observer to add
@@ -558,7 +557,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a register guide observer.
 	 *
 	 * @param observer the register guide observer to remove
@@ -567,7 +566,7 @@ public class ClientController implements ChatIF {
 		registerGuideObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all register guide observers about the registration result.
 	 *
 	 * @param response the registration response received from the server
@@ -578,7 +577,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Adds a search subscriber observer.
 	 *
 	 * @param observer the search subscriber observer to add
@@ -589,7 +588,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Removes a search subscriber observer.
 	 *
 	 * @param observer the search subscriber observer to remove
@@ -598,7 +597,7 @@ public class ClientController implements ChatIF {
 		searchSubscriberObservers.remove(observer);
 	}
 
-	/*
+	/**
 	 * Notifies all search subscriber observers about the search result.
 	 *
 	 * @param response the search subscriber response received from the server
@@ -609,14 +608,14 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Sends the server a request for all orders of the current user.
 	 */
 	public void requestOrders() {
 		client.handleMessageFromClientUI(new Message(id, Protocol.RETURN_ORDER));
 	}
 
-	/*
+	/**
 	 * Sends the server a request for all orders of a specific subscriber.
 	 *
 	 * @param subscriberId the subscriber ID whose orders should be loaded
@@ -629,7 +628,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends the server a request to update an order.
 	 *
 	 * @param um the update data
@@ -638,7 +637,7 @@ public class ClientController implements ChatIF {
 		client.handleMessageFromClientUI(new Message(um, Protocol.UPDATE_ORDER));
 	}
 
-	/*
+	/**
 	 * Sends the server a request to cancel an order.
 	 *
 	 * @param cancelOrderMessage the cancellation request data
@@ -647,7 +646,7 @@ public class ClientController implements ChatIF {
 		client.handleMessageFromClientUI(new Message(cancelOrderMessage, Protocol.CANCEL_ORDER));
 	}
 
-	/*
+	/**
 	 * Sends the server a request to join the waiting list.
 	 *
 	 * @param waitingListMessage the waiting-list request data
@@ -658,7 +657,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to get waiting-list offers for a subscriber.
 	 *
 	 * @param subscriberId the subscriber ID
@@ -669,7 +668,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to reject a waiting-list offer.
 	 *
 	 * @param waitingId the waiting-list request ID
@@ -682,7 +681,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to accept a waiting-list offer.
 	 *
 	 * @param waitingId the waiting-list request ID
@@ -695,14 +694,14 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends the server a request for all active parks.
 	 */
 	public void requestActiveParks() {
 		client.handleMessageFromClientUI(new Message(null, Protocol.GET_ACTIVE_PARKS));
 	}
 
-	/*
+	/**
 	 * Sends a request to search subscriber by subscriber ID.
 	 *
 	 * @param subscriberId the subscriber ID to search
@@ -713,7 +712,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends the server a request to check occasional customer access by order number.
 	 *
 	 * @param orderNumber the order number entered by the customer
@@ -726,7 +725,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends the server an occasional customer access request.
 	 *
 	 * The occasional customer identifies himself by ID number.
@@ -741,7 +740,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends an employee login request to the server.
 	 *
 	 * @param username the employee username
@@ -755,7 +754,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends an existing customer login request to the server.
 	 *
 	 * @param username the customer username
@@ -769,7 +768,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a register subscriber request to the server.
 	 *
 	 * @param request the subscriber registration request data
@@ -780,7 +779,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to register a subscriber as a guide.
 	 *
 	 * @param request the guide registration request
@@ -791,7 +790,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to check in visitors using an order confirmation code.
 	 *
 	 * @param parkEntranceMessage the check-in request data
@@ -802,7 +801,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to check out visitors using an order confirmation code.
 	 *
 	 * @param parkEntranceMessage the check-out request data
@@ -813,7 +812,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to create an occasional visit.
 	 *
 	 * @param parkEntranceMessage the occasional visit request data
@@ -824,7 +823,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a request to get the current number of visitors in a park.
 	 *
 	 * @param parkEntranceMessage the current visitors request data
@@ -835,7 +834,7 @@ public class ClientController implements ChatIF {
 		);
 	}
 
-	/*
+	/**
 	 * Sends a general message to the server.
 	 *
 	 * @param message the message to send
@@ -844,7 +843,7 @@ public class ClientController implements ChatIF {
 		client.handleMessageFromClientUI(message);
 	}
 
-	/*
+	/**
 	 * Handles messages received from the server.
 	 *
 	 * @param m the message received from the server
@@ -1033,7 +1032,7 @@ public class ClientController implements ChatIF {
 		});
 	}
 
-	/*
+	/**
 	 * Parses an object into a list of waiting-list messages.
 	 *
 	 * @param o the object to parse
@@ -1059,7 +1058,7 @@ public class ClientController implements ChatIF {
 		return offers;
 	}
 
-	/*
+	/**
 	 * Parses an object into a list of orders.
 	 *
 	 * @param o the object to parse
@@ -1085,7 +1084,7 @@ public class ClientController implements ChatIF {
 		return rows;
 	}
 
-	/*
+	/**
 	 * Parses an object into a list of park information objects.
 	 *
 	 * @param o the object to parse
@@ -1111,7 +1110,7 @@ public class ClientController implements ChatIF {
 		return parks;
 	}
 
-	/*
+	/**
 	 * Parses an object into a list of strings.
 	 *
 	 * @param o the object to parse
@@ -1137,7 +1136,7 @@ public class ClientController implements ChatIF {
 		return values;
 	}
 
-	/*
+	/**
 	 * Disconnects the client from the server after a user-initiated disconnect request.
 	 */
 	public void disconnectFromServer() {
@@ -1145,7 +1144,7 @@ public class ClientController implements ChatIF {
 		client.quit();
 	}
 
-	/*
+	/**
 	 * Handles a disconnect request issued by the server and notifies relevant observers.
 	 */
 	public void handleServerIssuedDisconnect() {
@@ -1162,7 +1161,7 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	/*
+	/**
 	 * Returns whether the user initiated the disconnect.
 	 *
 	 * @return true if the user initiated the disconnect, false otherwise
@@ -1171,7 +1170,7 @@ public class ClientController implements ChatIF {
 		return userIssuedDisconnect;
 	}
 
-	/*
+	/**
 	 * Sets whether the user initiated the disconnect.
 	 *
 	 * @param userIssuedDisconnect true if the user initiated the disconnect, false otherwise
