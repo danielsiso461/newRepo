@@ -425,6 +425,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
+		backButton.setText("Back");
 	}
 
 	/*
