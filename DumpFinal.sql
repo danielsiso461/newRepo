@@ -481,8 +481,7 @@ CREATE TABLE `visit` (
   CONSTRAINT `fk_visit_employee_entry` FOREIGN KEY (`handled_by_employee_id`) REFERENCES `employee` (`employee_id`),
   CONSTRAINT `fk_visit_employee_exit` FOREIGN KEY (`exit_handled_by_employee_id`) REFERENCES `employee` (`employee_id`),
   CONSTRAINT `fk_visit_order` FOREIGN KEY (`order_number`) REFERENCES `order` (`order_number`),
-  CONSTRAINT `fk_visit_park` FOREIGN KEY (`park_id`) REFERENCES `park` (`park_id`),
-  CONSTRAINT `fk_visit_subscriber` FOREIGN KEY (`subscriber_id`) REFERENCES `subscriber` (`subscriber_id`)
+  CONSTRAINT `fk_visit_park` FOREIGN KEY (`park_id`) REFERENCES `park` (`park_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=84 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -732,4 +731,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-06-23 22:05:47
+-- Dump completed on 2026-06-24 19:56:37
