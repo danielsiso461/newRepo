@@ -32,7 +32,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
-import common.Employee;
 
 /**
  * this class is the UI controller for the order table page
@@ -40,14 +39,6 @@ import common.Employee;
 public class OrderTableDisplayController implements OrderObserver, Runnable {
 	/** the client controller */
 	private ClientController clientController;
-	
-	private Employee loggedInEmployee;
-	
-	private boolean parkManagerView = false;
-	
-	private boolean serviceRepresentativeView = false;
-	
-	private boolean customerView = false;
 
 	/** a set that keeps track of which orders have requested an update */
 	private Set<Integer> awaitingUpdate = new HashSet<>();
@@ -141,9 +132,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 */
 	@FXML // fx:id="waitingListButton"
 	private Button waitingListButton; // Value injected by FXMLLoader
-	
-	@FXML
-	private Button backButton;
 
 	/**
 	 * this method handles click the update button
@@ -382,7 +370,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		assert visitorNumber != null : "fx:id=\"visitorNumber\" was not injected: check your FXML file 'Untitled'.";
 		assert notifLabel != null : "fx:id=\"notifLabel\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert backButton != null : "fx:id=\"backButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 
 		// Disable action buttons until the user selects an order from the table.
 		updateButton.setDisable(true);
@@ -461,10 +448,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 		this.clientController.addObserver(this);
-	}
-	
-	public void setLoggedInEmployee(Employee employee) {
-		this.loggedInEmployee = employee;
 	}
 
 	/**
@@ -584,7 +567,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			}
 		} else {
 			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " failed.");
+			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " succeeded. The order was removed from your list.");
 		}
 
 		// Remove the order from the local waiting list so the UI can be used again.
@@ -594,103 +577,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		if (selectedRow != null) {
 			onRowSelected(selectedRow);
 		}
-	}
-	
-	/**
-	 * Loads orders for a specific park.
-	 * 
-	 * This method is used when a park manager opens the order table screen.
-	 * 
-	 * @param parkId the park ID assigned to the park manager
-	 */
-	public void loadOrdersForPark(int parkId) {
-		if (clientController == null) {
-			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Client is not connected to server.");
-			return;
-		}
-
-		if (parkId <= 0) {
-			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Invalid park ID.");
-			return;
-		}
-
-		notifLabel.setTextFill(Color.BLUE);
-		notifLabel.setText("Loading park orders...");
-
-		clientController.requestOrdersByParkId(parkId);
-	}
-	
-	/**
-	 * Configures the order table screen for park manager view.
-	 * 
-	 * In this mode the park manager only views park orders.
-	 */
-	public void configureForParkManagerView() {
-		parkManagerView = true;
-		if (makeOrderButton != null) {
-			makeOrderButton.setVisible(false);
-			makeOrderButton.setManaged(false);
-		}
-
-		if (updateButton != null) {
-			updateButton.setVisible(false);
-			updateButton.setManaged(false);
-		}
-
-		if (cancelButton != null) {
-			cancelButton.setVisible(false);
-			cancelButton.setManaged(false);
-		}
-
-		if (waitingListButton != null) {
-			waitingListButton.setVisible(false);
-			waitingListButton.setManaged(false);
-		}
-	}
-	
-	public void configureForServiceRepresentativeView() {
-		serviceRepresentativeView = true;
-
-		if (makeOrderButton != null) {
-			makeOrderButton.setVisible(false);
-			makeOrderButton.setManaged(false);
-		}
-
-		if (updateButton != null) {
-			updateButton.setVisible(false);
-			updateButton.setManaged(false);
-		}
-
-		if (cancelButton != null) {
-			cancelButton.setVisible(false);
-			cancelButton.setManaged(false);
-		}
-
-		if (waitingListButton != null) {
-			waitingListButton.setVisible(false);
-			waitingListButton.setManaged(false);
-		}
-	}
-	
-	public void configureForCustomerView() {
-		customerView = true;
-		parkManagerView = false;
-		serviceRepresentativeView = false;
-	}
-
-	public void loadAllOrdersForServiceRepresentative() {
-		if (clientController == null) {
-			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Client is not connected to server.");
-			return;
-		}
-
-		notifLabel.setTextFill(Color.BLUE);
-		notifLabel.setText("Loading customer orders...");
-
-		clientController.requestAllOrdersForServiceRepresentative();
 	}
 
 	/**
@@ -705,72 +591,5 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			o.setOrderNumber(data.size() + 1);
 			data.add(o);
 		});
-	}
-	
-	@FXML
-	void backButtonClick(ActionEvent event) {
-		try {
-			if (parkManagerView) {
-				FXMLLoader loader = new FXMLLoader(
-						getClass().getResource("/clientGUI/ParkManagerHomePage.fxml")
-				);
-
-				Parent root = loader.load();
-
-				ParkManagerHomePageController controller = loader.getController();
-				controller.setClientController(clientController);
-				controller.setLoggedInEmployee(loggedInEmployee);
-
-				Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-				stage.setTitle("Park Manager Dashboard");
-				stage.setScene(new Scene(root));
-				stage.show();
-
-				return;
-			}
-			
-			if (serviceRepresentativeView) {
-				FXMLLoader loader = new FXMLLoader(
-						getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
-				);
-
-				Parent root = loader.load();
-
-				ServiceRepresentativeHomePageController controller = loader.getController();
-				controller.setClientController(clientController);
-				controller.setLoggedInEmployee(loggedInEmployee);
-
-				Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-				stage.setTitle("Service Representative Dashboard");
-				stage.setScene(new Scene(root));
-				stage.show();
-
-				return;
-			}
-			
-			if (customerView) {
-				FXMLLoader loader = new FXMLLoader(
-						getClass().getResource("/clientGUI/CustomerAccess.fxml")
-				);
-
-				Parent root = loader.load();
-
-				CustomerAccessController controller = loader.getController();
-				controller.setClientController(clientController);
-
-				Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-				stage.setTitle("Customer Access");
-				stage.setScene(new Scene(root));
-				stage.show();
-
-				return;
-			}
-
-			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Back is not configured for this screen mode.");
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 }

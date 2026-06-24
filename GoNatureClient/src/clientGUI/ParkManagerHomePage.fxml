@@ -19,6 +19,7 @@
             <Button layoutX="310.0" layoutY="227.0" mnemonicParsing="false" onAction="#handleViewParkReports" text="View Park Reports" />
             <Button alignment="CENTER" layoutX="313.0" layoutY="284.0" mnemonicParsing="false" onAction="#handleViewParkOrders" text="View Park Orders" textAlignment="JUSTIFY" />
             <Button layoutX="339.0" layoutY="334.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
+            <Button layoutX="304.0" layoutY="175.0" mnemonicParsing="false" onAction="#handleManagePromotions" text="Manage Promotions" />
          </children>
       </AnchorPane>
    </children>

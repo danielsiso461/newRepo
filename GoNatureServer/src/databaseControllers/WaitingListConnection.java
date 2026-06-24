@@ -52,7 +52,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 	 * @return the waiting_list table name
 	 */
 	@Override
-	public String getTableName() {
+	protected String getTableName() {
 		return TABLE_NAME;
 	}
 
@@ -61,7 +61,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 	 *
 	 * @throws SQLException if the connection cannot be opened
 	 */
-	public void ensureConnection() throws SQLException {
+	private void ensureConnection() throws SQLException {
 		if (conn == null || conn.isClosed()) {
 			connect();
 		}
@@ -250,7 +250,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 				UPDATE waiting_list
 				SET waiting_status = 'offered',
 				    offered_at = NOW(),
-				   offer_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
+				    offer_expires_at = DATE_ADD(NOW(), INTERVAL 1 DAY)
 				WHERE waiting_id = ?;
 				""";
 

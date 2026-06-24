@@ -111,7 +111,6 @@ public class ClientConnectionTableController {
 	 */
 	@FXML
 	void initialize() {
-		
 		assert hostNameLabel != null
 				: "fx:id=\"hostNameLabel\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
 		assert ipAddressLabel != null
@@ -130,8 +129,7 @@ public class ClientConnectionTableController {
 				: "fx:id=\"userTable\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
 		assert serverLogArea != null
 				: "fx:id=\"serverLogArea\" was not injected: check your FXML file 'ClientConnectionTable.fxml'.";
-		
-		userTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);		
+
 		// Set where each table column gets its data from in the User object.
 		userNumber.setCellValueFactory(new PropertyValueFactory<>("userNumber"));
 		hostName.setCellValueFactory(new PropertyValueFactory<>("hostName"));
@@ -246,7 +244,7 @@ public class ClientConnectionTableController {
 	public void setLabels(String hostName, String ip) {
 		Platform.runLater(() -> {
 			hostNameLabel.setText(hostName);
-			ipAddressLabel.setText("Server IP: " + ip);
+			ipAddressLabel.setText(ip);
 		});
 
 		addLog("Server started on host: " + hostName + ", IP: " + ip);

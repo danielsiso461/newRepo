@@ -61,6 +61,10 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * the order's email column's name
 	 */
 	private final String EMAIL = "email";
+
+	/**
+	 * The park id column in the order table.
+	 */
 	private final String PARK_ID = "park_id";
 	/**
 	 * the order's guide id  column's name
@@ -116,11 +120,12 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * 
 	 * @throws SQLException if reconnecting to the database fails
 	 */
-	public void ensureConnection() throws SQLException {
+	private void ensureConnection() throws SQLException {
 		if (conn == null || conn.isClosed()) {
 			connect();
 		}
 	}
+
 	/**
 	 * This method converts the current row of a ResultSet into an Order object.
 	 * 
@@ -171,10 +176,6 @@ public final class OrderConnection extends AbstractDBConnection {
 			newValues.add(um.getNumberOfVisitors());
 		}
 
-		if (columnNames.isEmpty()) {
-			throw new SQLException("No order fields were selected for update.");
-		}
-
 		keyColumns.add(ORDER_NUMBER);
 		keyValues.add(um.getOrderId());
 
@@ -205,17 +206,8 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		List<Order> orders = new ArrayList<>();
 
-		Object data = m.getData();
-		int subscriberId;
-
-		if (data instanceof Integer) {
-			subscriberId = (Integer) data;
-		} else {
-			subscriberId = Integer.parseInt(data.toString());
-		}
-
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, subscriberId);
+			pstmt.setInt(1, Integer.parseInt((String) m.getData()));
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				int index = 1;
@@ -723,38 +715,6 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method returns all orders in the system.
-	 * 
-	 * This method is used by the service representative order table.
-	 * 
-	 * @return a list of all orders
-	 * @throws SQLException if the select query fails
-	 */
-	public List<Order> getAllOrders() throws SQLException {
-		ensureConnection();
-
-		String sql = """
-				SELECT *
-				FROM `order`
-				ORDER BY order_date DESC, order_number;
-				""";
-
-		List<Order> orders = new ArrayList<>();
-
-		try (PreparedStatement pstmt = conn.prepareStatement(sql);
-				ResultSet rs = pstmt.executeQuery()) {
-
-			int index = 1;
-
-			while (rs.next()) {
-				orders.add(convertResultSetToOrder(index++, rs));
-			}
-		}
-
-		return orders;
-	}
-
-	/*
 	 * this method returns the next order number for a new order.
 	 * 
 	 * The order_number column is not AUTO_INCREMENT in the database, so the value
@@ -927,10 +887,21 @@ public final class OrderConnection extends AbstractDBConnection {
 			pstmt.setString(2, customerIdNumber);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
-				int index = 1;
-
 				while (rs.next()) {
-					orders.add(convertResultSetToOrder(index++, rs));
+					Order order = new Order(
+							rs.getInt(ORDER_NUMBER),
+							rs.getDate(ORDER_DATE).toLocalDate(),
+							rs.getInt(VISITOR_NUMBER),
+							rs.getInt(CONF_CODE),
+							rs.getInt(ORDER_CUSTOMER_ID),
+							rs.getDate(PLACEMENT_DATE).toLocalDate(),
+							rs.getInt(PARK_ID),
+							rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID),
+							rs.getString(ORDER_STATUS),
+							rs.getString(ORDER_TYPE)
+					);
+
+					orders.add(order);
 				}
 			}
 		}
