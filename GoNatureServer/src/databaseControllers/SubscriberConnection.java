@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import common.Subscriber;
 
 import common.SystemUser;
 
@@ -496,5 +497,24 @@ public class SubscriberConnection extends AbstractDBConnection {
 				keyColumns.toArray(new String[keyColumns.size()]), keyValues);
 
 		return true;
+	}
+	
+	
+	public Subscriber findSubscriberById(int subscriberId) throws SQLException {
+		ArrayList<Object> subscriberData = getSubscriberById(subscriberId);
+
+		if (subscriberData.isEmpty()) {
+			return null;
+		}
+
+		return new Subscriber(
+				((Number) subscriberData.get(0)).intValue(),
+				(String) subscriberData.get(1),
+				(String) subscriberData.get(2),
+				(String) subscriberData.get(3),
+				(String) subscriberData.get(4),
+				((Number) subscriberData.get(5)).intValue(),
+				(String) subscriberData.get(6),
+				(String) subscriberData.get(7));
 	}
 }
