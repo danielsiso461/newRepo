@@ -12,6 +12,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
+import clientCommon.ClientSession;
 
 /*
  * This class is the controller for the park worker home page.
@@ -110,6 +111,12 @@ public class ParkWorkerHomePageController {
 	@FXML
 	private void handleLogout(ActionEvent event) {
 		try {
+			if (clientController != null) {
+				clientController.logoutCurrentUserFromServer();
+			}
+
+			ClientSession.clear();
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/OpeningScreen.fxml")
 			);

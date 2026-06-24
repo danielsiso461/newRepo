@@ -13,6 +13,7 @@ import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import clientCommon.ClientSession;
 
+
 /*
  * This class is the controller for the service representative home page.
  * 
@@ -136,6 +137,10 @@ public class ServiceRepresentativeHomePageController {
 	@FXML
 	private void handleLogout(ActionEvent event) {
 		try {
+			if (clientController != null) {
+				clientController.logoutCurrentUserFromServer();
+			}
+
 			ClientSession.clear();
 
 			FXMLLoader loader = new FXMLLoader(

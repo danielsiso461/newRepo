@@ -66,6 +66,7 @@ public class CustomerAccessController {
 	@FXML
 	private void handleOccasionalCustomerAccess(ActionEvent event) {
 		try {
+			System.out.println("CustomerAccess clientController = " + clientController);
 			OccasionalCustomerAccessController.setClientController(clientController);
 
 			FXMLLoader loader = new FXMLLoader(

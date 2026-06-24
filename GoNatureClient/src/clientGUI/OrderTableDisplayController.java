@@ -710,6 +710,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			
 			if (customerView) {
 				if (clientController != null) {
+					clientController.logoutCurrentUserFromServer();
 					clientController.setLoggedInSubscriberId(null);
 					clientController.removeObserver(this);
 				}

@@ -158,7 +158,7 @@ public class WelcomePageController {
 
     		OpeningScreenController controller = loader.getController();
     		controller.setClientController(clientController);
-
+    		
     	} catch (IOException e) {
     		e.printStackTrace();
     		Platform.exit();

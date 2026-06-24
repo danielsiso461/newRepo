@@ -95,6 +95,11 @@ public final class Server extends AbstractServer {
 				}
 			}
 		}
+		
+		if (m.getType() == Protocol.CLIENT_LOGOUT_USER) {
+			processClientLogout(client);
+			return;
+		}
 
 		// check if the user issued a disconnect
 		if (m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
@@ -198,6 +203,49 @@ public final class Server extends AbstractServer {
 					String.valueOf(employee.getEmployeeId()),
 					client
 			);
+		}
+		
+		if (requestMessage.getType() == Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST) {
+			String customerIdNumber = (String) requestMessage.getData();
+
+			bindIdToClientConnection(
+					customerIdNumber,
+					client
+			);
+
+			return;
+		}
+		
+	}
+	
+	private void processClientLogout(ConnectionToClient client) {
+		if (client == null) {
+			return;
+		}
+
+		User user = (User) client.getInfo("User");
+
+		if (user == null) {
+			try {
+				client.sendToClient(new Message(null, Protocol.CLIENT_LOGOUT_USER_SUCCESS));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return;
+		}
+
+		if (user.getUserId() != null) {
+			currIdConnection.remove(user.getUserId());
+		}
+
+		serverController.removeUserOnUserDisconnected(user);
+
+		client.setInfo("User", null);
+
+		try {
+			client.sendToClient(new Message(null, Protocol.CLIENT_LOGOUT_USER_SUCCESS));
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	

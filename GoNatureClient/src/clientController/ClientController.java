@@ -511,6 +511,10 @@ public class ClientController implements ChatIF {
 	public void requestAllOrdersForServiceRepresentative() {
 		sendMessageToServer(new Message(null, Protocol.GET_ALL_ORDERS_REQUEST));
 	}
+	
+	public void logoutCurrentUserFromServer() {
+		sendMessageToServer(new Message(null, Protocol.CLIENT_LOGOUT_USER));
+	}
 
 	// Messages from server
 
@@ -665,6 +669,10 @@ public class ClientController implements ChatIF {
 			
 		case GET_ALL_ORDERS_RESPONSE:
 			handleReturnOrderResponse(message.getData());
+			break;	
+			
+		case CLIENT_LOGOUT_USER_SUCCESS:
+			System.out.println("User logged out successfully from server.");
 			break;	
 
 		default:
