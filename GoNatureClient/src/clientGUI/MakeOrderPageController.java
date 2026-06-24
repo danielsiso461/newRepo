@@ -621,5 +621,20 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		Platform.exit();
 		System.exit(0);
 	}
+
+	@FXML
+	private void handleBack(ActionEvent event) {
+		if (prevScene == null) {
+			warningMessage("Previous page is not available.");
+			return;
+		}
+
+		if (clientController != null) {
+			clientController.removeMakeOrderObserver(this);
+			clientController.removeWaitingListObserver(this);
+		}
+
+		switchScene();
+	}
 }
 

@@ -56,45 +56,92 @@ public class DepartmentManagerHomePageController {
 	/**
 	 * Handles click on the reports button.
 	 * 
-	 * This screen will allow the department manager to view department-level reports,
+	 * This screen allows the department manager to view department-level reports,
 	 * such as visit reports and cancellation reports.
 	 */
 	@FXML
-	private void handleViewReports() {
-		System.out.println("View Reports clicked");
+	private void handleViewReports(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ReportsPage.fxml")
+			);
 
-		/*
-		 * Later:
-		 * Open DepartmentManagerReports.fxml
-		 */
+			Parent root = loader.load();
+
+			ReportsPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Reports");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	/**
-	 * method that let's you know approve park requests was clicked
+	 * method that Handles click on the approve park requests button.
+	 * 
+	 * This screen allows the department manager to review, approve, and reject
+	 * pending park parameter change requests.
 	 */
 	@FXML
-	private void handleApproveParkRequests() {
-		System.out.println("Approve Park Requests clicked");
+	private void handleApproveParkRequests(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ParkParameterApprovalPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			ParkParameterApprovalPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Approve Park Requests");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	
 	/**
 	 * Handles click on the park occupancy button.
 	 * 
-	 * This screen will show the current occupancy of parks,
+	 * This screen shows the current occupancy of parks,
 	 * including current visitors, capacity, and available space.
 	 */
 	@FXML
-	private void handleViewParkOccupancy() {
-		System.out.println("View Park Occupancy clicked");
+	private void handleViewParksOccupancy(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ParkVisitorCounterViewPage.fxml")
+			);
 
-		/*
-		 * Later:
-		 * Open DepartmentManagerParkOccupancy.fxml
-		 */
+			Parent root = loader.load();
+
+			ParkVisitorCounterViewPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Parks Occupancy");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
-	 * Handles logout from the park worker screen.
+	 * Handles logout from the department manager screen.
 	 * 
 	 * For now, this returns the user to the opening screen.
 	 * 
@@ -108,6 +155,9 @@ public class DepartmentManagerHomePageController {
 			);
 
 			Parent root = loader.load();
+
+			OpeningScreenController controller = loader.getController();
+			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("GoNature");

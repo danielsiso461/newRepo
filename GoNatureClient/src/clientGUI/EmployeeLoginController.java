@@ -8,6 +8,7 @@ import java.io.IOException;
 import javafx.scene.Node;
 
 import clientCommon.EmployeeLoginObserver;
+import clientCommon.ClientSession;
 import clientController.ClientController;
 import common.Employee;
 import common.OperationResponse;
@@ -119,6 +120,14 @@ public class EmployeeLoginController implements EmployeeLoginObserver {
 
 			if (response.isSuccess()) {
 				Employee employee = (Employee) response.getData();
+				
+				int parkId = employee.getParkId() == null ? -1 : employee.getParkId();
+
+				ClientSession.setLoggedEmployee(
+						employee.getEmployeeId(),
+						employee.getRole(),
+						parkId
+				);
 
 				messageLabel.setText("Login successful. Welcome " + employee.getFirstName());
 
