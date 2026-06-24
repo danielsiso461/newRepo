@@ -582,14 +582,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 	
-	public void requestOrdersByParkId(int parkId) {
-		sendMessageToServer(new Message(parkId, Protocol.GET_PARK_ORDERS_REQUEST));
-	}
-	
-	public void requestAllOrdersForServiceRepresentative() {
-		sendMessageToServer(new Message(null, Protocol.GET_ALL_ORDERS_REQUEST));
-	}
-	
 	public void logoutCurrentUserFromServer() {
 		sendMessageToServer(new Message(null, Protocol.CLIENT_LOGOUT_USER));
 	}
@@ -789,10 +781,6 @@ public class ClientController implements ChatIF {
 		case PARK_VISITOR_COUNTERS_UPDATED:
 			notifyParkVisitorCountersUpdated();
 			break;
-			
-		case GET_ALL_ORDERS_RESPONSE:
-			handleReturnOrderResponse(message.getData());
-			break;	
 			
 		case CLIENT_LOGOUT_USER_SUCCESS:
 			System.out.println("User logged out successfully from server.");

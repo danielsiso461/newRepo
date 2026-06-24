@@ -72,13 +72,15 @@ public final class Server extends AbstractServer {
 			return;
 		}
 		
+		Message m = (Message) msg;
+
+		
 		if (m.getType() == Protocol.CLIENT_LOGOUT_USER) {
 			processClientLogout(client);
 			return;
 		}
 
-		Message m = (Message) msg;
-
+		
 		// Check if the user issued a disconnect.
 		if (m.getType() == Protocol.CLIENT_DISCONNECT_USER) {
 			processClientDisconnection(client);
