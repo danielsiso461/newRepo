@@ -15,6 +15,15 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
+import java.io.IOException;
+
+import common.Employee;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
  * Allows park workers and park managers to update the real-time visitor counter.
@@ -25,6 +34,8 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
     private static final String ROLE_PARK_MANAGER = "park_manager";
 
     private ClientController clientController;
+    
+    private Employee loggedInEmployee;
 
     @FXML
     private Label parkIdLabel;
@@ -46,6 +57,10 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
 
     public void setClientController(ClientController clientController) {
         this.clientController = clientController;
+    }
+    
+    public void setLoggedInEmployee(Employee employee) {
+    	this.loggedInEmployee = employee;
     }
 
     @FXML
@@ -260,5 +275,28 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    @FXML
+    private void handleBack(ActionEvent event) {
+    	try {
+    		FXMLLoader loader = new FXMLLoader(
+    				getClass().getResource("/clientGUI/ParkWorkerHomePage.fxml")
+    		);
+
+    		Parent root = loader.load();
+
+    		ParkWorkerHomePageController controller = loader.getController();
+    		controller.setClientController(clientController);
+    		controller.setLoggedInEmployee(loggedInEmployee);
+
+    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    		stage.setTitle("Park Worker Dashboard");
+    		stage.setScene(new Scene(root));
+    		stage.show();
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
     }
 }

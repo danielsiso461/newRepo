@@ -20,6 +20,14 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
+import java.io.IOException;
+import common.Employee;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
  * Controls the park parameter approval page.
@@ -38,6 +46,8 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
     private static final String ROLE_DEPARTMENT_MANAGER = "department_manager";
 
     private ClientController clientController;
+    
+    private Employee loggedInEmployee;
 
     private String lastSubmittedReviewNote = "";
     private String lastOperationMessageToKeep;
@@ -89,6 +99,10 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 
     public void setClientController(ClientController clientController) {
         this.clientController = clientController;
+    }
+    
+    public void setLoggedInEmployee(Employee employee) {
+    	this.loggedInEmployee = employee;
     }
 
     @FXML
@@ -460,5 +474,28 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    @FXML
+    private void handleBack(ActionEvent event) {
+    	try {
+    		FXMLLoader loader = new FXMLLoader(
+    				getClass().getResource("/clientGUI/DepartmentManagerHomePage.fxml")
+    		);
+
+    		Parent root = loader.load();
+
+    		DepartmentManagerHomePageController controller = loader.getController();
+    		controller.setClientController(clientController);
+    		controller.setLoggedInEmployee(loggedInEmployee);
+
+    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    		stage.setTitle("Department Manager Dashboard");
+    		stage.setScene(new Scene(root));
+    		stage.show();
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
     }
 }

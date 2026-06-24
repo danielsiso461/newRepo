@@ -5,49 +5,60 @@ import java.net.URL;
 import java.util.ResourceBundle;
 
 import clientController.ClientController;
-import common.CommonConstants;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
-/**
- * Controls the welcome page.
+/*
+ * this class controls the welcome page of the client application
  * 
- * The user first enters a user ID.
- * Then the user enters the server IP address.
- * After a successful connection, the order table page is opened.
+ * the page asks the user to enter an ID and a server address
+ * and then opens the order table page
  */
 public class WelcomePageController {
 
-    private boolean idEntered = false;
-    private String id;
-    private String address;
+	/*
+	 * indicates whether a valid ID was already entered
+	 */
+	//private boolean idEntered = false;
 
-    @FXML
+	/*
+	 * stores the user ID
+	 */
+	//private String id;
+
+	/*
+	 * stores the server address
+	 */
+	private String address;
+
+    @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
 
-    @FXML
+    @FXML // URL location of the FXML file that was given to the FXMLLoader
     private URL location;
 
-    @FXML
-    private Label commandLabel;
+    @FXML // fx:id="commandLabel"
+    private Label commandLabel; // Value injected by FXMLLoader
 
-    @FXML
-    private Label inputTitleLabel;
+    @FXML // fx:id="confirmButton"
+    private Button confirmButton; // Value injected by FXMLLoader
 
-    @FXML
-    private Button confirmButton;
+    @FXML // fx:id="inputField"
+    private TextField inputField; // Value injected by FXMLLoader
 
-    @FXML
-    private TextField inputField;
-
-    @FXML
-    private Label messageLabel;
+    @FXML // fx:id="messageLabel"
+    private Label messageLabel; // Value injected by FXMLLoader
 
     
     /*
@@ -71,6 +82,12 @@ public class WelcomePageController {
     	launchOpeningScreen();
     }
 
+    /*
+     * this function initializes the welcome page
+     * 
+     * checks that all FXML components were injected correctly
+     * and handles closing the application when pressing the red X button
+     */
     @FXML
     void initialize() {
         assert commandLabel != null : "fx:id=\"commandLabel\" was not injected: check your FXML file 'welcomePage.fxml'.";
@@ -82,73 +99,21 @@ public class WelcomePageController {
         inputField.setPromptText("Server address");
         messageLabel.setText("");
 
-        showIdStep();
+        // this handles closing when pressing the red X button
+     	Platform.runLater(new Runnable() {
+     		@Override
+     		public void run() {
+     			Stage stage = (Stage) inputField.getScene().getWindow();
 
-        messageLabel.textProperty().addListener((observable, oldText, newText) -> {
-            updateMessageLabelVisibility();
-        });
-
-        updateMessageLabelVisibility();
-
-        Platform.runLater(() -> {
-            Stage stage = (Stage) inputField.getScene().getWindow();
-
-            stage.setOnCloseRequest(event -> {
-                Platform.exit();
-                System.exit(0);
-            });
-        });
-    }
-
-    private void showIdStep() {
-        idEntered = false;
-
-        commandLabel.setText("Step 1: Enter your user ID");
-        inputTitleLabel.setText("User ID");
-        inputField.setPromptText("Enter 9-digit user ID");
-        confirmButton.setText("Continue");
-
-        inputField.clear();
-        clearMessage();
-    }
-
-    private void showServerAddressStep() {
-        idEntered = true;
-
-        commandLabel.setText("Step 2: Enter the server IP address");
-        inputTitleLabel.setText("Server IP Address");
-        inputField.setPromptText("");
-        confirmButton.setText("Connect");
-
-        inputField.clear();
-        clearMessage();
-    }
-
-    private void handleIdInput() {
-        id = inputField.getText().trim();
-
-        if (!id.matches("\\d{9}")) {
-            showError("ID should contain exactly 9 digits");
-            return;
-        }
-
-        if ("000000000".equals(id)) {
-            showError("ID should be a valid positive ID");
-            return;
-        }
-
-        showServerAddressStep();
-    }
-
-    private void handleAddressInput() {
-        address = inputField.getText().trim();
-
-        if (address.isEmpty()) {
-            showError("Server IP address cannot be empty");
-            return;
-        }
-
-        launchOrderTable();
+     			stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+     				@Override
+     				public void handle(WindowEvent event) {
+     					Platform.exit();
+     					System.exit(0);
+     				}
+     			});
+     		}
+     	});
     }
     /*
      * This function loads and opens the opening screen.
@@ -159,18 +124,6 @@ public class WelcomePageController {
     private void launchOpeningScreen() {
     	Stage stage = (Stage) inputField.getScene().getWindow();
 
-    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
-
-    	Parent root = null;
-
-    	try {
-    		root = loader.load();
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    		Platform.exit();
-    		System.exit(1);
-    	}
-
     	ClientController clientController;
 
     	try {
@@ -180,13 +133,13 @@ public class WelcomePageController {
     		 */
     		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, "");
 
-    		// Gives the occasional customer access screen the active ClientController, so it can send requests to the server.
+    		// Gives the occasional customer access screen the active ClientController.
     		OccasionalCustomerAccessController.setClientController(clientController);
-    		
-    		// Gives the employee login screen the active ClientController, so it can send login requests to the server.
+
+    		// Gives the employee login screen the active ClientController.
     		EmployeeLoginController.setClientController(clientController);
-    		
-    		// Gives the registered customer login screen the active ClientController, so it can send requests to the server.
+
+    		// Gives the registered customer login screen the active ClientController.
     		ExistingCustomerLoginController.setClientController(clientController);
 
     	} catch (IOException e) {
@@ -194,6 +147,22 @@ public class WelcomePageController {
     		messageLabel.setText("Bad server address");
     		inputField.clear();
     		return;
+    	}
+
+    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
+
+    	Parent root = null;
+
+    	try {
+    		root = loader.load();
+
+    		OpeningScreenController controller = loader.getController();
+    		controller.setClientController(clientController);
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		Platform.exit();
+    		System.exit(1);
     	}
 
     	Scene scene = new Scene(root);

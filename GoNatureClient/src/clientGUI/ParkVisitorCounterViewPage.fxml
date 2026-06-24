@@ -80,6 +80,14 @@
                                                 <String fx:value="secondary-button"/>
                                             </styleClass>
                                         </Button>
+                                        
+                                        <Button text="Back"
+        										prefWidth="120.0"
+        										onAction="#handleBack">
+    										<styleClass>
+       											 <String fx:value="secondary-button"/>
+  								 			</styleClass>
+										</Button>
                                     </children>
                                 </HBox>
 

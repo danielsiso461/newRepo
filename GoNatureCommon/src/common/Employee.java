@@ -41,10 +41,6 @@ public class Employee implements Serializable {
 		return employeeNumber;
 	}
 
-	public String getEmployeeNumber() {
-		return Integer.toString(employeeNumber);
-	}
-
 	public String getFirstName() {
 		return firstName;
 	}

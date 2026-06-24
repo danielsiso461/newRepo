@@ -1,23 +1,17 @@
 package clientGUI;
 
 import java.io.IOException;
-
-/**
- * Sample Skeleton for 'Untitled' Controller Class
- */
-
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
-
 import clientCommon.OrderObserver;
 import clientController.ClientController;
+import common.CancelOrderMessage;
 import common.Order;
 import common.UpdateMessage;
-import common.CancelOrderMessage;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -38,6 +32,8 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import common.Employee;
+
 /*
  * this class is the UI controller for the order table page
  */
@@ -45,51 +41,78 @@ import javafx.stage.WindowEvent;
 public class OrderTableDisplayController implements OrderObserver, Runnable {
 	/* the client controller */
 	private ClientController clientController;
+	
+	private Employee loggedInEmployee;
+	
+	private boolean parkManagerView = false;
+	
+	private boolean serviceRepresentativeView = false;
+	
+	private boolean customerView = false;
+
 	/* a set that keeps track of which orders have requested an update */
 	private Set<Integer> awaitingUpdate = new HashSet<>();
+
 	// Stores orders that already have a cancellation request waiting for a server response.
 	private Set<Integer> awaitingCancel = new HashSet<>();
 
 	@FXML // ResourceBundle that was given to the FXMLLoader
 	private ResourceBundle resources;
-	
-	@FXML // fx:id="makeOrderButton"
-    private Button makeOrderButton; // Value injected by FXMLLoader
 
 	@FXML // URL location of the FXML file that was given to the FXMLLoader
 	private URL location;
- 
+
+	@FXML // fx:id="makeOrderButton"
+	private Button makeOrderButton; // Value injected by FXMLLoader
+
 	@FXML // fx:id="orderTable"
 	private TableView<Order> orderTable; // Value injected by FXMLLoader
+
 	/* the table data */
 	private ObservableList<Order> data = FXCollections.observableArrayList();
+
 	/* the currently selected row in the table */
 	private Order selectedRow = null;
 
 	@FXML // fx:id="confCode"
 	private TableColumn<Order, Integer> confCode; // Value injected by FXMLLoader
+
 	@FXML // fx:id="orderDate"
 	private TableColumn<Order, LocalDate> orderDate; // Value injected by FXMLLoader
+
 	@FXML // fx:id="orderId"
 	private TableColumn<Order, Integer> orderId; // Value injected by FXMLLoader
+
 	@FXML // fx:id="placementDate"
 	private TableColumn<Order, LocalDate> placementDate; // Value injected by FXMLLoader
+
 	@FXML // fx:id="userId"
 	private TableColumn<Order, Integer> userId; // Value injected by FXMLLoader
+
 	@FXML // fx:id="visitorNumber"
 	private TableColumn<Order, Integer> visitorNumber; // Value injected by FXMLLoader
+
 	@FXML // fx:id="orderNumber"
 	private TableColumn<Order, Integer> orderNumber; // Value injected by FXMLLoader
+
 	@FXML // fx:id="orderStatus"
 	private TableColumn<Order, String> orderStatus; // Value injected by FXMLLoader
+
 	@FXML // fx:id="notifLabel"
-    private Label notifLabel; // Value injected by FXMLLoader
-	
+	private Label notifLabel; // Value injected by FXMLLoader
+
 	@FXML // fx:id="updateButton"
 	private Button updateButton; // Value injected by FXMLLoader
+
 	@FXML // fx:id="cancelButton"
-	private Button cancelButton;// Value injected by FXMLLoader
+	private Button cancelButton; // Value injected by FXMLLoader
+
+	@FXML // fx:id="waitingListButton"
+	private Button waitingListButton; // Value injected by FXMLLoader
 	
+	@FXML
+	private Button backButton;
+
 	/*
 	 * this method handles click the update button
 	 * it loads the update page, 
@@ -100,6 +123,13 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 */
 	@FXML
 	void updateButtonClick(ActionEvent event) throws Exception {
+		// Make sure the user selected an order before trying to update it.
+		if (selectedRow == null) {
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Please select an order to update.");
+			return;
+		}
+
 		// launch the order update screen
 		FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.updatePage));
 		Pane root = loader.load();
@@ -107,7 +137,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		OrderUpdateController OrderUpdatePageController = loader.getController();
 
 		addOrderToUpdateWaitingList(selectedRow.getOrderId());
-		
+
 		OrderUpdatePageController.setClientController(clientController);
 		OrderUpdatePageController.setOrderData(
 				selectedRow.getOrderId(),
@@ -130,6 +160,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		primaryStage.setScene(scene);
 		primaryStage.show();
 	}
+
 	/*
 	 * this method handles clicking the make order button.
 	 * It loads the make order page and hides the current screen.
@@ -162,6 +193,40 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		Scene scene = new Scene(root);
 		stage.setScene(scene);
 		stage.setTitle("Make Order Page");
+		stage.show();
+	}
+
+	/*
+	 * this method handles clicking the waiting list button.
+	 * It loads the waiting list page and keeps the same client controller.
+	 * 
+	 * @param event the waiting list button click event
+	 */
+	@FXML
+	void waitingListButtonClick(ActionEvent event) {
+		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+		// load the FXML file of the waiting list page
+		FXMLLoader loader = new FXMLLoader(getClass().getResource(ConstantsUI.waitingListPage));
+		Parent root = null;
+
+		try {
+			root = loader.load();
+		} catch (IOException e) {
+			e.printStackTrace();
+			Platform.exit();
+			System.exit(1);
+		}
+
+		// get controller
+		WaitingListController controller = loader.getController();
+		controller.setClientController(clientController);
+		controller.setPrevScene(stage.getScene());
+		
+		// show UI
+		Scene scene = new Scene(root);
+		stage.setScene(scene);
+		stage.setTitle("Waiting List Page");
 		stage.show();
 	}
 
@@ -223,6 +288,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			onRowSelected(newSelection);
 		}
 	}
+
 	/*
 	 * this method handles updating which row is selected
 	 * and whether the update and cancel buttons should be available for it
@@ -269,26 +335,21 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		assert orderTable != null : "fx:id=\"orderTable\" was not injected: check your FXML file 'Untitled'.";
 		assert placementDate != null : "fx:id=\"placementDate\" was not injected: check your FXML file 'Untitled'.";
 		assert updateButton != null : "fx:id=\"updateButton\" was not injected: check your FXML file 'Untitled'.";
+		assert makeOrderButton != null : "fx:id=\"makeOrderButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		assert cancelButton != null : "fx:id=\"cancelButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
+		assert waitingListButton != null : "fx:id=\"waitingListButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		assert userId != null : "fx:id=\"userId\" was not injected: check your FXML file 'Untitled'.";
 		assert visitorNumber != null : "fx:id=\"visitorNumber\" was not injected: check your FXML file 'Untitled'.";
 		assert notifLabel != null : "fx:id=\"notifLabel\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		
+		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
+		assert backButton != null : "fx:id=\"backButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
+
 		// Disable action buttons until the user selects an order from the table.
 		updateButton.setDisable(true);
 		cancelButton.setDisable(true);
-		
-		orderTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-		
-		notifLabel.textProperty().addListener((observable, oldText, newText) -> {
-		    updateNotifLabelVisibility();
-		});
 
-		updateNotifLabelVisibility();
-		
 		// sets where the table columns get their data from (of the given object) 
 		orderNumber.setCellValueFactory(new PropertyValueFactory<>("orderNumber"));
-		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		orderId.setCellValueFactory(new PropertyValueFactory<>("orderId"));
 		orderDate.setCellValueFactory(new PropertyValueFactory<>("orderDate"));
 		visitorNumber.setCellValueFactory(new PropertyValueFactory<>("visitorNumber"));
@@ -296,21 +357,15 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		userId.setCellValueFactory(new PropertyValueFactory<>("userId"));
 		placementDate.setCellValueFactory(new PropertyValueFactory<>("placementDate"));
 		orderStatus.setCellValueFactory(new PropertyValueFactory<>("orderStatus"));
+
 		// sets the table to get it's data from the ObservableList set up to hold order
 		// data
 		orderTable.setItems(data);
-		// adds listener to row selection
-		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);		
-	}
-	
-	private void updateNotifLabelVisibility() {
-	    boolean hasMessage = notifLabel.getText() != null
-	            && !notifLabel.getText().isBlank();
 
-	    notifLabel.setVisible(hasMessage);
-	    notifLabel.setManaged(hasMessage);
+		// adds listener to row selection
+		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);
 	}
-	
+
 	/* 
 	 * this method handles closing the client program if the server 
 	 * closed the user connection
@@ -318,10 +373,10 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	public void handleExit() {
 		Platform.runLater(() -> {
 			Platform.exit();
-	        System.exit(0);
+			System.exit(0);
 		});
 	}
-	
+
 	/*
 	 * this method handles disconnecting the user and closing the program
 	 * once the user clicked the red X button
@@ -330,13 +385,14 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	public void run() {
 		Stage stage = (Stage) orderTable.getScene().getWindow();
 		stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-		    @Override
-		    public void handle(WindowEvent event) {
-		    	event.consume();
-		    	userIssuedDisconnect();
-		    }
+			@Override
+			public void handle(WindowEvent event) {
+				event.consume();
+				userIssuedDisconnect();
+			}
 		});
 	}
+
 	/*
 	 * this method disconnects the user from the server
 	 */
@@ -344,7 +400,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		clientController.setUserIssuedDisconnect(true);
 		clientController.disconnectFromServer();
 	}
-	
+
 	/*
 	 * this method sets the order data to the ObservableList the tableView is connected to
 	 * 
@@ -355,6 +411,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			data.setAll(rows);
 		});
 	}
+
 	/*
 	 * this method sets the ClientController on the UI side
 	 * add this UI controller to the ClientController observer List
@@ -366,6 +423,10 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		this.clientController.addObserver(this);
 	}
 	
+	public void setLoggedInEmployee(Employee employee) {
+		this.loggedInEmployee = employee;
+	}
+
 	/*
 	 * this method adds orders to the update waiting list
 	 * 
@@ -374,7 +435,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	private void addOrderToUpdateWaitingList(int orderNumber) {
 		awaitingUpdate.add(orderNumber);
 	}
-	
+
 	/*
 	 * this method removes orders from the update waiting list
 	 * 
@@ -383,7 +444,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	protected void removeOrderFromUpdateWaitingList(int orderNumber) {
 		awaitingUpdate.remove(orderNumber);
 	}
-	
+
 	/*
 	 * this method sets the object holding the orders to the data received from the server
 	 * 
@@ -393,7 +454,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	public void onOrdersReceived(List<Order> rows) {
 		setData(rows);
 	}
-	
 	/*
 	 * this method handles updating the UI upon reply from 
 	 * the server to requesting an order update
@@ -403,30 +463,52 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 */
 	@Override
 	public void onUpdateResult(boolean success, UpdateMessage updateMessage) {
-		if(updateMessage == null) {
+		if (updateMessage == null) {
 			System.out.println("Error: invalid data");
 			return;
 		}
+
+		int updatedOrderId = updateMessage.getOrderId();
+
 		if (success) {
 			notifLabel.setTextFill(Color.GREEN);
-			notifLabel.setText("Order update for order#:" + 
-					updateMessage.getOrderNumber() + " succeeded.");
-			
-			// updating order in tableview - update is local, as it was confirmed by server
-			Order updatedRow = data.get(updateMessage.getOrderNumber() - 1);
-			if(updateMessage.getUpdateDate() != null)
-				updatedRow.setOrderDate(updateMessage.getUpdateDate());
-			if(updateMessage.getNumberOfVisitors() > 0)
-				updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
-			data.set(updateMessage.getOrderNumber() - 1, updatedRow);
+			notifLabel.setText("Order update for order ID: " + updatedOrderId + " succeeded.");
+
+			boolean found = false;
+
+			for (int i = 0; i < data.size(); i++) {
+				Order updatedRow = data.get(i);
+
+				if (updatedRow.getOrderId() != null && updatedRow.getOrderId() == updatedOrderId) {
+					if (updateMessage.getUpdateDate() != null) {
+						updatedRow.setOrderDate(updateMessage.getUpdateDate());
+					}
+
+					if (updateMessage.getNumberOfVisitors() > 0) {
+						updatedRow.setNumberOfVisitors(updateMessage.getNumberOfVisitors());
+					}
+
+					data.set(i, updatedRow);
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				System.out.println("Updated order was not found in the local table: " + updatedOrderId);
+			}
 		} else {
 			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Order update for order#:" + 
-					updateMessage.getOrderNumber() + " failed.");
+			notifLabel.setText("Order update for order ID: " + updatedOrderId + " failed.");
 		}
-		// removing order from waiting list
-		removeOrderFromUpdateWaitingList(updateMessage.getOrderId());
+
+		removeOrderFromUpdateWaitingList(updatedOrderId);
+
+		if (selectedRow != null) {
+			onRowSelected(selectedRow);
+		}
 	}
+
 	/*
 	 * Handles the server response after an order cancellation request.
 	 *
@@ -450,20 +532,19 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			notifLabel.setTextFill(Color.GREEN);
 			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " succeeded.");
 
-			// Update the matching row locally after the server confirms the cancellation.
-			// The order stays in the table, but its status changes to "cancelled".
+			// Remove the matching row locally after the server confirms the cancellation.
+			// The cancelled order stays in the database, but it is not displayed to the visitor.
 			for (int i = 0; i < data.size(); i++) {
 				Order row = data.get(i);
 
 				if (row.getOrderId() == cancelledOrderId) {
-					row.setOrderStatus("cancelled");
-					data.set(i, row);
+					data.remove(i);
 					break;
 				}
 			}
 		} else {
 			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " failed.");
+			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " succeeded. The order was removed from your list.");
 		}
 
 		// Remove the order from the local waiting list so the UI can be used again.
@@ -473,6 +554,103 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		if (selectedRow != null) {
 			onRowSelected(selectedRow);
 		}
+	}
+	
+	/**
+	 * Loads orders for a specific park.
+	 * 
+	 * This method is used when a park manager opens the order table screen.
+	 * 
+	 * @param parkId the park ID assigned to the park manager
+	 */
+	public void loadOrdersForPark(int parkId) {
+		if (clientController == null) {
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Client is not connected to server.");
+			return;
+		}
+
+		if (parkId <= 0) {
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Invalid park ID.");
+			return;
+		}
+
+		notifLabel.setTextFill(Color.BLUE);
+		notifLabel.setText("Loading park orders...");
+
+		clientController.requestOrdersByParkId(parkId);
+	}
+	
+	/**
+	 * Configures the order table screen for park manager view.
+	 * 
+	 * In this mode the park manager only views park orders.
+	 */
+	public void configureForParkManagerView() {
+		parkManagerView = true;
+		if (makeOrderButton != null) {
+			makeOrderButton.setVisible(false);
+			makeOrderButton.setManaged(false);
+		}
+
+		if (updateButton != null) {
+			updateButton.setVisible(false);
+			updateButton.setManaged(false);
+		}
+
+		if (cancelButton != null) {
+			cancelButton.setVisible(false);
+			cancelButton.setManaged(false);
+		}
+
+		if (waitingListButton != null) {
+			waitingListButton.setVisible(false);
+			waitingListButton.setManaged(false);
+		}
+	}
+	
+	public void configureForServiceRepresentativeView() {
+		serviceRepresentativeView = true;
+
+		if (makeOrderButton != null) {
+			makeOrderButton.setVisible(false);
+			makeOrderButton.setManaged(false);
+		}
+
+		if (updateButton != null) {
+			updateButton.setVisible(false);
+			updateButton.setManaged(false);
+		}
+
+		if (cancelButton != null) {
+			cancelButton.setVisible(false);
+			cancelButton.setManaged(false);
+		}
+
+		if (waitingListButton != null) {
+			waitingListButton.setVisible(false);
+			waitingListButton.setManaged(false);
+		}
+	}
+	
+	public void configureForCustomerView() {
+		customerView = true;
+		parkManagerView = false;
+		serviceRepresentativeView = false;
+	}
+
+	public void loadAllOrdersForServiceRepresentative() {
+		if (clientController == null) {
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Client is not connected to server.");
+			return;
+		}
+
+		notifLabel.setTextFill(Color.BLUE);
+		notifLabel.setText("Loading customer orders...");
+
+		clientController.requestAllOrdersForServiceRepresentative();
 	}
 
 	/*
@@ -487,5 +665,72 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			o.setOrderNumber(data.size() + 1);
 			data.add(o);
 		});
+	}
+	
+	@FXML
+	void backButtonClick(ActionEvent event) {
+		try {
+			if (parkManagerView) {
+				FXMLLoader loader = new FXMLLoader(
+						getClass().getResource("/clientGUI/ParkManagerHomePage.fxml")
+				);
+
+				Parent root = loader.load();
+
+				ParkManagerHomePageController controller = loader.getController();
+				controller.setClientController(clientController);
+				controller.setLoggedInEmployee(loggedInEmployee);
+
+				Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+				stage.setTitle("Park Manager Dashboard");
+				stage.setScene(new Scene(root));
+				stage.show();
+
+				return;
+			}
+			
+			if (serviceRepresentativeView) {
+				FXMLLoader loader = new FXMLLoader(
+						getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
+				);
+
+				Parent root = loader.load();
+
+				ServiceRepresentativeHomePageController controller = loader.getController();
+				controller.setClientController(clientController);
+				controller.setLoggedInEmployee(loggedInEmployee);
+
+				Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+				stage.setTitle("Service Representative Dashboard");
+				stage.setScene(new Scene(root));
+				stage.show();
+
+				return;
+			}
+			
+			if (customerView) {
+				FXMLLoader loader = new FXMLLoader(
+						getClass().getResource("/clientGUI/CustomerAccess.fxml")
+				);
+
+				Parent root = loader.load();
+
+				CustomerAccessController controller = loader.getController();
+				controller.setClientController(clientController);
+
+				Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+				stage.setTitle("Customer Access");
+				stage.setScene(new Scene(root));
+				stage.show();
+
+				return;
+			}
+
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Back is not configured for this screen mode.");
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

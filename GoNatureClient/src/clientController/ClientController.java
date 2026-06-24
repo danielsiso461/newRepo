@@ -51,8 +51,13 @@ public class ClientController implements ChatIF {
 	 * @throws IOException if the client connection cannot be created
 	 */
 	public ClientController(String host, int port, String id) throws IOException {
-		client = new Client(host, port, this);
-		this.id = id;
+		try {
+            client = new Client(host, port, this);
+        } catch (IOException exception) {
+            System.out.println("Error: Can't setup connection!" + " Terminating client.");
+            System.exit(1);
+        }
+        this.id = id;
 	}
 
 	public String getId() {
@@ -110,6 +115,10 @@ public class ClientController implements ChatIF {
 			waitingListObservers.add(observer);
 		}
 	}
+	
+	public void requestWaitingOffers(int subscriberId) {
+	    client.handleMessageFromClientUI(
+	            new Message(subscriberId, Protocol.GET_WAITING_OFFERS_REQUEST));}
 
 	public void removeWaitingListObserver(WaitingListObserver observer) {
 		waitingListObservers.remove(observer);
@@ -169,7 +178,7 @@ public class ClientController implements ChatIF {
 		parkObservers.remove(observer);
 	}
 
-	private void notifyParksReceived(List parks) {
+	private void notifyParksReceived(List<Park> parks) {
 		for (ParkObserver observer : parkObservers) {
 			observer.onParksReceived(parks);
 		}
@@ -494,6 +503,14 @@ public class ClientController implements ChatIF {
 			client.handleMessageFromClientUI(message);
 		}
 	}
+	
+	public void requestOrdersByParkId(int parkId) {
+		sendMessageToServer(new Message(parkId, Protocol.GET_PARK_ORDERS_REQUEST));
+	}
+	
+	public void requestAllOrdersForServiceRepresentative() {
+		sendMessageToServer(new Message(null, Protocol.GET_ALL_ORDERS_REQUEST));
+	}
 
 	// Messages from server
 
@@ -558,6 +575,10 @@ public class ClientController implements ChatIF {
 		case RETURN_ORDER:
 			handleReturnOrderResponse(message.getData());
 			break;
+			
+		case GET_PARK_ORDERS_RESPONSE:
+			handleReturnOrderResponse(message.getData());
+			break;	
 
 		case RETURN_PARK_NAMES_SUCCESS:
 		case GET_PARK_NAMES:
@@ -641,6 +662,10 @@ public class ClientController implements ChatIF {
 		case PARK_VISITOR_COUNTERS_UPDATED:
 			notifyParkVisitorCountersUpdated();
 			break;
+			
+		case GET_ALL_ORDERS_RESPONSE:
+			handleReturnOrderResponse(message.getData());
+			break;	
 
 		default:
 			System.out.println("Error: unknown server response in ClientController: " + type);
@@ -873,14 +898,14 @@ public class ClientController implements ChatIF {
 		}
 
 		List<?> rawList = (List<?>) data;
-		List parks = new ArrayList();
+		List<Park> parks = new ArrayList<>();
 
 		for (Object item : rawList) {
-			if (item instanceof Park || item instanceof ParkInfo) {
-				parks.add(item);
-			} else {
+			if (!(item instanceof Park)) {
 				return null;
-			}
+			} 
+			
+			parks.add((Park) item);
 		}
 
 		return parks;
@@ -923,6 +948,8 @@ public class ClientController implements ChatIF {
 
 		return counters;
 	}
+	
+	
 
 	private interface OperationResponseConsumer {
 		void accept(OperationResponse response);

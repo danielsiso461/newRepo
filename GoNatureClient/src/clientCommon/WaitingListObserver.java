@@ -1,5 +1,7 @@
 package clientCommon;
 
+import java.util.List;
+
 import common.WaitingListMessage;
 
 /**
@@ -45,4 +47,7 @@ public interface WaitingListObserver {
 	 * Handles a server shutdown/disconnect event.
 	 */
 	void handleExit();
+
+
+	void onWaitingOffersReceived(boolean success, List<WaitingListMessage> offers);
 }

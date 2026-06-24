@@ -50,17 +50,6 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Makes sure the database connection is open before running a query.
-	 *
-	 * @throws SQLException if the connection cannot be opened
-	 */
-	private void ensureConnection() throws SQLException {
-		if (conn == null || conn.isClosed()) {
-			connect();
-		}
-	}
-
-	/**
 	 * Calculates the next queue position for a specific park and requested date.
 	 *
 	 * The next position is calculated by taking the current maximum queue_position

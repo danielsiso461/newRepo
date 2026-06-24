@@ -58,7 +58,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 	 * @param controller the client controller instance
 	 */
 	public static void setClientController(ClientController controller) {
-		clientController = controller;
+		OccasionalCustomerAccessController.clientController = controller;
 	}
 
 	/*
@@ -97,12 +97,11 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			messageLabel.setText("ID number must contain 9 digits.");
 			return;
 		}
-
+		
 		if (clientController == null) {
 			messageLabel.setText("Client is not connected to server.");
 			return;
 		}
-
 		messageLabel.setText("Checking orders...");
 
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);
@@ -128,52 +127,13 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 				ArrayList<Order> orders = (ArrayList<Order>) response.getData();
 
 				messageLabel.setText("Orders found.");
-				openOrderTableScreen(orders);
+				Platform.runLater(()->{openOrderTableScreen(orders);});
 
 			} else {
 				messageLabel.setText(response.getMessage());
 			}
 		});
 	}
-	
-	/*
-	 * Opens the order table screen after the occasional customer was identified
-	 * successfully by order number.
-	 */
-	/*
-	private void openOrderTableScreen() {
-		try {
-			if (clientController != null) {
-				clientController.removeOccasionalCustomerAccessObserver(this);
-			}
-
-			FXMLLoader loader = new FXMLLoader(
-					getClass().getResource(ConstantsUI.orderTable)
-			);
-
-			Parent root = loader.load();
-
-			OrderTableDisplayController controller = loader.getController();
-
-			/*
-			 * Gives the order table screen the active ClientController.
-			 */
-	/*
-			controller.setClientController(clientController);
-
-			Scene scene = new Scene(root);
-
-			currentStage.setScene(scene);
-			currentStage.setTitle("Order Table");
-			currentStage.show();
-
-			Platform.runLater(controller);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-			messageLabel.setText("Failed to open order table screen.");
-		}
-	}*/
 	
 	/*
 	 * Opens the order table screen and displays all orders that belong to the
@@ -196,7 +156,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			OrderTableDisplayController controller = loader.getController();
 
 			controller.setClientController(clientController);
-
+			controller.configureForCustomerView();
 			controller.onOrdersReceived(orders);
 
 			Scene scene = new Scene(root);
@@ -231,6 +191,9 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			);
 
 			Parent root = loader.load();
+
+			CustomerAccessController controller = loader.getController();
+			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("Customer Access");

@@ -21,6 +21,15 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.util.StringConverter;
+import java.io.IOException;
+import common.Employee;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
 
 /**
  * Controls the park parameter request page.
@@ -40,6 +49,8 @@ public class ParkParameterRequestPageController
     private static final String ROLE_PARK_MANAGER = "park_manager";
 
     private ClientController clientController;
+    
+    private Employee loggedInEmployee;
 
     @FXML
     private Label headerLabel;
@@ -66,7 +77,17 @@ public class ParkParameterRequestPageController
     private Label statusLabel;
 
     public void setClientController(ClientController clientController) {
-        this.clientController = clientController;
+    	this.clientController = clientController;
+
+    	if (this.clientController != null) {
+    		this.clientController.addParkObserver(this);
+    		this.clientController.addParkParameterObserver(this);
+    		this.clientController.requestActiveParks();
+    	}
+    }
+    
+    public void setLoggedInEmployee(Employee employee) {
+    	this.loggedInEmployee = employee;
     }
 
     @FXML
@@ -455,5 +476,28 @@ public class ParkParameterRequestPageController
         public String toString() {
             return displayName;
         }
+    }
+    
+    @FXML
+    private void handleBack(ActionEvent event) {
+    	try {
+    		FXMLLoader loader = new FXMLLoader(
+    				getClass().getResource("/clientGUI/ParkManagerHomePage.fxml")
+    		);
+
+    		Parent root = loader.load();
+
+    		ParkManagerHomePageController controller = loader.getController();
+    		controller.setClientController(clientController);
+    		controller.setLoggedInEmployee(loggedInEmployee);
+
+    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    		stage.setTitle("Park Manager Dashboard");
+    		stage.setScene(new Scene(root));
+    		stage.show();
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
     }
 }

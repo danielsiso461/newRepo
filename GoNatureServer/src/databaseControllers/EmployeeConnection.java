@@ -79,14 +79,13 @@ public class EmployeeConnection extends AbstractDBConnection {
 
 		return new Employee(
 				rs.getInt(EMPLOYEE_ID),
-				rs.getString(EMPLOYEE_NUMBER),
+				rs.getInt(EMPLOYEE_NUMBER),
 				rs.getString(FIRST_NAME),
 				rs.getString(LAST_NAME),
 				rs.getString(EMAIL),
 				rs.getString(USERNAME),
 				rs.getString(EMPLOYEE_ROLE),
-				parkId,
-				rs.getInt(IS_ACTIVE) == 1
+				parkId
 		);
 	}
 

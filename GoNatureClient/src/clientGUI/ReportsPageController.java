@@ -9,13 +9,7 @@ import clientCommon.ClientSession;
 import clientCommon.ParkObserver;
 import clientCommon.ReportObserver;
 import clientController.ClientController;
-import common.CancellationReportRow;
-import common.OperationResponse;
-import common.Park;
-import common.ParkUsageReportRow;
-import common.ReportRequest;
-import common.VisitDurationReportRow;
-import common.VisitorReportRow;
+import common.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -30,6 +24,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import java.io.IOException;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
  * Controls the reports screen.
@@ -42,6 +43,8 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     private static final String PARK_USAGE_REPORT = "Park Usage Report";
 
     private ClientController clientController;
+    
+    private Employee loggedInEmployee;
 
     @FXML
     private ComboBox<String> reportTypeComboBox;
@@ -77,7 +80,17 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     private Label statusLabel;
 
     public void setClientController(ClientController clientController) {
-        this.clientController = clientController;
+    	this.clientController = clientController;
+
+    	if (this.clientController != null) {
+    		this.clientController.addReportObserver(this);
+    		this.clientController.addParkObserver(this);
+    		this.clientController.requestActiveParks();
+    	}
+    }
+
+    public void setLoggedInEmployee(Employee employee) {
+    	this.loggedInEmployee = employee;
     }
 
     @FXML
@@ -511,5 +524,51 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         reportBarChart.setVisible(false);
         reportBarChart.setManaged(false);
+    }
+    
+    @FXML
+    private void handleBack(ActionEvent event) {
+    	try {
+    		String role = ClientSession.getEmployeeRole();
+
+    		String fxmlPath;
+    		String title;
+
+    		if ("department_manager".equals(role)) {
+    			fxmlPath = "/clientGUI/DepartmentManagerHomePage.fxml";
+    			title = "Department Manager Dashboard";
+    		} else if ("park_manager".equals(role)) {
+    			fxmlPath = "/clientGUI/ParkManagerHomePage.fxml";
+    			title = "Park Manager Dashboard";
+    		} else {
+    			statusLabel.setText("Status: Cannot return back: unknown employee role.");
+    			return;
+    		}
+
+    		FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+    		Parent root = loader.load();
+
+    		Object controller = loader.getController();
+
+    		if (controller instanceof DepartmentManagerHomePageController) {
+    			DepartmentManagerHomePageController departmentController =
+    					(DepartmentManagerHomePageController) controller;
+    			departmentController.setClientController(clientController);
+    			departmentController.setLoggedInEmployee(loggedInEmployee);
+    		} else if (controller instanceof ParkManagerHomePageController) {
+    			ParkManagerHomePageController parkManagerController =
+    					(ParkManagerHomePageController) controller;
+    			parkManagerController.setClientController(clientController);
+    			parkManagerController.setLoggedInEmployee(loggedInEmployee);
+    		}
+
+    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    		stage.setTitle(title);
+    		stage.setScene(new Scene(root));
+    		stage.show();
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
     }
 }

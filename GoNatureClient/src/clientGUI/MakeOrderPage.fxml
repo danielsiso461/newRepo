@@ -106,6 +106,10 @@
                                         prefWidth="230.0"
                                         styleClass="primary-button"
                                         onAction="#makeOrderButtonClicked"/>
+                                        
+                                <Button text="Back"
+        								prefWidth="120.0"
+        								onAction="#handleBack"/>
 
                                 <Label fx:id="errorLabel" text="" styleClass="error-label"/>
 

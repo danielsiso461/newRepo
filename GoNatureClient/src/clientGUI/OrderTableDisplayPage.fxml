@@ -83,6 +83,10 @@
                                         <TableColumn fx:id="placementDate"
                                                      prefWidth="140.0"
                                                      text="Placement Date"/>
+
+                                        <TableColumn fx:id="orderStatus"
+                                                     prefWidth="120.0"
+                                                     text="Status"/>
                                     </columns>
                                 </TableView>
 
@@ -99,6 +103,24 @@
                                                 prefWidth="180.0"
                                                 styleClass="primary-button"
                                                 onAction="#makeOrderButtonClick"/>
+
+                                        <Button fx:id="cancelButton"
+                                                text="Cancel Order"
+                                                prefWidth="160.0"
+                                                styleClass="secondary-button"
+                                                onAction="#cancelButtonClick"/>
+
+                                        <Button fx:id="waitingListButton"
+                                                text="My Waiting List"
+                                                prefWidth="160.0"
+                                                styleClass="secondary-button"
+                                                onAction="#waitingListButtonClick"/>
+                                                
+                                        <Button fx:id="backButton"
+        										text="Back"
+        										prefWidth="120.0"
+        										styleClass="secondary-button"
+        										onAction="#backButtonClick"/>        
                                     </children>
                                 </HBox>
                             </children>

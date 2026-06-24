@@ -238,7 +238,7 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			addLog("Loading updated active parks before notifying clients.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Loaded " + parks.size() + " active parks for update notification.");
 
@@ -360,6 +360,12 @@ public class ServerController implements ServerAndControllerConnection {
 
 		case UPDATE_PARK_VISITOR_COUNTER_REQUEST:
 			return handleUpdateParkVisitorCounter(m);
+			
+		case GET_PARK_ORDERS_REQUEST:
+			return handleGetParkOrders(m);	
+			
+		case GET_ALL_ORDERS_REQUEST:
+			return handleGetAllOrdersForServiceRepresentative();	
 
 		default:
 			System.out.println("Error: client request unknown");
@@ -448,6 +454,37 @@ public class ServerController implements ServerAndControllerConnection {
 			e.printStackTrace();
 			addLog("ERROR - Failed to load active park names: " + e.getMessage());
 			return new Message(null, Protocol.RETURN_PARK_NAMES_FAILURE);
+		}
+	}
+	
+	/**
+	 * Handles a park manager request for viewing orders of a specific park.
+	 *
+	 * @param m the client message containing park ID
+	 * @return a message containing the park orders
+	 */
+	private Message handleGetParkOrders(Message m) {
+		addLog("Client requested park orders.");
+
+		try {
+			if (!(m.getData() instanceof Integer)) {
+				addLog("ERROR - Invalid park ID for park orders request.");
+				return new Message(null, Protocol.GET_PARK_ORDERS_RESPONSE);
+			}
+
+			int parkId = (Integer) m.getData();
+
+			List<Order> orders = oc.getOrdersByPark(parkId);
+
+			addLog("Returning " + orders.size() + " orders for park ID: " + parkId);
+
+			return new Message(orders, Protocol.GET_PARK_ORDERS_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to load park orders: " + e.getMessage());
+
+			return new Message(null, Protocol.GET_PARK_ORDERS_RESPONSE);
 		}
 	}
 
@@ -606,7 +643,7 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			addLog("Loading active parks from database.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Active parks list loaded from database. Number of parks: " + parks.size());
 			addLog("Returning active parks list to client.");
@@ -1972,6 +2009,24 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 
 		return true;
+	}
+	
+	private Message handleGetAllOrdersForServiceRepresentative() {
+		addLog("Service representative requested all customer orders.");
+
+		try {
+			List<Order> orders = oc.getAllOrders();
+
+			addLog("Returning " + orders.size() + " customer orders to service representative.");
+
+			return new Message(orders, Protocol.GET_ALL_ORDERS_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to load all customer orders: " + e.getMessage());
+
+			return new Message(null, Protocol.GET_ALL_ORDERS_RESPONSE);
+		}
 	}
 
 	/**

@@ -10,7 +10,10 @@ public final class ConstantsUI {
 	protected static final String orderTable = "/clientGUI/OrderTableDisplayPage.fxml",
 			updatePage = "/clientGUI/OrderUpdatePage.fxml",
 			welcomePage = "/clientGUI/WelcomePage.fxml",
-			makeOrderPage = "/clientGUI/MakeOrderPage.fxml";
+			makeOrderPage = "/clientGUI/MakeOrderPage.fxml",
+			openingPage = "/clientGUI/OpeningScreen.fxml",
+			waitingListPage = "/clientGUI/WaitingListPage.fxml",
+			parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
 
 	/*
 	 * Constants for visitor number and hour pickers.

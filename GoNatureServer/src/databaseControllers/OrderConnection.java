@@ -52,11 +52,6 @@ public final class OrderConnection extends AbstractDBConnection {
 		return ConstantsDBTableNames.ORDER;
 	}
 
-	private void ensureConnection() throws SQLException {
-		if (conn == null || conn.isClosed()) {
-			connect();
-		}
-	}
 
 	private Order convertResultSetToOrderRow(int index, ResultSet rs) throws SQLException {
 		Integer guideId = rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID);
@@ -590,6 +585,30 @@ public final class OrderConnection extends AbstractDBConnection {
 		}
 
 		return o;
+	}
+	
+	public List<Order> getAllOrders() throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT *
+				FROM `order`
+				ORDER BY order_date DESC, order_number;
+				""";
+
+		List<Order> orders = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql);
+			 ResultSet rs = pstmt.executeQuery()) {
+
+			int index = 1;
+
+			while (rs.next()) {
+				orders.add(convertResultSetToOrderRow(index++, rs));
+			}
+		}
+
+		return orders;
 	}
 
 	@Override

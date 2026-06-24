@@ -16,6 +16,14 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import common.Employee;
+import java.io.IOException;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
  * Displays real-time park visitor counters.
@@ -25,10 +33,14 @@ import javafx.scene.control.cell.PropertyValueFactory;
  */
 public class ParkVisitorCounterViewPageController implements ParkVisitorCounterObserver {
 
-    private static final String ROLE_PARK_MANAGER = "park_manager";
-    private static final String ROLE_DEPARTMENT_MANAGER = "department_manager";
+	private static final String ROLE_PARK_WORKER = "park_worker";
+	private static final String ROLE_PARK_MANAGER = "park_manager";
+	private static final String ROLE_DEPARTMENT_MANAGER = "department_manager";
 
     private ClientController clientController;
+    
+    private Employee loggedInEmployee;
+
 
     @FXML
     private TableView<ParkVisitorCounterSnapshot> counterTableView;
@@ -52,7 +64,16 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
     private Label statusLabel;
 
     public void setClientController(ClientController clientController) {
-        this.clientController = clientController;
+    	this.clientController = clientController;
+
+    	if (this.clientController != null) {
+    		this.clientController.addParkVisitorCounterObserver(this);
+    		requestCounters();
+    	}
+    }
+    
+    public void setLoggedInEmployee(Employee employee) {
+    	this.loggedInEmployee = employee;
     }
 
     @FXML
@@ -65,7 +86,7 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
 
         if (!canCurrentEmployeeViewCounters()) {
             refreshButton.setDisable(true);
-            setErrorStatus("Only park managers and department managers can view this page.");
+            setErrorStatus("Only park workers, park managers and department managers can view this page.");
             return;
         }
 
@@ -93,14 +114,15 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
     }
 
     private boolean canCurrentEmployeeViewCounters() {
-        if (!isTestMode() && !ClientSession.isEmployeeLoggedIn()) {
-            return false;
-        }
+    	if (!isTestMode() && !ClientSession.isEmployeeLoggedIn()) {
+    		return false;
+    	}
 
-        String role = getCurrentEmployeeRole();
+    	String role = getCurrentEmployeeRole();
 
-        return ROLE_PARK_MANAGER.equals(role)
-                || ROLE_DEPARTMENT_MANAGER.equals(role);
+    	return ROLE_PARK_WORKER.equals(role)
+    			|| ROLE_PARK_MANAGER.equals(role)
+    			|| ROLE_DEPARTMENT_MANAGER.equals(role);
     }
 
     @FXML
@@ -221,5 +243,59 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         if (!statusLabel.getStyleClass().contains(statusStyleClass)) {
             statusLabel.getStyleClass().add(statusStyleClass);
         }
+    }
+    
+    @FXML
+    private void handleBack(ActionEvent event) {
+    	try {
+    		String role = ClientSession.getEmployeeRole();
+
+    		String fxmlPath;
+    		String title;
+
+    		if ("department_manager".equals(role)) {
+    			fxmlPath = "/clientGUI/DepartmentManagerHomePage.fxml";
+    			title = "Department Manager Dashboard";
+    		} else if ("park_manager".equals(role)) {
+    			fxmlPath = "/clientGUI/ParkManagerHomePage.fxml";
+    			title = "Park Manager Dashboard";
+    		} else if ("park_worker".equals(role)) {
+    			fxmlPath = "/clientGUI/ParkWorkerHomePage.fxml";
+    			title = "Park Worker Dashboard";
+    		} else {
+    			setErrorStatus("Cannot return back: unknown employee role.");
+    			return;
+    		}
+
+    		FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+    		Parent root = loader.load();
+
+    		Object controller = loader.getController();
+
+    		if (controller instanceof DepartmentManagerHomePageController) {
+    			DepartmentManagerHomePageController departmentController =
+    					(DepartmentManagerHomePageController) controller;
+    			departmentController.setClientController(clientController);
+    			departmentController.setLoggedInEmployee(loggedInEmployee);
+    		} else if (controller instanceof ParkManagerHomePageController) {
+    			ParkManagerHomePageController parkManagerController =
+    					(ParkManagerHomePageController) controller;
+    			parkManagerController.setClientController(clientController);
+    			parkManagerController.setLoggedInEmployee(loggedInEmployee);
+    		} else if (controller instanceof ParkWorkerHomePageController) {
+    			ParkWorkerHomePageController parkWorkerController =
+    					(ParkWorkerHomePageController) controller;
+    			parkWorkerController.setClientController(clientController);
+    			parkWorkerController.setLoggedInEmployee(loggedInEmployee);
+    		}
+
+    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    		stage.setTitle(title);
+    		stage.setScene(new Scene(root));
+    		stage.show();
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    	}
     }
 }

@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 import clientCommon.ParkObserver;
 import common.Message;
-import common.ParkInfo;
+import common.Park;
 import common.Protocol;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -24,7 +24,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
  * It is used by the client before creating an order, so the user can choose a
  * park from the list of active parks.
  * 
- * The controller works with ParkInfo objects only, meaning it receives only
+ * The controller works with Park objects only, meaning it receives only
  * public park data and not internal management data such as max capacity or
  * reserved places for unplanned visitors.
  */
@@ -34,31 +34,31 @@ public class ParkSelectionPageController implements ParkObserver {
 	 * The table that displays the parks.
 	 */
 	@FXML
-	private TableView<ParkInfo> parksTable;
+	private TableView<Park> parksTable;
 
 	/**
 	 * The column that displays the park ID.
 	 */
 	@FXML
-	private TableColumn<ParkInfo, Integer> parkIdColumn;
+	private TableColumn<Park, Integer> parkIdColumn;
 
 	/**
 	 * The column that displays the park name.
 	 */
 	@FXML
-	private TableColumn<ParkInfo, String> parkNameColumn;
+	private TableColumn<Park, String> parkNameColumn;
 
 	/**
 	 * The column that displays the estimated visit duration.
 	 */
 	@FXML
-	private TableColumn<ParkInfo, Double> estimatedDurationColumn;
+	private TableColumn<Park, Double> estimatedDurationColumn;
 
 	/**
 	 * The column that displays the full entry price.
 	 */
 	@FXML
-	private TableColumn<ParkInfo, Double> fullEntryPriceColumn;
+	private TableColumn<Park, Double> fullEntryPriceColumn;
 
 	/**
 	 * Button used to request the updated park list from the server.
@@ -87,7 +87,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	/**
 	 * The list of parks displayed in the table.
 	 */
-	private ObservableList<ParkInfo> parks = FXCollections.observableArrayList();
+	private ObservableList<Park> parks = FXCollections.observableArrayList();
 
 	/**
 	 * A handler used to send messages from this controller to the server.
@@ -99,7 +99,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	/**
 	 * The park selected by the user.
 	 */
-	private ParkInfo selectedPark;
+	private Park selectedPark;
 
 	/**
 	 * Initializes the park selection screen.
@@ -202,7 +202,7 @@ public class ParkSelectionPageController implements ParkObserver {
 		}
 
 		if (message.getType() == Protocol.ACTIVE_PARKS_RESULT || message.getType() == Protocol.PARKS_UPDATED) {
-			List<ParkInfo> updatedParks = (List<ParkInfo>) message.getData();
+			List<Park> updatedParks = (List<Park>) message.getData();
 
 			Platform.runLater(() -> setParks(updatedParks));
 		}
@@ -213,7 +213,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	 * 
 	 * @param updatedParks the updated list of public park information
 	 */
-	public void setParks(List<ParkInfo> updatedParks) {
+	public void setParks(List<Park> updatedParks) {
 		parks.clear();
 
 		if (updatedParks != null) {
@@ -226,9 +226,9 @@ public class ParkSelectionPageController implements ParkObserver {
 	/**
 	 * Returns the park selected by the user.
 	 * 
-	 * @return the selected ParkInfo object, or null if no park was selected
+	 * @return the selected Park object, or null if no park was selected
 	 */
-	public ParkInfo getSelectedPark() {
+	public Park getSelectedPark() {
 		return selectedPark;
 	}
 
@@ -238,7 +238,7 @@ public class ParkSelectionPageController implements ParkObserver {
 	 * @param parks the active parks received from the server
 	 */
 	@Override
-	public void onParksReceived(List<ParkInfo> parks) {
+	public void onParksReceived(List<Park> parks) {
 		setParks(parks);
 	}
 }

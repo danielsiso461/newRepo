@@ -69,17 +69,6 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method checks that the database connection is open.
-	 * 
-	 * @throws SQLException if reconnecting to the database fails
-	 */
-	private void ensureConnection() throws SQLException {
-		if (conn == null || conn.isClosed()) {
-			connect();
-		}
-	}
-
-	/**
 	 * Converts the current ResultSet row into a Subscriber object.
 	 * 
 	 * @param rs the ResultSet positioned on the current subscriber row

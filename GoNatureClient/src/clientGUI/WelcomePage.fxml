@@ -32,7 +32,6 @@
                                 <Label text="GoNature Client" styleClass="page-title"/>
 
                                 <Label fx:id="commandLabel"
-                                       text="Step 1: Enter your user ID"
                                        styleClass="page-subtitle"/>
                             </children>
                         </VBox>
@@ -41,7 +40,6 @@
                             <children>
 
                                 <Label fx:id="inputTitleLabel"
-                                       text="User ID"
                                        styleClass="field-label"/>
 
                                 <TextField fx:id="inputField"

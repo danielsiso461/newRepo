@@ -28,20 +28,10 @@ public class ParkWorkerHomePageController {
 	@FXML
 	private Label welcomeLabel;
 
-	/*
-	 * Sets the ClientController used by this screen.
-	 * 
-	 * @param clientController the active client controller
-	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
 
-	/*
-	 * Sets the employee that logged in successfully.
-	 * 
-	 * @param employee the logged-in employee
-	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -50,85 +40,73 @@ public class ParkWorkerHomePageController {
 		}
 	}
 
-	/*
-	 * Opens the visitor entry check screen.
-	 * 
-	 * This functionality will allow the park worker to search for an existing
-	 * order by visitor ID and confirmation code, then approve the entry.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleCheckVisitorEntry(ActionEvent event) {
 		System.out.println("Check Visitor Entry clicked");
-
-		/*
-		 * Later:
-		 * Open ParkWorkerCheckEntry.fxml
-		 */
 	}
 
-	/*
-	 * Opens the walk-in visitor handling screen.
-	 * 
-	 * This functionality will allow the park worker to check available space
-	 * and approve entry for visitors without a prior order.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleWalkInVisitor(ActionEvent event) {
-		System.out.println("Handle Walk-In Visitor clicked");
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ParkVisitorCounterUpdatePage.fxml")
+			);
 
-		/*
-		 * Later:
-		 * Open ParkWorkerWalkInVisitor.fxml
-		 */
+			Parent root = loader.load();
+
+			ParkVisitorCounterUpdatePageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+			if (clientController != null) {
+				clientController.addParkVisitorCounterObserver(controller);
+			}
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Handle Walk-In Visitor");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-	/*
-	 * Opens the visitor exit recording screen.
-	 * 
-	 * This functionality will allow the park worker to record visitors leaving
-	 * the park and update the current number of visitors.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleRecordVisitorExit(ActionEvent event) {
 		System.out.println("Record Visitor Exit clicked");
-
-		/*
-		 * Later:
-		 * Open ParkWorkerRecordExit.fxml
-		 */
 	}
 
 	/*
 	 * Opens the park occupancy screen.
 	 * 
-	 * This functionality will show the current number of visitors in the park,
+	 * This screen shows the current number of visitors in the worker's park,
 	 * the park capacity, and the number of available places.
-	 * 
-	 * @param event the button click event
 	 */
 	@FXML
 	private void handleViewParkOccupancy(ActionEvent event) {
-		System.out.println("View Park Occupancy clicked");
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/ParkVisitorCounterViewPage.fxml")
+			);
 
-		/*
-		 * Later:
-		 * Open ParkWorkerParkOccupancy.fxml
-		 */
+			Parent root = loader.load();
+
+			ParkVisitorCounterViewPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Park Occupancy");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-	/*
-	 * Handles logout from the park worker screen.
-	 * 
-	 * For now, this returns the user to the opening screen.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleLogout(ActionEvent event) {
 		try {
@@ -137,6 +115,9 @@ public class ParkWorkerHomePageController {
 			);
 
 			Parent root = loader.load();
+
+			OpeningScreenController controller = loader.getController();
+			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("GoNature");

@@ -90,6 +90,13 @@
                         <Label fx:id="statusLabel"
                                text="Status: Ready"
                                styleClass="status-label"/>
+                               
+                        <Button text="Back"
+        						prefWidth="120.0"
+        						styleClass="secondary-button"
+        						onAction="#handleBack"/>       
+                               
+                               
 
                     </children>
                 </VBox>

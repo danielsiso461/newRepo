@@ -9,8 +9,15 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import clientController.ClientController;
 
 public class OpeningScreenController {
+	
+	private ClientController clientController;
+
+	public void setClientController(ClientController clientController) {
+		this.clientController = clientController;
+	}
 
 	/*
 	 * Handles the click on the Employee Login button.
@@ -27,6 +34,9 @@ public class OpeningScreenController {
 			);
 
 			Parent root = loader.load();
+
+			EmployeeLoginController controller = loader.getController();
+			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("Employee Login");
@@ -53,7 +63,10 @@ public class OpeningScreenController {
     		);
 
     		Parent root = loader.load();
-
+    		
+    		CustomerAccessController controller = loader.getController();
+    		controller.setClientController(clientController);
+    		
     		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
     		stage.setTitle("Customer Access");
     		stage.setScene(new Scene(root));

@@ -5,8 +5,7 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import common.Message;
-import common.Protocol;
+import common.*;
 import ocsf.server.AbstractServer;
 import ocsf.server.ConnectionToClient;
 import serverCommon.ServerAndControllerConnection;
@@ -76,10 +75,10 @@ public final class Server extends AbstractServer {
 		// makes a user instance for a client
 		// if the id bound to the client is a duplicate it disconnects the client
 		// otherwise binds a User instance to the client
-		if (m.getType() == Protocol.RETURN_ORDER) {
+		if (m.getType() == Protocol.RETURN_ORDER && client.getInfo("User") == null) {
 			User u = makeUserFromConnectionToClient(client);
 			u.setUserId((String) m.getData());
-			
+
 			if (!serverController.addUserOnUserConnected(u)) {
 				try {
 					client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
@@ -90,8 +89,10 @@ public final class Server extends AbstractServer {
 				return;
 			} else {
 				client.setInfo("User", u);
-				if(currIdConnection.containsKey(u.getUserId()) == false)
+
+				if (!currIdConnection.containsKey(u.getUserId())) {
 					currIdConnection.put(u.getUserId(), client);
+				}
 			}
 		}
 
@@ -106,19 +107,97 @@ public final class Server extends AbstractServer {
 			Message returnMessage = serverController.handleRequest(m);
 
 			if (returnMessage != null) {
-				if(returnMessage.getType() == Protocol.UPDATE_ORDER_SUCCESS || 
-					returnMessage.getType() == Protocol.UPDATE_ORDER_FAILURE) {
-					String messageId = ((User) client.getInfo("User")).getUserId();
-					ConnectionToClient c = currIdConnection.get(messageId);
-					c.sendToClient(returnMessage);
-					return;
+
+				bindClientAfterSuccessfulLogin(m, returnMessage, client);
+
+				if (returnMessage.getType() == Protocol.UPDATE_ORDER_SUCCESS
+						|| returnMessage.getType() == Protocol.UPDATE_ORDER_FAILURE) {
+
+					User user = (User) client.getInfo("User");
+
+					if (user != null) {
+						String messageId = user.getUserId();
+						ConnectionToClient c = currIdConnection.get(messageId);
+
+						if (c != null) {
+							c.sendToClient(returnMessage);
+							return;
+						}
+					}
 				}
+
 				client.sendToClient(returnMessage);
+
 			} else {
 				System.out.println("Error: request handling failure");
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
+		}
+	}
+	
+	private void bindIdToClientConnection(String id, ConnectionToClient client) {
+		if (id == null || id.trim().isEmpty() || client == null) {
+			return;
+		}
+
+		User u = makeUserFromConnectionToClient(client);
+		u.setUserId(id);
+
+		if (!serverController.addUserOnUserConnected(u)) {
+			System.out.println("User ID is already connected: " + id);
+			return;
+		}
+
+		client.setInfo("User", u);
+
+		if (!currIdConnection.containsKey(id)) {
+			currIdConnection.put(id, client);
+		}
+
+		System.out.println("Bound user ID " + id + " to client connection.");
+	}
+	
+	private void bindClientAfterSuccessfulLogin(Message requestMessage,
+			Message responseMessage,
+			ConnectionToClient client) {
+
+		if (requestMessage == null || responseMessage == null) {
+			return;
+		}
+
+		if (!(responseMessage.getData() instanceof OperationResponse)) {
+			return;
+		}
+
+		OperationResponse response = (OperationResponse) responseMessage.getData();
+
+		if (!response.isSuccess() || response.getData() == null) {
+			return;
+		}
+
+		if (requestMessage.getType() == Protocol.EXISTING_CUSTOMER_LOGIN_REQUEST
+				&& response.getData() instanceof Subscriber) {
+
+			Subscriber subscriber = (Subscriber) response.getData();
+
+			bindIdToClientConnection(
+					String.valueOf(subscriber.getSubscriberId()),
+					client
+			);
+
+			return;
+		}
+
+		if (requestMessage.getType() == Protocol.EMPLOYEE_LOGIN_REQUEST
+				&& response.getData() instanceof Employee) {
+
+			Employee employee = (Employee) response.getData();
+
+			bindIdToClientConnection(
+					String.valueOf(employee.getEmployeeId()),
+					client
+			);
 		}
 	}
 	
