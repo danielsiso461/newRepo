@@ -8,7 +8,7 @@ import java.util.List;
 
 import common.Order;
 import common.Park;
-import common.ParkInfo;
+import common.Park;
 
 /**
  * This class is the DB connector used when working with the park table.
@@ -210,25 +210,20 @@ public class ParkConnection extends AbstractDBConnection {
 	/**
 	 * This method returns public information about all active parks.
 	 * 
-	 * The method converts full Park objects into ParkInfo objects before sending
-	 * them to the client, so internal management data is not exposed.
+	 * The method returns Park objects, which contain only the data that can be
+	 * sent to the client.
 	 * 
 	 * @return a list of public park information objects
 	 * @throws SQLException if the select query fails
 	 */
-	public List<ParkInfo> getAllActiveParksInfo() throws SQLException {
-		List<ParkInfo> parkInfoList = new ArrayList<>();
+	public List<Park> getAllActiveParksInfo() throws SQLException {
+		List<Park> ParkList = new ArrayList<>();
 
 		for (Park park : getAllActiveParks()) {
-			parkInfoList.add(new ParkInfo(
-					park.getParkId(),
-					park.getParkName(),
-					park.getEstimatedVisitDurationHours(),
-					park.getFullEntryPrice()
-			));
+			ParkList.add(park);
 		}
 
-		return parkInfoList;
+		return ParkList;
 	}
 	
 

@@ -225,7 +225,7 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			addLog("Loading updated active parks before notifying clients.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Loaded " + parks.size() + " active parks for update notification.");
 
@@ -581,7 +581,7 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			addLog("Loading active parks from database.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Active parks list loaded from database. Number of parks: " + parks.size());
 			addLog("Returning active parks list to client.");
