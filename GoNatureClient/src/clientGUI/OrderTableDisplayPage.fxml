@@ -117,7 +117,7 @@
                                                 onAction="#waitingListButtonClick"/>
                                                 
                                         <Button fx:id="backButton"
-        										text="Back"
+        										text="Logout"
         										prefWidth="120.0"
         										styleClass="secondary-button"
         										onAction="#backButtonClick"/>        

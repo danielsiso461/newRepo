@@ -709,6 +709,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			}
 			
 			if (customerView) {
+				if (clientController != null) {
+					clientController.setLoggedInSubscriberId(null);
+					clientController.removeObserver(this);
+				}
+
 				FXMLLoader loader = new FXMLLoader(
 						getClass().getResource("/clientGUI/CustomerAccess.fxml")
 				);
