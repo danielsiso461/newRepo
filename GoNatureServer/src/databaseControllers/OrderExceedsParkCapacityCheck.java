@@ -8,44 +8,55 @@ import java.time.LocalDate;
 import common.Order;
 
 /**
- * Checks whether an order exceeds the park capacity.
+ * Checks whether an order can be booked without exceeding the park capacity.
  */
 public class OrderExceedsParkCapacityCheck {
 
 	private static OrderExceedsParkCapacityCheck instance;
 
-	private ParkConnection pc;
-	private OrderConnection oc;
-
-	private final String ORDER_STATUS_APPROVED = "approved";
-	private final String RETURN_COLUMN = "exceeds_capacity";
-
-	private final int NUMBER_OF_HOURS_IN_A_DAY = 24;
-
-	/*
-	 * The constructor of OrderExceedsParkCapacityCheck receives connections for
-	 * ParkConnection and OrderConnection.
-	 *
-	 * @param pc the ParkConnection
-	 * @param oc the OrderConnection
+	/**
+	 * The park DB connector used for the capacity query.
 	 */
-	private OrderExceedsParkCapacityCheck(ParkConnection pc, OrderConnection oc) {
+	private final ParkConnection pc;
+
+	/**
+	 * The status value of approved orders.
+	 */
+	private static final String ORDER_STATUS_APPROVED = "approved";
+
+	/**
+	 * The alias returned by the capacity query.
+	 */
+	private static final String RETURN_COLUMN = "exceeds_capacity";
+
+	/**
+	 * The number of hours in one day.
+	 */
+	private static final int NUMBER_OF_HOURS_IN_A_DAY = 24;
+
+	/**
+	 * Private constructor for Singleton.
+	 * 
+	 * @param pc the park table connection
+	 */
+	private OrderExceedsParkCapacityCheck(ParkConnection pc) {
 		this.pc = pc;
-		this.oc = oc;
 	}
 
 	/**
 	 * Returns the single instance of OrderExceedsParkCapacityCheck.
-	 *
-	 * If no instance exists, a new instance is created.
-	 *
-	 * @param pc the ParkConnection
-	 * @param oc the OrderConnection
+	 * 
+	 * The OrderConnection parameter is kept for compatibility with existing calls,
+	 * but the current capacity query uses one connection and joins the park and
+	 * order tables in the same SQL query.
+	 * 
+	 * @param pc the park table connection
+	 * @param oc the order table connection
 	 * @return the only OrderExceedsParkCapacityCheck instance
 	 */
 	public static OrderExceedsParkCapacityCheck getInstance(ParkConnection pc, OrderConnection oc) {
 		if (instance == null) {
-			instance = new OrderExceedsParkCapacityCheck(pc, oc);
+			instance = new OrderExceedsParkCapacityCheck(pc);
 		}
 
 		return instance;
@@ -53,18 +64,18 @@ public class OrderExceedsParkCapacityCheck {
 
 	/**
 	 * Checks if the requested order exceeds the park capacity.
-	 *
+	 * 
 	 * Returns:
 	 * -1 if there is a problem,
 	 *  0 if the order can be booked,
 	 *  1 if the order exceeds capacity.
-	 *
+	 * 
 	 * @param order the order to check
 	 * @return the capacity check result
 	 * @throws SQLException if the query fails
 	 */
 	public int check(Order order) throws SQLException {
-		if (pc == null || oc == null || order == null) {
+		if (pc == null || order == null) {
 			return -1;
 		}
 
@@ -76,6 +87,8 @@ public class OrderExceedsParkCapacityCheck {
 		if (numberOfVisitors == null || orderDate == null || parkId == null) {
 			return -1;
 		}
+
+		pc.ensureConnection();
 
 		String sql = """
 				SELECT

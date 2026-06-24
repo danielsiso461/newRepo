@@ -20,7 +20,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
 
-/*
+/**
  * This class is the controller for the existing customer login screen.
  * 
  * The screen allows an existing customer to log in using username and password.
@@ -29,21 +29,27 @@ import javafx.stage.Stage;
  */
 public class ExistingCustomerLoginController implements ExistingCustomerLoginObserver {
 
-	/*
+	/**
 	 * The client controller used for communication with the server.
 	 */
 	private static ClientController clientController;
-
+	/**
+	 * the text field for the user to enter their username
+	 */
 	@FXML
 	private TextField usernameField;
-
+	/**
+	 * the password field for the user to enter their password
+	 */
 	@FXML
 	private PasswordField passwordField;
-
+	/**
+	 * a label to give the user feedback
+	 */
 	@FXML
 	private Label messageLabel;
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param controller the client controller instance
@@ -52,7 +58,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		clientController = controller;
 	}
 
-	/*
+	/**
 	 * Initializes the screen.
 	 * 
 	 * This method registers the screen as an observer so it can receive the server
@@ -65,7 +71,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Login button.
 	 * 
 	 * The method validates that the username and password fields are not empty.
@@ -98,7 +104,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		clientController.requestExistingCustomerLogin(username.trim(), password.trim());
 	}
 
-	/*
+	/**
 	 * Receives the existing customer login result from the ClientController.
 	 * 
 	 * If the customer login succeeds, the method opens the order table screen
@@ -132,7 +138,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		});
 	}
 	
-	/*
+	/**
 	 * Opens the order table screen and loads all orders that belong to the
 	 * logged-in subscriber.
 	 * 
@@ -178,7 +184,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Back button.
 	 * 
 	 * This method removes this screen from the observer list and navigates the user

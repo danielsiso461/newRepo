@@ -1,11 +1,9 @@
 package databaseControllers;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import common.ParkParameterChangeRequest;
@@ -15,262 +13,375 @@ import common.ParkParameterChangeRequest;
  */
 public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 
-    private static ParkParameterChangeRequestConnection instance;
+	private static ParkParameterChangeRequestConnection instance;
 
-    private final String REQUEST_ID = "request_id";
-    private final String PARK_ID = "park_id";
-    private final String REQUESTED_BY_EMPLOYEE_ID = "requested_by_employee_id";
-    private final String APPROVED_BY_EMPLOYEE_ID = "approved_by_employee_id";
-    private final String PARAMETER_NAME = "parameter_name";
-    private final String OLD_VALUE = "old_value";
-    private final String NEW_VALUE = "new_value";
-    private final String REQUEST_STATUS = "request_status";
-    private final String REQUESTED_AT = "requested_at";
-    private final String REVIEWED_AT = "reviewed_at";
-    private final String REVIEW_NOTE = "review_note";
+	private final String REQUEST_ID = "request_id";
+	private final String PARK_ID = "park_id";
+	private final String PARAMETER_NAME = "parameter_name";
+	private final String OLD_VALUE = "old_value";
+	private final String NEW_VALUE = "new_value";
+	private final String REQUEST_STATUS = "request_status";
 
-    private final String STATUS_PENDING = "pending";
-    private final String STATUS_APPROVED = "approved";
-    private final String STATUS_REJECTED = "rejected";
+	private final String STATUS_PENDING = "pending";
+	private final String STATUS_APPROVED = "approved";
+	private final String STATUS_REJECTED = "rejected";
 
-    private ParkParameterChangeRequestConnection() throws SQLException {
-        connect();
-    }
+	private final String PARK_TABLE = ConstantsDBTableNames.PARK;
+	private final String PARAMETER_MAX_CAPACITY = "max_capacity";
+	private final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
+			"places_for_unplanned_visitors";
+	private final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
+			"estimated_visit_duration_hours";
+	private final String PARAMETER_PROMOTIONS = "promotions";
 
-    public static ParkParameterChangeRequestConnection getInstance() throws SQLException {
-        if (instance == null || instance.conn == null || instance.conn.isClosed()) {
-            instance = new ParkParameterChangeRequestConnection();
-        }
+	private ParkParameterChangeRequestConnection() throws SQLException {
+		connect();
+	}
 
-        return instance;
-    }
+	public static ParkParameterChangeRequestConnection getInstance() throws SQLException {
+		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
+			instance = new ParkParameterChangeRequestConnection();
+		}
 
-    @Override
-    public String getTableName(){
-        return ConstantsDBTableNames.PARK_PARAMETER_CHANGE_REQUEST;
-    }
+		return instance;
+	}
 
-    /**
-     * Creates a new park parameter change request.
-     */
-    public boolean createChangeRequest(int parkId, int requestedByEmployeeId,
-            String parameterName, String oldValue, String newValue) throws SQLException {
+	@Override
+	public String getTableName() {
+		return ConstantsDBTableNames.PARK_PARAMETER_CHANGE_REQUEST;
+	}
 
-        ensureConnection();
+	/**
+	 * Creates a new park parameter change request.
+	 * 
+	 * requestedByEmployeeId is used by the server for permission checks, but it is
+	 * not stored here because the current DB table does not contain this column.
+	 */
+	public boolean createChangeRequest(int parkId, int requestedByEmployeeId,
+			String parameterName, String oldValue, String newValue) throws SQLException {
 
-        if (parkId <= 0 || requestedByEmployeeId <= 0
-                || parameterName == null || parameterName.isBlank()
-                || oldValue == null || newValue == null) {
-            return false;
-        }
+		ensureConnection();
 
-        List<Object> values = new ArrayList<>();
+		if (parkId <= 0
+				|| parameterName == null || parameterName.isBlank()
+				|| oldValue == null
+				|| newValue == null || newValue.isBlank()) {
+			return false;
+		}
 
-        values.add(parkId);
-        values.add(requestedByEmployeeId);
-        values.add(parameterName);
-        values.add(oldValue);
-        values.add(newValue);
-        values.add(STATUS_PENDING);
-        values.add(Timestamp.valueOf(LocalDateTime.now()));
+		if (!isSupportedParameter(parameterName)) {
+			return false;
+		}
 
-        insertFields(
-                new String[] {
-                        PARK_ID,
-                        REQUESTED_BY_EMPLOYEE_ID,
-                        PARAMETER_NAME,
-                        OLD_VALUE,
-                        NEW_VALUE,
-                        REQUEST_STATUS,
-                        REQUESTED_AT
-                },
-                values
-        );
+		insertFields(
+				new String[] {
+						PARK_ID,
+						PARAMETER_NAME,
+						OLD_VALUE,
+						NEW_VALUE,
+						REQUEST_STATUS
+				},
+				List.of(
+						parkId,
+						parameterName,
+						oldValue,
+						newValue,
+						STATUS_PENDING
+				)
+		);
 
-        return true;
-    }
+		return true;
+	}
 
-    /**
-     * Approves a pending request.
-     */
-    public boolean approveRequest(int requestId, int approvedByEmployeeId,
-            String reviewNote) throws SQLException {
+	/**
+	 * Approves a pending request.
+	 * 
+	 * approvedByEmployeeId and reviewNote are kept for compatibility with the
+	 * server code, but they are not stored because the current DB table does not
+	 * contain matching columns.
+	 */
+	public boolean approveRequest(int requestId, int approvedByEmployeeId,
+			String reviewNote) throws SQLException {
 
-        return updateRequestStatus(
-                requestId,
-                approvedByEmployeeId,
-                reviewNote,
-                STATUS_APPROVED
-        );
-    }
+		ensureConnection();
 
-    /**
-     * Rejects a pending request.
-     */
-    public boolean rejectRequest(int requestId, int approvedByEmployeeId,
-            String reviewNote) throws SQLException {
+		if (requestId <= 0 || approvedByEmployeeId <= 0) {
+			return false;
+		}
 
-        return updateRequestStatus(
-                requestId,
-                approvedByEmployeeId,
-                reviewNote,
-                STATUS_REJECTED
-        );
-    }
+		boolean oldAutoCommit = conn.getAutoCommit();
 
-    /**
-     * Updates a pending request to approved or rejected.
-     * 
-     * Uses the generic updateFields method from AbstractDBConnection.
-     */
-    private boolean updateRequestStatus(int requestId, int approvedByEmployeeId,
-            String reviewNote, String newStatus) throws SQLException {
-    	
+		try {
+			conn.setAutoCommit(false);
 
-        ensureConnection();
-        
-        if (reviewNote == null) {
-            reviewNote = "";
-        }
+			RequestData requestData = loadPendingRequestData(requestId);
 
-        if (requestId <= 0 || approvedByEmployeeId <= 0
-                || newStatus == null || newStatus.isBlank()) {
-            return false;
-        }
+			if (requestData == null) {
+				conn.rollback();
+				return false;
+			}
 
-        if (!isPendingRequest(requestId)) {
-            return false;
-        }
+			boolean parkUpdated = updateParkParameter(
+					requestData.parkId,
+					requestData.parameterName,
+					requestData.newValue
+			);
 
-        return updateFields(
-                new String[] {
-                        REQUEST_STATUS,
-                        APPROVED_BY_EMPLOYEE_ID,
-                        REVIEW_NOTE,
-                        REVIEWED_AT
-                },
-                List.of(
-                        newStatus,
-                        approvedByEmployeeId,
-                        reviewNote,
-                        Timestamp.valueOf(LocalDateTime.now())
-                ),
-                new String[] {
-                        REQUEST_ID,
-                        REQUEST_STATUS
-                },
-                List.of(
-                        requestId,
-                        STATUS_PENDING
-                )
-        );
-    }
+			if (!parkUpdated) {
+				conn.rollback();
+				return false;
+			}
 
-    /**
-     * Checks whether a request exists and is still pending.
-     */
-    private boolean isPendingRequest(int requestId) throws SQLException {
-        ensureConnection();
+			boolean requestUpdated = updateRequestStatusOnly(
+					requestId,
+					STATUS_APPROVED
+			);
 
-        String sql = selectByFields(
-                new String[] { REQUEST_ID },
-                new String[] { REQUEST_ID, REQUEST_STATUS }
-        );
+			if (!requestUpdated) {
+				conn.rollback();
+				return false;
+			}
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, requestId);
-            pstmt.setString(2, STATUS_PENDING);
+			conn.commit();
+			return true;
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                return rs.next();
-            }
-        }
-    }
+		} catch (SQLException e) {
+			conn.rollback();
+			throw e;
 
-    /**
-     * Returns a specific request by id.
-     */
-    public ParkParameterChangeRequest getRequestById(int requestId) throws SQLException {
-        ensureConnection();
+		} finally {
+			conn.setAutoCommit(oldAutoCommit);
+		}
+	}
 
-        String sql = selectByFields(
-                new String[] { "*" },
-                new String[] { REQUEST_ID }
-        );
+	/**
+	 * Rejects a pending request.
+	 * 
+	 * approvedByEmployeeId and reviewNote are kept for compatibility with the
+	 * server code, but they are not stored because the current DB table does not
+	 * contain matching columns.
+	 */
+	public boolean rejectRequest(int requestId, int approvedByEmployeeId,
+			String reviewNote) throws SQLException {
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, requestId);
+		ensureConnection();
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return convertResultSetToRequest(rs);
-                }
-            }
-        }
+		if (requestId <= 0 || approvedByEmployeeId <= 0) {
+			return false;
+		}
 
-        return null;
-    }
+		return updateRequestStatusOnly(
+				requestId,
+				STATUS_REJECTED
+		);
+	}
 
-    /**
-     * Returns all pending requests.
-     */
-    public List<ParkParameterChangeRequest> getPendingRequests() throws SQLException {
-        ensureConnection();
+	private boolean updateRequestStatusOnly(int requestId, String newStatus)
+			throws SQLException {
 
-        String sql = "SELECT * FROM `" + getTableName() + "` "
-                + "WHERE " + REQUEST_STATUS + " = ? "
-                + "ORDER BY " + REQUESTED_AT + ";";
+		return updateFields(
+				new String[] {
+						REQUEST_STATUS
+				},
+				List.of(
+						newStatus
+				),
+				new String[] {
+						REQUEST_ID,
+						REQUEST_STATUS
+				},
+				List.of(
+						requestId,
+						STATUS_PENDING
+				)
+		);
+	}
 
-        List<ParkParameterChangeRequest> pendingRequests = new ArrayList<>();
+	private RequestData loadPendingRequestData(int requestId) throws SQLException {
+		String sql = selectByFields(
+				new String[] {
+						PARK_ID,
+						PARAMETER_NAME,
+						NEW_VALUE
+				},
+				new String[] {
+						REQUEST_ID,
+						REQUEST_STATUS
+				}
+		);
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, STATUS_PENDING);
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, requestId);
+			pstmt.setString(2, STATUS_PENDING);
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    pendingRequests.add(convertResultSetToRequest(rs));
-                }
-            }
-        }
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					RequestData data = new RequestData();
+					data.parkId = rs.getInt(PARK_ID);
+					data.parameterName = rs.getString(PARAMETER_NAME);
+					data.newValue = rs.getString(NEW_VALUE);
 
-        return pendingRequests;
-    }
+					return data;
+				}
+			}
+		}
 
-    /**
-     * Converts a database row into a ParkParameterChangeRequest object.
-     */
-    private ParkParameterChangeRequest convertResultSetToRequest(ResultSet rs)
-            throws SQLException {
+		return null;
+	}
 
-        Integer approvedByEmployeeId = null;
+	private boolean updateParkParameter(int parkId, String parameterName,
+			String newValue) throws SQLException {
 
-        if (rs.getObject(APPROVED_BY_EMPLOYEE_ID) != null) {
-            approvedByEmployeeId = rs.getInt(APPROVED_BY_EMPLOYEE_ID);
-        }
+		if (parkId <= 0 || !isSupportedParameter(parameterName)
+				|| newValue == null || newValue.isBlank()) {
+			return false;
+		}
 
-        return new ParkParameterChangeRequest(
-                rs.getInt(REQUEST_ID),
-                rs.getInt(PARK_ID),
-                rs.getInt(REQUESTED_BY_EMPLOYEE_ID),
-                approvedByEmployeeId,
-                rs.getString(PARAMETER_NAME),
-                rs.getString(OLD_VALUE),
-                rs.getString(NEW_VALUE),
-                rs.getString(REQUEST_STATUS),
-                convertTimestampToLocalDateTime(rs.getTimestamp(REQUESTED_AT)),
-                convertTimestampToLocalDateTime(rs.getTimestamp(REVIEWED_AT)),
-                rs.getString(REVIEW_NOTE)
-        );
-    }
+		Object convertedValue = convertParkParameterValue(parameterName, newValue);
 
-    /**
-     * Converts SQL Timestamp to LocalDateTime safely.
-     */
-    private LocalDateTime convertTimestampToLocalDateTime(Timestamp timestamp) {
-        if (timestamp == null) {
-            return null;
-        }
+		return updateFieldsInTable(
+				PARK_TABLE,
+				new String[] {
+						parameterName
+				},
+				List.of(
+						convertedValue
+				),
+				new String[] {
+						PARK_ID
+				},
+				List.of(
+						parkId
+				)
+		);
+	}
 
-        return timestamp.toLocalDateTime();
-    }
+	private Object convertParkParameterValue(String parameterName, String newValue)
+			throws SQLException {
+
+		try {
+			switch (parameterName) {
+
+			case PARAMETER_MAX_CAPACITY:
+				int maxCapacity = Integer.parseInt(newValue);
+
+				if (maxCapacity <= 0) {
+					throw new SQLException("Max capacity must be positive.");
+				}
+
+				return maxCapacity;
+
+			case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
+				int placesForUnplannedVisitors = Integer.parseInt(newValue);
+
+				if (placesForUnplannedVisitors < 0) {
+					throw new SQLException("Places for unplanned visitors cannot be negative.");
+				}
+
+				return placesForUnplannedVisitors;
+
+			case PARAMETER_ESTIMATED_VISIT_DURATION_HOURS:
+				int estimatedVisitDurationHours = Integer.parseInt(newValue);
+
+				if (estimatedVisitDurationHours <= 0) {
+					throw new SQLException("Estimated visit duration must be positive.");
+				}
+
+				return estimatedVisitDurationHours;
+
+			case PARAMETER_PROMOTIONS:
+				BigDecimal promotions = new BigDecimal(newValue);
+
+				if (promotions.compareTo(BigDecimal.ZERO) < 0
+						|| promotions.compareTo(BigDecimal.valueOf(100)) > 0) {
+					throw new SQLException("Promotions must be between 0 and 100.");
+				}
+
+				return promotions;
+
+			default:
+				throw new SQLException("Unsupported park parameter: " + parameterName);
+			}
+
+		} catch (NumberFormatException e) {
+			throw new SQLException("Invalid numeric value for " + parameterName + ": " + newValue);
+		}
+	}
+
+	private boolean isSupportedParameter(String parameterName) {
+		return PARAMETER_MAX_CAPACITY.equals(parameterName)
+				|| PARAMETER_PLACES_FOR_UNPLANNED_VISITORS.equals(parameterName)
+				|| PARAMETER_ESTIMATED_VISIT_DURATION_HOURS.equals(parameterName)
+				|| PARAMETER_PROMOTIONS.equals(parameterName);
+	}
+
+	public ParkParameterChangeRequest getRequestById(int requestId) throws SQLException {
+		ensureConnection();
+
+		String sql = selectByFields(
+				new String[] {
+						"*"
+				},
+				new String[] {
+						REQUEST_ID
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, requestId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return convertResultSetToRequest(rs);
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public List<ParkParameterChangeRequest> getPendingRequests() throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT *
+				FROM `park_parameter_change_request`
+				WHERE request_status = ?
+				ORDER BY request_id;
+				""";
+
+		List<ParkParameterChangeRequest> pendingRequests =
+				new java.util.ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, STATUS_PENDING);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					pendingRequests.add(convertResultSetToRequest(rs));
+				}
+			}
+		}
+
+		return pendingRequests;
+	}
+
+	private ParkParameterChangeRequest convertResultSetToRequest(ResultSet rs)
+			throws SQLException {
+
+		return new ParkParameterChangeRequest(
+				rs.getInt(REQUEST_ID),
+				rs.getInt(PARK_ID),
+				rs.getString(PARAMETER_NAME),
+				rs.getString(OLD_VALUE),
+				rs.getString(NEW_VALUE),
+				rs.getString(REQUEST_STATUS)
+		);
+	}
+
+	private static class RequestData {
+		private int parkId;
+		private String parameterName;
+		private String newValue;
+	}
 }

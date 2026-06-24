@@ -16,15 +16,54 @@ public class EmployeeConnection extends AbstractDBConnection {
 	 */
 	private static EmployeeConnection instance;
 
+	/**
+	 * The employee table's employee id column.
+	 */
 	private final String EMPLOYEE_ID = "employee_id";
+
+	/**
+	 * The employee table's employee number column.
+	 */
 	private final String EMPLOYEE_NUMBER = "employee_number";
-	private final String FIRST_NAME = "employee_first_name";
-	private final String LAST_NAME = "employee_last_name";
-	private final String EMAIL = "employee_email";
+
+	/**
+	 * The employee table's employee first name column.
+	 */
+	private final String EMPLOYEE_FIRST_NAME = "employee_first_name";
+
+	/**
+	 * The employee table's employee last name column.
+	 */
+	private final String EMPLOYEE_LAST_NAME = "employee_last_name";
+
+	/**
+	 * The employee table's employee email column.
+	 */
+	private final String EMPLOYEE_EMAIL = "employee_email";
+
+	/**
+	 * The employee table's employee username column.
+	 */
 	private final String USERNAME = "username";
+
+	/**
+	 * The employee table's employee password column.
+	 */
 	private final String PASSWORD = "password";
+
+	/**
+	 * The employee table's employee role column.
+	 */
 	private final String EMPLOYEE_ROLE = "employee_role";
+
+	/**
+	 * The employee table's employee park id column.
+	 */
 	private final String PARK_ID = "park_id";
+
+	/**
+	 * The employee table's employee activity status column.
+	 */
 	private final String IS_ACTIVE = "is_active";
 
 	/**
@@ -80,9 +119,9 @@ public class EmployeeConnection extends AbstractDBConnection {
 		return new Employee(
 				rs.getInt(EMPLOYEE_ID),
 				rs.getInt(EMPLOYEE_NUMBER),
-				rs.getString(FIRST_NAME),
-				rs.getString(LAST_NAME),
-				rs.getString(EMAIL),
+				rs.getString(EMPLOYEE_FIRST_NAME),
+				rs.getString(EMPLOYEE_LAST_NAME),
+				rs.getString(EMPLOYEE_EMAIL),
 				rs.getString(USERNAME),
 				rs.getString(EMPLOYEE_ROLE),
 				parkId

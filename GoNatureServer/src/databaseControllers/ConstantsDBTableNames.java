@@ -57,11 +57,6 @@ public final class ConstantsDBTableNames {
 	protected static final String NOTIFICATION = "notification";
 
 	/**
-	 * The name of the order status history table.
-	 */
-	protected static final String ORDER_STATUS_HISTORY = "order_status_history";
-
-	/**
 	 * The name of the park parameter change request table.
 	 */
 	protected static final String PARK_PARAMETER_CHANGE_REQUEST = "park_parameter_change_request";

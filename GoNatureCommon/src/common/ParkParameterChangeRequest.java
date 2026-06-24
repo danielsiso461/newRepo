@@ -5,94 +5,110 @@ import java.time.LocalDateTime;
 
 /**
  * Represents a request to change one of the park parameters.
- * 
- * Park managers create these requests.
- * Department managers approve or reject them.
  */
 public class ParkParameterChangeRequest implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    private int requestId;
-    private int parkId;
-    private int requestedByEmployeeId;
-    private Integer approvedByEmployeeId;
+	private int requestId;
+	private int parkId;
 
-    private String parameterName;
-    private String oldValue;
-    private String newValue;
-    private String requestStatus;
-    private String reviewNote;
+	private int requestedByEmployeeId;
+	private Integer approvedByEmployeeId;
 
-    private LocalDateTime requestedAt;
-    private LocalDateTime reviewedAt;
+	private String parameterName;
+	private String oldValue;
+	private String newValue;
+	private String requestStatus;
+	private String reviewNote;
 
-    public ParkParameterChangeRequest(int requestId, int parkId,
-            int requestedByEmployeeId, Integer approvedByEmployeeId,
-            String parameterName, String oldValue, String newValue,
-            String requestStatus, LocalDateTime requestedAt,
-            LocalDateTime reviewedAt, String reviewNote) {
+	private LocalDateTime requestedAt;
+	private LocalDateTime reviewedAt;
 
-        this.requestId = requestId;
-        this.parkId = parkId;
-        this.requestedByEmployeeId = requestedByEmployeeId;
-        this.approvedByEmployeeId = approvedByEmployeeId;
-        this.parameterName = parameterName;
-        this.oldValue = oldValue;
-        this.newValue = newValue;
-        this.requestStatus = requestStatus;
-        this.requestedAt = requestedAt;
-        this.reviewedAt = reviewedAt;
-        this.reviewNote = reviewNote;
-    }
+	public ParkParameterChangeRequest(int requestId, int parkId,
+			String parameterName, String oldValue, String newValue,
+			String requestStatus) {
 
-    public int getRequestId() {
-        return requestId;
-    }
+		this.requestId = requestId;
+		this.parkId = parkId;
+		this.parameterName = parameterName;
+		this.oldValue = oldValue;
+		this.newValue = newValue;
+		this.requestStatus = requestStatus;
 
-    public int getParkId() {
-        return parkId;
-    }
+		this.requestedByEmployeeId = 0;
+		this.approvedByEmployeeId = null;
+		this.requestedAt = null;
+		this.reviewedAt = null;
+		this.reviewNote = "";
+	}
 
-    public int getRequestedByEmployeeId() {
-        return requestedByEmployeeId;
-    }
+	public ParkParameterChangeRequest(int requestId, int parkId,
+			int requestedByEmployeeId, Integer approvedByEmployeeId,
+			String parameterName, String oldValue, String newValue,
+			String requestStatus, LocalDateTime requestedAt,
+			LocalDateTime reviewedAt, String reviewNote) {
 
-    public Integer getApprovedByEmployeeId() {
-        return approvedByEmployeeId;
-    }
+		this.requestId = requestId;
+		this.parkId = parkId;
+		this.requestedByEmployeeId = requestedByEmployeeId;
+		this.approvedByEmployeeId = approvedByEmployeeId;
+		this.parameterName = parameterName;
+		this.oldValue = oldValue;
+		this.newValue = newValue;
+		this.requestStatus = requestStatus;
+		this.requestedAt = requestedAt;
+		this.reviewedAt = reviewedAt;
+		this.reviewNote = reviewNote;
+	}
 
-    public String getParameterName() {
-        return parameterName;
-    }
+	public int getRequestId() {
+		return requestId;
+	}
 
-    public String getOldValue() {
-        return oldValue;
-    }
+	public int getParkId() {
+		return parkId;
+	}
 
-    public String getNewValue() {
-        return newValue;
-    }
+	public int getRequestedByEmployeeId() {
+		return requestedByEmployeeId;
+	}
 
-    public String getRequestStatus() {
-        return requestStatus;
-    }
+	public Integer getApprovedByEmployeeId() {
+		return approvedByEmployeeId;
+	}
 
-    public LocalDateTime getRequestedAt() {
-        return requestedAt;
-    }
+	public String getParameterName() {
+		return parameterName;
+	}
 
-    public LocalDateTime getReviewedAt() {
-        return reviewedAt;
-    }
+	public String getOldValue() {
+		return oldValue;
+	}
 
-    public String getReviewNote() {
-        return reviewNote;
-    }
+	public String getNewValue() {
+		return newValue;
+	}
 
-    @Override
-    public String toString() {
-        return "Request #" + requestId + " - park " + parkId + " - "
-                + parameterName + ": " + oldValue + " -> " + newValue;
-    }
+	public String getRequestStatus() {
+		return requestStatus;
+	}
+
+	public LocalDateTime getRequestedAt() {
+		return requestedAt;
+	}
+
+	public LocalDateTime getReviewedAt() {
+		return reviewedAt;
+	}
+
+	public String getReviewNote() {
+		return reviewNote;
+	}
+
+	@Override
+	public String toString() {
+		return "Request #" + requestId + " - park " + parkId + " - "
+				+ parameterName + ": " + oldValue + " -> " + newValue;
+	}
 }

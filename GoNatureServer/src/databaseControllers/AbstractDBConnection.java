@@ -61,9 +61,7 @@ public abstract class AbstractDBConnection {
 	protected abstract String getTableName();
 
 	/**
-	 * General UPDATE query.
-	 * 
-	 * The method updates the given columns according to the given key columns.
+	 * General UPDATE query for the table used by the specific subclass.
 	 * 
 	 * @param columnNames the columns to update
 	 * @param newValues the new values for the updated columns
@@ -75,9 +73,61 @@ public abstract class AbstractDBConnection {
 	public boolean updateFields(String[] columnNames, List<Object> newValues,
 			String[] keyColumns, List<Object> keyValues) throws SQLException {
 
+		return updateFieldsInSpecificTable(
+				getTableName(),
+				columnNames,
+				newValues,
+				keyColumns,
+				keyValues
+		);
+	}
+
+	/**
+	 * General UPDATE query for a specific database table.
+	 * 
+	 * This method is used when a connector needs to update a table that is different
+	 * from the table returned by getTableName().
+	 * 
+	 * @param tableName the table name to update
+	 * @param columnNames the columns to update
+	 * @param newValues the new values for the updated columns
+	 * @param keyColumns the columns used in the WHERE clause
+	 * @param keyValues the values used in the WHERE clause
+	 * @return true if at least one row was updated, otherwise false
+	 * @throws SQLException if the update query fails
+	 */
+	protected boolean updateFieldsInTable(String tableName, String[] columnNames,
+			List<Object> newValues, String[] keyColumns, List<Object> keyValues)
+			throws SQLException {
+
+		return updateFieldsInSpecificTable(
+				tableName,
+				columnNames,
+				newValues,
+				keyColumns,
+				keyValues
+		);
+	}
+
+	/**
+	 * Executes a general UPDATE query for the given table.
+	 * 
+	 * @param tableName the table name to update
+	 * @param columnNames the columns to update
+	 * @param newValues the new values for the updated columns
+	 * @param keyColumns the columns used in the WHERE clause
+	 * @param keyValues the values used in the WHERE clause
+	 * @return true if at least one row was updated, otherwise false
+	 * @throws SQLException if the update query fails
+	 */
+	private boolean updateFieldsInSpecificTable(String tableName,
+			String[] columnNames, List<Object> newValues,
+			String[] keyColumns, List<Object> keyValues) throws SQLException {
+
 		ensureConnection();
 
-		if (columnNames == null || newValues == null
+		if (tableName == null || tableName.isBlank()
+				|| columnNames == null || newValues == null
 				|| keyColumns == null || keyValues == null) {
 			System.out.println("bad sql update request");
 			return false;
@@ -95,17 +145,17 @@ public abstract class AbstractDBConnection {
 		}
 
 		StringBuilder sql = new StringBuilder("UPDATE `");
-		sql.append(getTableName()).append("` SET ");
+		sql.append(tableName).append("` SET ");
 
 		for (String column : columnNames) {
-			sql.append(column).append(" = ?, ");
+			sql.append("`").append(column).append("` = ?, ");
 		}
 
 		sql.setLength(sql.length() - 2);
 		sql.append(" WHERE ");
 
 		for (String key : keyColumns) {
-			sql.append(key).append(" = ? AND ");
+			sql.append("`").append(key).append("` = ? AND ");
 		}
 
 		sql.setLength(sql.length() - 5);
@@ -133,18 +183,59 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * General INSERT query.
-	 * 
-	 * It inserts a new record into the table using the given columns and values.
+	 * General INSERT query for the table used by the specific subclass.
 	 * 
 	 * @param columnNames the columns that appear in the INSERT query
 	 * @param values the values corresponding to columnNames
 	 * @throws SQLException if the insert query fails
 	 */
-	public void insertFields(String[] columnNames, List<Object> values) throws SQLException {
+	public void insertFields(String[] columnNames, List<Object> values)
+			throws SQLException {
+
+		insertFieldsInSpecificTable(
+				getTableName(),
+				columnNames,
+				values
+		);
+	}
+
+	/**
+	 * General INSERT query for a specific database table.
+	 * 
+	 * This method is used when a connector needs to insert into a table that is
+	 * different from the table returned by getTableName().
+	 * 
+	 * @param tableName the table name to insert into
+	 * @param columnNames the columns that appear in the INSERT query
+	 * @param values the values corresponding to columnNames
+	 * @throws SQLException if the insert query fails
+	 */
+	protected void insertFieldsInTable(String tableName, String[] columnNames,
+			List<Object> values) throws SQLException {
+
+		insertFieldsInSpecificTable(
+				tableName,
+				columnNames,
+				values
+		);
+	}
+
+	/**
+	 * Executes a general INSERT query for the given table.
+	 * 
+	 * @param tableName the table name to insert into
+	 * @param columnNames the columns that appear in the INSERT query
+	 * @param values the values corresponding to columnNames
+	 * @throws SQLException if the insert query fails
+	 */
+	private void insertFieldsInSpecificTable(String tableName, String[] columnNames,
+			List<Object> values) throws SQLException {
+
 		ensureConnection();
 
-		if (columnNames == null || values == null || columnNames.length != values.size()) {
+		if (tableName == null || tableName.isBlank()
+				|| columnNames == null || values == null
+				|| columnNames.length != values.size()) {
 			System.out.println("bad sql insert request");
 			return;
 		}
@@ -155,10 +246,10 @@ public abstract class AbstractDBConnection {
 		}
 
 		StringBuilder sql = new StringBuilder("INSERT INTO `");
-		sql.append(getTableName()).append("` (");
+		sql.append(tableName).append("` (");
 
 		for (String column : columnNames) {
-			sql.append(column).append(", ");
+			sql.append("`").append(column).append("`, ");
 		}
 
 		sql.setLength(sql.length() - 2);
@@ -189,20 +280,61 @@ public abstract class AbstractDBConnection {
 	/**
 	 * General INSERT query that returns the generated primary key.
 	 * 
-	 * This method is useful when inserting a row into a table with an
-	 * auto-increment primary key.
+	 * This method is useful when inserting a row into a table with an auto-increment
+	 * primary key.
 	 * 
 	 * @param columnNames the columns that appear in the INSERT query
 	 * @param values the values corresponding to columnNames
 	 * @return the generated key, or -1 if the insert failed
 	 * @throws SQLException if the insert query fails
 	 */
-	public int insertFieldsAndReturnGeneratedKey(String[] columnNames, List<Object> values)
-			throws SQLException {
+	public int insertFieldsAndReturnGeneratedKey(String[] columnNames,
+			List<Object> values) throws SQLException {
+
+		return insertFieldsAndReturnGeneratedKeyInSpecificTable(
+				getTableName(),
+				columnNames,
+				values
+		);
+	}
+
+	/**
+	 * General INSERT query into a specific table that returns the generated primary
+	 * key.
+	 * 
+	 * @param tableName the table name to insert into
+	 * @param columnNames the columns that appear in the INSERT query
+	 * @param values the values corresponding to columnNames
+	 * @return the generated key, or -1 if the insert failed
+	 * @throws SQLException if the insert query fails
+	 */
+	protected int insertFieldsAndReturnGeneratedKeyInTable(String tableName,
+			String[] columnNames, List<Object> values) throws SQLException {
+
+		return insertFieldsAndReturnGeneratedKeyInSpecificTable(
+				tableName,
+				columnNames,
+				values
+		);
+	}
+
+	/**
+	 * Executes an INSERT query for the given table and returns the generated key.
+	 * 
+	 * @param tableName the table name to insert into
+	 * @param columnNames the columns that appear in the INSERT query
+	 * @param values the values corresponding to columnNames
+	 * @return the generated key, or -1 if the insert failed
+	 * @throws SQLException if the insert query fails
+	 */
+	private int insertFieldsAndReturnGeneratedKeyInSpecificTable(String tableName,
+			String[] columnNames, List<Object> values) throws SQLException {
 
 		ensureConnection();
 
-		if (columnNames == null || values == null || columnNames.length != values.size()) {
+		if (tableName == null || tableName.isBlank()
+				|| columnNames == null || values == null
+				|| columnNames.length != values.size()) {
 			System.out.println("bad sql insert request");
 			return -1;
 		}
@@ -213,10 +345,10 @@ public abstract class AbstractDBConnection {
 		}
 
 		StringBuilder sql = new StringBuilder("INSERT INTO `");
-		sql.append(getTableName()).append("` (");
+		sql.append(tableName).append("` (");
 
 		for (String column : columnNames) {
-			sql.append(column).append(", ");
+			sql.append("`").append(column).append("`, ");
 		}
 
 		sql.setLength(sql.length() - 2);
@@ -254,14 +386,10 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Builds a SELECT query.
+	 * Builds a SELECT query for the table used by the specific subclass.
 	 * 
 	 * If keyColumns is null or empty, the query will not contain a WHERE clause.
 	 * If keyColumns has values, the conditions will be connected with AND.
-	 * 
-	 * Examples:
-	 * SELECT col1, col2 FROM `table`;
-	 * SELECT col1, col2 FROM `table` WHERE key1 = ? AND key2 = ?;
 	 * 
 	 * @param columnNames the columns to select
 	 * @param keyColumns the columns used in the WHERE clause
@@ -308,6 +436,28 @@ public abstract class AbstractDBConnection {
 	 */
 	public String selectByFieldsAND(String[] columnNames, String[] keyColumns) {
 		return selectByFields(columnNames, keyColumns);
+	}
+
+	/**
+	 * Builds a SELECT query with FOR UPDATE.
+	 * 
+	 * This method is used inside transactions when the selected row must be locked
+	 * until commit or rollback.
+	 * 
+	 * @param columnNames the columns to select
+	 * @param keyColumns the columns used in the WHERE clause
+	 * @return the generated SELECT FOR UPDATE query
+	 */
+	protected String selectByFieldsForUpdate(String[] columnNames,
+			String[] keyColumns) {
+
+		String sql = selectByFields(columnNames, keyColumns);
+
+		if (sql.endsWith(";")) {
+			sql = sql.substring(0, sql.length() - 1);
+		}
+
+		return sql + " FOR UPDATE;";
 	}
 
 	/**

@@ -34,77 +34,106 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
-/*
+/**
  * this class is the UI controller for the make order page
  */
 public class MakeOrderPageController implements MakeOrderObserver, WaitingListObserver {
-
+	
+	/**
+	 * the fxml loader's resource bundle
+	 */
 	@FXML // ResourceBundle that was given to the FXMLLoader
 	private ResourceBundle resources;
-
+	
+	/**
+	 * URL location of the FXML file that was given to the FXMLLoader
+	 */
 	@FXML // URL location of the FXML file that was given to the FXMLLoader
 	private URL location;
-
+	
+	/**
+	 * buttonbar for the enterWaitingList button and Reschedule button
+	 */
 	@FXML // fx:id="buttonBar"
 	private ButtonBar buttonBar; // Value injected by FXMLLoader
-
+	/**
+	 * datepicker to pick order date
+	 */
 	@FXML // fx:id="datePicker"
 	private DatePicker datePicker; // Value injected by FXMLLoader
-
+	/**
+	 * email textfield for the user to enter their email
+	 */
 	@FXML // fx:id="email"
 	private TextField email; // Value injected by FXMLLoader
-
+	/**
+	 * enterWaitingList button for user's who wish to enter a waiting list
+	 */
 	@FXML // fx:id="enterWaitingListButton"
 	private Button enterWaitingListButton; // Value injected by FXMLLoader
-
+	/**
+	 * an error label to give feedback to the user
+	 */
 	@FXML // fx:id="errorLabel"
 	private Label errorLabel; // Value injected by FXMLLoader
-
+	/**
+	 * checkbox to let the user decide between a private or organized visit
+	 */
 	@FXML // fx:id="guideCheckbox"
 	private CheckBox guideCheckbox; // Value injected by FXMLLoader
-
+	/**
+	 * a combobox that let's the user pick the order's hour
+	 */
 	@FXML // fx:id="hourPicker"
 	private ComboBox<Integer> hourPicker; // Value injected by FXMLLoader
-
+	/**
+	 * a button for making the order
+	 */
 	@FXML // fx:id="makeOrderButton"
 	private Button makeOrderButton; // Value injected by FXMLLoader
-
+	/**
+	 * a combobox for the user to pick the park they wish to visit
+	 */
 	@FXML // fx:id="parkPicker"
 	private ComboBox<String> parkPicker; // Value injected by FXMLLoader
-
+	/**
+	 * reschedule button in case the user wishes to change the order's time
+	 */
 	@FXML // fx:id="rescheduleButton"
 	private Button rescheduleButton; // Value injected by FXMLLoader
-
+	/**
+	 * a way for the user to choose how many visitors to include in the visit
+	 */
 	@FXML // fx:id="visitorNumberPicker"
 	private Spinner<Integer> visitorNumberPicker; // Value injected by FXMLLoader
 
-	/* controller that handles the communication with the server */
+	/** controller that handles the communication with the server */
 	private ClientController clientController;
 
-	/* holds the last controller, which is supposed to be a runnable object */
+	/** holds the last controller, which is supposed to be a runnable object */
 	private Runnable prevController;
 
-	/* holds the scene of the previous page */
+	/** holds the scene of the previous page */
 	private Scene prevScene;
 
-	/*
+	/**
 	 * holds the previous date
 	 * this is used to make sure a change happened when rescheduling
 	 */
 	private LocalDate date = null;
 
-	/*
+	/**
 	 * holds the previous hour
 	 * this is used to make sure a change happened when rescheduling
 	 */
 	private Integer hour = null;
 
-	/* keeps track if the user left the make order scene */
+	/** keeps track if the user left the make order scene */
 	private boolean switchedScene = false;
 
-	/* keeps track if the user made an order through this instance of make order controller */
+	/** keeps track if the user made an order through this instance of make order controller */
 	private boolean orderMade = false;
-	/*
+	/**
 	 * Returns the current subscriber ID from the client controller.
 	 * 
 	 * This method prevents the screen from crashing if the ID is missing or invalid.
@@ -126,7 +155,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			return -1;
 		}
 	}
-	/*
+	/**
 	 * this method triggers when the enter waiting list button is clicked
 	 * @param event the button click event
 	 */
@@ -180,7 +209,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		clientController.requestJoinWaitingList(waitingListMessage);
 	}
 
-	/*
+	/**
 	 * this method triggers when the enter reschedule button is clicked
 	 * it handles enabling relevant fields
 	 * @param event the button click event
@@ -195,7 +224,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		makeOrderButton.setDisable(false);
 	}
 
-	/*
+	/**
 	 * this method triggers when the enter make order button is clicked
 	 * it handles checking the entered values and sending the order to the server
 	 * @param event the button click event
@@ -259,7 +288,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		clientController.sendMessageToServer(new Message(o, Protocol.MAKE_ORDER));
 	}
 
-	/*
+	/**
 	 * this method initializes the make order page
 	 * handles certain components behaviors and the red X button behavior
 	 */
@@ -330,7 +359,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		});
 	}
 
-	/*
+	/**
 	 * this method changes the error label of the form according to the given message
 	 * @param s the given message
 	 */
@@ -338,7 +367,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		errorLabel.setText(s);
 	}
 
-	/* this method disables all of the form's fields */
+	/** this method disables all of the form's fields */
 	private void disableFields() {
 		parkPicker.setDisable(true);
 		datePicker.setDisable(true);
@@ -348,7 +377,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		guideCheckbox.setDisable(true);
 	}
 
-	/* this method enables all of the form's fields */
+	/** this method enables all of the form's fields */
 	private void enableFields() {
 		parkPicker.setDisable(false);
 		datePicker.setDisable(false);
@@ -358,7 +387,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		guideCheckbox.setDisable(false);
 	}
 
-	/*
+	/**
 	 * this method loads the given park names into the relevant controller component
 	 * @param parkNames the list of park Names
 	 */
@@ -369,14 +398,14 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		parkPicker.getItems().addAll(parkNames);
 	}
 
-	/*
+	/**
 	 * this method sends a request to the server to get the list of park names
 	 */
 	public void requestActiveParkList() {
 		clientController.sendMessageToServer(new Message(null, Protocol.GET_PARK_NAMES));
 	}
 
-	/*
+	/**
 	 * this method handles setting a client controller for this UI controller
 	 * it also adds this controller as a make order observer on the client controller
 	 * @param c the client controller
@@ -398,7 +427,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		requestActiveParkList();
 	}
 
-	/*
+	/**
 	 * this method handles keeping track of the previous scene
 	 * @param prevScene the previous scene
 	 */
@@ -410,7 +439,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		switchedScene = false;
 	}
 
-	/*
+	/**
 	 * this method handles keeping track of the previous controller
 	 * @param prevController the previous controller
 	 */
@@ -421,7 +450,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		this.prevController = prevController;
 	}
 
-	/*
+	/**
 	 * this method handles receiving the park names from the server
 	 * @param parkNames the park name list
 	 */
@@ -430,7 +459,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		loadParkNames(parkNames);
 	}
 
-	/*
+	/**
 	 * this method handles the response from the server
 	 * @param m the message from the server
 	 */
@@ -504,7 +533,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		orderMade = false;
 	}
 
-	/* this method handles switching the current scene back the previous one */
+	/** this method handles switching the current scene back the previous one */
 	private void switchScene() {
 		Stage stage = (Stage) makeOrderButton.getScene().getWindow();
 		stage.setScene(prevScene);
@@ -514,7 +543,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		stage.show();
 	}
 
-	/*
+	/**
 	 * This method is called when the server returns a response for joining
 	 * the waiting list.
 	 *
@@ -532,7 +561,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		}
 	}
 
-	/*
+	/**
 	 * Handles the result of rejecting a waiting list offer.
 	 *
 	 * This screen currently does not display waiting list offers, so the method only
@@ -551,7 +580,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		}
 	}
 	
-	/*
+	/**
 	 * Handles the result of loading waiting list offers.
 	 *
 	 * This screen does not display waiting list offers, so no UI action is needed
@@ -565,7 +594,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		// No action is needed here at this stage.
 	}
 	
-	/*
+	/**
 	 * Handles the result of accepting a waiting list offer.
 	 *
 	 * This screen currently does not display waiting list offers, so the method only
@@ -584,7 +613,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		}
 	}
 
-	/*
+	/**
 	 * This method is called when the server disconnects the client.
 	 */
 	@Override
