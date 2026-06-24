@@ -12,62 +12,76 @@
 <AnchorPane xmlns="http://javafx.com/javafx/21.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.OrderTableDisplayController"
-            stylesheets="@gonature-theme.css">
+            stylesheets="@gonature-theme.css"
+            styleClass="root-pane">
 
     <children>
-        <BorderPane AnchorPane.topAnchor="0.0"
+        <BorderPane prefWidth="1000.0"
+                    prefHeight="700.0"
+                    minWidth="650.0"
+                    minHeight="500.0"
+                    AnchorPane.topAnchor="0.0"
                     AnchorPane.bottomAnchor="0.0"
                     AnchorPane.leftAnchor="0.0"
-                    AnchorPane.rightAnchor="0.0"
-                    styleClass="page-background">
-
-            <top>
-                <VBox alignment="CENTER" spacing="8.0" styleClass="page-header">
-                    <children>
-                        <Label text="My Orders" styleClass="page-title"/>
-                        <Label text="View your existing orders and choose an action"
-                               styleClass="page-subtitle"/>
-                    </children>
-                </VBox>
-            </top>
+                    AnchorPane.rightAnchor="0.0">
 
             <center>
-                <VBox alignment="CENTER" spacing="18.0" styleClass="card-container">
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      styleClass="page-container"
+                      maxWidth="1.7976931348623157E308"
+                      maxHeight="1.7976931348623157E308">
+
                     <children>
 
-                        <VBox alignment="CENTER" spacing="16.0" styleClass="content-card">
+                        <VBox alignment="CENTER" spacing="10.0">
                             <children>
+                                <Label text="My Orders" styleClass="page-title"/>
+                                <Label text="View your existing orders and choose an action"
+                                       styleClass="page-subtitle"/>
+                            </children>
+                        </VBox>
 
+                        <VBox spacing="16.0"
+                              maxWidth="1.7976931348623157E308"
+                              maxHeight="1.7976931348623157E308"
+                              styleClass="card"
+                              VBox.vgrow="ALWAYS">
+
+                            <children>
                                 <TableView fx:id="orderTable"
                                            prefHeight="430.0"
-                                           prefWidth="850.0">
+                                           maxWidth="1.7976931348623157E308"
+                                           maxHeight="1.7976931348623157E308"
+                                           VBox.vgrow="ALWAYS">
+
                                     <columns>
                                         <TableColumn fx:id="orderNumber"
-                                                     prefWidth="120.0"
+                                                     prefWidth="130.0"
                                                      text="Order Number"/>
 
                                         <TableColumn fx:id="orderId"
-                                                     prefWidth="100.0"
+                                                     prefWidth="110.0"
                                                      text="Order ID"/>
 
                                         <TableColumn fx:id="orderDate"
-                                                     prefWidth="120.0"
+                                                     prefWidth="130.0"
                                                      text="Order Date"/>
 
                                         <TableColumn fx:id="visitorNumber"
-                                                     prefWidth="110.0"
+                                                     prefWidth="120.0"
                                                      text="Visitors"/>
 
                                         <TableColumn fx:id="confCode"
-                                                     prefWidth="150.0"
+                                                     prefWidth="160.0"
                                                      text="Confirmation Code"/>
 
                                         <TableColumn fx:id="userId"
-                                                     prefWidth="120.0"
+                                                     prefWidth="130.0"
                                                      text="User ID"/>
 
                                         <TableColumn fx:id="placementDate"
-                                                     prefWidth="130.0"
+                                                     prefWidth="140.0"
                                                      text="Placement Date"/>
 
                                         <TableColumn fx:id="orderStatus"
@@ -103,13 +117,12 @@
                                                 onAction="#waitingListButtonClick"/>
 
                                         <Button fx:id="backButton"
-                                                text="Logout"
-                                                prefWidth="120.0"
-                                                styleClass="secondary-button"
-                                                onAction="#backButtonClick"/>
+        										text="Logout"
+        										prefWidth="120.0"
+        										styleClass="secondary-button"
+        										onAction="#backButtonClick"/>        
                                     </children>
                                 </HBox>
-
                             </children>
                         </VBox>
 

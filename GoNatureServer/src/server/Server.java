@@ -18,18 +18,11 @@ import serverCommon.User;
  * during runtime.
  */
 public final class Server extends AbstractServer {
-	/**
-	 * the server instance
-	 */
+
 	private static Server instance = null;
-	/**
-	 * the servercontroller instance
-	 */
+
 	private ServerAndControllerConnection serverController;
-	/**
-	 * a map that maps the user's id to the user's connection
-	 */
-    private Map<String, ConnectionToClient> currIdConnection = new HashMap<>();
+	private Map<String, ConnectionToClient> currIdConnection = new HashMap<>();
 
 	/**
 	 * Constructs an instance of the server.
@@ -131,7 +124,7 @@ public final class Server extends AbstractServer {
 		}
 	}
 
-	/** 
+	/*
 	 * Registers the client in the server user table once an identifying value is
 	 * available in the received message.
 	 *
@@ -173,7 +166,7 @@ public final class Server extends AbstractServer {
 		return true;
 	}
 
-	/** 
+	/*
 	 * Extracts a user identifier from a client message.
 	 *
 	 * The server table should show the user once the client enters the system,
@@ -193,7 +186,6 @@ public final class Server extends AbstractServer {
 		switch (m.getType()) {
 		case RETURN_ORDER:
 		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
-            return String.valueOf(m.getData());
 		case GET_WAITING_OFFERS_REQUEST:
 			return String.valueOf(m.getData());
 
@@ -225,20 +217,6 @@ public final class Server extends AbstractServer {
 			}
 			break;
 
-        case EMPLOYEE_LOGIN_REQUEST:
-			if (m.getData() instanceof EmployeeLoginRequest) {
-				EmployeeLoginRequest request = (EmployeeLoginRequest) m.getData();
-				return "employee: " + request.getUsername();
-			}
-			break;
-
-		case EXISTING_CUSTOMER_LOGIN_REQUEST:
-			if (m.getData() instanceof ExistingCustomerLoginRequest) {
-				ExistingCustomerLoginRequest request = (ExistingCustomerLoginRequest) m.getData();
-				return "customer: " + request.getUsername();
-			}
-			break;
-
 		default:
 			break;
 		}
@@ -246,7 +224,7 @@ public final class Server extends AbstractServer {
 		return null;
 	}
 
-	/** 
+	/*
 	 * Binds a user id to the current client connection.
 	 *
 	 * This method is used after successful login responses, so employees and
@@ -290,7 +268,7 @@ public final class Server extends AbstractServer {
 		System.out.println("Bound user ID " + id + " to client connection.");
 	}
 
-	/** 
+	/*
 	 * Binds the client connection after a successful login response.
 	 *
 	 * @param requestMessage the original request message

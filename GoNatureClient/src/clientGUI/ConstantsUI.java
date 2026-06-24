@@ -1,42 +1,29 @@
 package clientGUI;
 
-/**
+/*
  * this class holds constants relevant to the client
  */
 public final class ConstantsUI {
 	/*
 	 * holds the UI pages paths
 	 */
-	/**
-	 * the order table's fxml path
+	protected static final String orderTable = "/clientGUI/OrderTableDisplayPage.fxml",
+			updatePage = "/clientGUI/OrderUpdatePage.fxml",
+			welcomePage = "/clientGUI/WelcomePage.fxml",
+			makeOrderPage = "/clientGUI/MakeOrderPage.fxml",
+			openingPage = "/clientGUI/OpeningScreen.fxml",
+			waitingListPage = "/clientGUI/WaitingListPage.fxml",
+			parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
+
+	/*
+	 * Constants for visitor number and hour pickers.
 	 */
-	protected static final String orderTable = "/clientGUI/OrderTableDisplayPage.fxml";
-	/**
-	 * the update page's fxml path
-	 */
-	protected static final String updatePage = "/clientGUI/OrderUpdatePage.fxml";
-	/**
-	 * the welcome page's fxml path
-	 */
-	protected static final String welcomePage = "/clientGUI/WelcomePage.fxml";
-	/**
-	 * the make order page's fxml path
-	 */
-	protected static final String makeOrderPage = "/clientGUI/MakeOrderPage.fxml";
-	/**
-	 * the waiting list page's fxml path
-	 */
-	protected static final String waitingListPage = "/clientGUI/WaitingListPage.fxml";
-	/**
-	 * the park entrance control page's fxml path
-	 */
-	protected static final String parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
-	/**
-	 * Constants for visitor number picker.
-	 */
-	protected static final int START_VISITORS = 1;
-	/**
-	 * empty private constructor so this class cannot be instantiated
-	 */
+	protected static final int
+			MIN_VISITORS = 1,
+			MAX_VISITORS = 15,
+			START_VISITORS = 1,
+			MIN_HOUR = 0,
+			MAX_HOUR = 23;
+
 	private ConstantsUI() {}
 }

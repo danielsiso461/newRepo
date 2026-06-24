@@ -25,61 +25,21 @@ public final class OrderConnection extends AbstractDBConnection {
 	private static final OrderConnection INSTANCE = new OrderConnection();
 
 	// table columns
-	/**
-	 * the order id column's name
-	 */
 	private final String ORDER_NUMBER = "order_number";
-	/**
-	 * the order date column's name
-	 */
 	private final String ORDER_DATE = "order_date";
-	/**
-	 * the order's visitor number column's name
-	 */
 	private final String VISITOR_NUMBER = "number_of_visitors";
-	/**
-	 * the order's confirmation code column's name
-	 */
 	private final String CONF_CODE = "confirmation_code";
-	/**
-	 * the order's subscriber id column's name
-	 */
 	private final String SUBSCRIBER_ID = "subscriber_id";
-	/**
-	 * the order's placement date column's name
-	 */
 	private final String PLACEMENT_DATE = "date_of_placing_order";
-	/**
-	 * the order's order hour column's name
-	 */
 	private final String ORDER_HOUR = "order_hour";
-	/**
-	 * the order's customer id column's name
-	 */
 	private final String ORDER_CUSTOMER_ID = "customer_id";
-	/**
-	 * the order's email column's name
-	 */
 	private final String EMAIL = "email";
-
-	/**
-	 * The park id column in the order table.
-	 */
 	private final String PARK_ID = "park_id";
-	/**
-	 * the order's guide id  column's name
-	 */
 	private final String GUIDE_ID = "guide_id";
-	/**
-	 * the order's order status column's name
-	 */
 	private final String ORDER_STATUS = "order_status";
-	/**
-	 * the order's order type column's name
-	 */
 	private final String ORDER_TYPE = "order_type";
 
-	/** this is used to generate confirmation codes */
+	/* this is used to generate confirmation codes */
 	private final int CONF_CODE_OFFSET = 100000;
 
 	/**
@@ -120,12 +80,11 @@ public final class OrderConnection extends AbstractDBConnection {
 	 * 
 	 * @throws SQLException if reconnecting to the database fails
 	 */
-	private void ensureConnection() throws SQLException {
+	public void ensureConnection() throws SQLException {
 		if (conn == null || conn.isClosed()) {
 			connect();
 		}
 	}
-
 	/**
 	 * This method converts the current row of a ResultSet into an Order object.
 	 * 
@@ -176,6 +135,10 @@ public final class OrderConnection extends AbstractDBConnection {
 			newValues.add(um.getNumberOfVisitors());
 		}
 
+		if (columnNames.isEmpty()) {
+			throw new SQLException("No order fields were selected for update.");
+		}
+
 		keyColumns.add(ORDER_NUMBER);
 		keyValues.add(um.getOrderId());
 
@@ -206,8 +169,17 @@ public final class OrderConnection extends AbstractDBConnection {
 
 		List<Order> orders = new ArrayList<>();
 
+		Object data = m.getData();
+		int subscriberId;
+
+		if (data instanceof Integer) {
+			subscriberId = (Integer) data;
+		} else {
+			subscriberId = Integer.parseInt(data.toString());
+		}
+
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, Integer.parseInt((String) m.getData()));
+			pstmt.setInt(1, subscriberId);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				int index = 1;
@@ -715,6 +687,38 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	/**
+	 * This method returns all orders in the system.
+	 * 
+	 * This method is used by the service representative order table.
+	 * 
+	 * @return a list of all orders
+	 * @throws SQLException if the select query fails
+	 */
+	public List<Order> getAllOrders() throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT *
+				FROM `order`
+				ORDER BY order_date DESC, order_number;
+				""";
+
+		List<Order> orders = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
+
+			int index = 1;
+
+			while (rs.next()) {
+				orders.add(convertResultSetToOrder(index++, rs));
+			}
+		}
+
+		return orders;
+	}
+
+	/*
 	 * this method returns the next order number for a new order.
 	 * 
 	 * The order_number column is not AUTO_INCREMENT in the database, so the value
@@ -739,7 +743,7 @@ public final class OrderConnection extends AbstractDBConnection {
 		return 1;
 	}
 
-	/**
+	/*
 	 * this method adds an order to the order table
 	 * 
 	 * @param o the order to add
@@ -887,21 +891,10 @@ public final class OrderConnection extends AbstractDBConnection {
 			pstmt.setString(2, customerIdNumber);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
-				while (rs.next()) {
-					Order order = new Order(
-							rs.getInt(ORDER_NUMBER),
-							rs.getDate(ORDER_DATE).toLocalDate(),
-							rs.getInt(VISITOR_NUMBER),
-							rs.getInt(CONF_CODE),
-							rs.getInt(ORDER_CUSTOMER_ID),
-							rs.getDate(PLACEMENT_DATE).toLocalDate(),
-							rs.getInt(PARK_ID),
-							rs.getObject(GUIDE_ID) == null ? null : rs.getInt(GUIDE_ID),
-							rs.getString(ORDER_STATUS),
-							rs.getString(ORDER_TYPE)
-					);
+				int index = 1;
 
-					orders.add(order);
+				while (rs.next()) {
+					orders.add(convertResultSetToOrder(index++, rs));
 				}
 			}
 		}

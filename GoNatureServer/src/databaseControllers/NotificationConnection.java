@@ -31,7 +31,7 @@ public class NotificationConnection extends AbstractDBConnection {
 	private NotificationConnection() throws SQLException {
 		connect();
 	}
-
+ 
 	/**
 	 * Returns the single instance of NotificationConnection.
 	 * 
@@ -54,7 +54,8 @@ public class NotificationConnection extends AbstractDBConnection {
 	 * @return the notification table name
 	 */
 	@Override
-	protected String getTableName() {
+	public String getTableName()
+	{
 		return ConstantsDBTableNames.NOTIFICATION;
 	}
 
