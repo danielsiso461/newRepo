@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 
 import common.*;
-
 import databaseControllers.BillConnection;
 import databaseControllers.DBConnectionPool;
 import databaseControllers.EmployeeConnection;
@@ -20,6 +19,7 @@ import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
 import databaseControllers.ReportConnection;
 import databaseControllers.SubscriberConnection;
+import databaseControllers.VisitConnection;
 import databaseControllers.WaitingListConnection;
 import server.Server;
 import serverCommon.ServerAndControllerConnection;
@@ -63,6 +63,7 @@ public class ServerController implements ServerAndControllerConnection {
 	private OrderConnection oc;
 	private ParkConnection pc;
 	private SubscriberConnection sc;
+	private VisitConnection vc;
 	private GuideConnection gc;
 	private EmployeeConnection ec;
 	private ParkParameterChangeRequestConnection pcrc;
@@ -99,6 +100,7 @@ public class ServerController implements ServerAndControllerConnection {
 			gc = GuideConnection.getInstance();
 			ec = EmployeeConnection.getInstance();
 			wlc = WaitingListConnection.getInstance();
+			vc = VisitConnection.getInstance();
 			rc = ReportConnection.getInstance();
 			bc = BillConnection.getInstance();
 
@@ -111,6 +113,7 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("Guide database connection object created.");
 			addLog("Employee database connection object created.");
 			addLog("Waiting list database connection object created.");
+			addLog("Visit database connection object created.");
 			addLog("Report database connection object created.");
 			addLog("Bill database connection object created.");
 			addLog("Order checker object created.");
@@ -317,31 +320,57 @@ public class ServerController implements ServerAndControllerConnection {
 			return handleRejectParkParameterChangeRequest(m);
 
 		case SEARCH_SUBSCRIBER_REQUEST:
+			addLog("Client requested subscriber search.");
 			return handleSearchSubscriber(m);
 
 		case REGISTER_GUIDE_REQUEST:
+			addLog("Client requested guide registration.");
 			return handleRegisterGuide(m);
 
 		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
+			addLog("Client requested occasional customer access.");
 			return handleOccasionalCustomerAccess(m);
 
 		case EMPLOYEE_LOGIN_REQUEST:
+			addLog("Client requested employee login.");
 			return handleEmployeeLogin(m);
 
 		case EXISTING_CUSTOMER_LOGIN_REQUEST:
+			addLog("Client requested existing customer login.");
 			return handleExistingCustomerLogin(m);
 
 		case REGISTER_SUBSCRIBER_REQUEST:
+			addLog("Client requested subscriber registration.");
 			return handleRegisterSubscriber(m);
 
 		case JOIN_WAITING_LIST_REQUEST:
 			return handleJoinWaitingList(m);
+
+		case GET_WAITING_OFFERS_REQUEST:
+			addLog("Client requested waiting list offers.");
+			return handleGetWaitingOffers(m);
 
 		case REJECT_WAITING_OFFER_REQUEST:
 			return handleRejectWaitingOffer(m);
 
 		case ACCEPT_WAITING_OFFER_REQUEST:
 			return handleAcceptWaitingOffer(m);
+
+		case CHECK_IN_ORDER_REQUEST:
+			addLog("Client requested park check-in by confirmation code.");
+			return handleCheckInOrder(m);
+
+		case CHECK_OUT_VISIT_REQUEST:
+			addLog("Client requested park check-out by confirmation code.");
+			return handleCheckOutVisit(m);
+
+		case OCCASIONAL_VISIT_REQUEST:
+			addLog("Client requested occasional visit entrance.");
+			return handleOccasionalVisit(m);
+
+		case GET_CURRENT_VISITORS_REQUEST:
+			addLog("Client requested current visitors count.");
+			return handleGetCurrentVisitors(m);
 
 		case GET_REPORT_REQUEST:
 			return handleGetReport(m);
@@ -360,10 +389,10 @@ public class ServerController implements ServerAndControllerConnection {
 
 		case UPDATE_PARK_VISITOR_COUNTER_REQUEST:
 			return handleUpdateParkVisitorCounter(m);
-			
+
 		case GET_PARK_ORDERS_REQUEST:
 			return handleGetParkOrders(m);	
-			
+
 		case GET_ALL_ORDERS_REQUEST:
 			return handleGetAllOrdersForServiceRepresentative();	
 
@@ -456,7 +485,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(null, Protocol.RETURN_PARK_NAMES_FAILURE);
 		}
 	}
-	
+
 	/**
 	 * Handles a park manager request for viewing orders of a specific park.
 	 *
@@ -854,6 +883,14 @@ public class ServerController implements ServerAndControllerConnection {
 					waitingListMessage.getNumberOfVisitors()
 			);
 
+			if (queuePosition == -1) {
+				waitingListMessage.setWaitingStatus("duplicate");
+
+				addLog("ERROR - Duplicate active waiting list request was not added.");
+
+				return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
+			}
+
 			waitingListMessage.setQueuePosition(queuePosition);
 			waitingListMessage.setWaitingStatus("waiting");
 
@@ -869,6 +906,43 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("ERROR - Failed to add visitor to waiting list: " + e.getMessage());
 
 			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles a client request to get all offered waiting list requests for a
+	 * specific subscriber.
+	 *
+	 * The request data is the subscriber ID. The server returns all waiting list
+	 * requests that are currently in "offered" status and can still be accepted or
+	 * rejected by the visitor.
+	 *
+	 * @param m the message received from the client, containing the subscriber ID
+	 * @return a message with GET_WAITING_OFFERS_SUCCESS or GET_WAITING_OFFERS_FAILURE
+	 */
+	private Message handleGetWaitingOffers(Message m) {
+		if (!(m.getData() instanceof Integer)) {
+			addLog("ERROR - Invalid get waiting offers request data.");
+			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
+		}
+
+		int subscriberId = (int) m.getData();
+
+		try {
+			expireOldWaitingOffers();
+
+			List<WaitingListMessage> offers = wlc.getOfferedRequestsForSubscriber(subscriberId);
+
+			addLog("Returning waiting list offers for subscriber ID: "
+					+ subscriberId + ". Offers count: " + offers.size());
+
+			return new Message(offers, Protocol.GET_WAITING_OFFERS_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to get waiting list offers: " + e.getMessage());
+
+			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
 		}
 	}
 
@@ -892,7 +966,7 @@ public class ServerController implements ServerAndControllerConnection {
 			boolean rejected = wlc.rejectWaitingOfferAndOfferNext(waitingListMessage.getWaitingId());
 
 			if (rejected) {
-				waitingListMessage.setWaitingStatus("rejected");
+				waitingListMessage.setWaitingStatus("cancelled");
 
 				addLog("Waiting list offer rejected successfully. Waiting ID: "
 						+ waitingListMessage.getWaitingId());
@@ -933,7 +1007,7 @@ public class ServerController implements ServerAndControllerConnection {
 			boolean accepted = wlc.acceptWaitingOffer(waitingListMessage.getWaitingId());
 
 			if (accepted) {
-				waitingListMessage.setWaitingStatus("accepted");
+				waitingListMessage.setWaitingStatus("confirmed");
 
 				addLog("Waiting list offer accepted successfully. Waiting ID: "
 						+ waitingListMessage.getWaitingId());
@@ -2013,7 +2087,7 @@ public class ServerController implements ServerAndControllerConnection {
 
 		return true;
 	}
-	
+
 	private Message handleGetAllOrdersForServiceRepresentative() {
 		addLog("Service representative requested all customer orders.");
 
@@ -2074,6 +2148,11 @@ public class ServerController implements ServerAndControllerConnection {
 				addLog("Waiting list database connection returned to pool.");
 			}
 
+			if (vc != null) {
+				vc.close();
+				addLog("Visit database connection returned to pool.");
+			}
+
 			if (rc != null) {
 				rc.close();
 				addLog("Report database connection returned to pool.");
@@ -2116,6 +2195,244 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("ERROR - Failed to close server: " + e.getMessage());
 		} finally {
 			closeDBConnection();
+		}
+	}
+
+	/*
+	 * Handles a park check-in request using a confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. If the order is valid,
+	 * the server creates a new visit record.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the check-in action
+	 */
+	private Message handleCheckInOrder(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid check-in request data.");
+			return new Message(null, Protocol.CHECK_IN_ORDER_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			int visitId = vc.createVisitFromConfirmationCode(
+					entranceMessage.getConfirmationCode(),
+					entranceMessage.getParkId(),
+					entranceMessage.getActualNumberOfVisitors(),
+					entranceMessage.getEmployeeId(),
+					"confirmation_code"
+			);
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("No order was found for this confirmation code.");
+				addLog("Check-in failed. No order was found for this confirmation code.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -4) {
+				entranceMessage.setResponseMessage("This order does not belong to the park assigned to the logged-in employee.");
+				addLog("Check-in failed. Order belongs to another park.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -5) {
+				entranceMessage.setResponseMessage("This order is not approved and cannot be used for park entrance.");
+				addLog("Check-in failed. Order is not approved.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -6) {
+				entranceMessage.setResponseMessage("This order has already been completed.");
+				addLog("Check-in failed. Order has already been completed.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -7) {
+				entranceMessage.setResponseMessage("This order is not valid for the current date and time.");
+				addLog("Check-in failed. Order is not valid for the current date and time.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -3) {
+				entranceMessage.setResponseMessage("The entered number of visitors is greater than the number in the order.");
+				addLog("Check-in failed. Invalid number of visitors.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			if (visitId == -2) {
+				entranceMessage.setResponseMessage("This order already has an open visit.");
+				addLog("Check-in failed. The order already has an open visit.");
+				return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+			}
+
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setVisitId(visitId);
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Check-in completed successfully. Visit ID: " + visitId);
+
+			addLog("Check-in completed successfully. Visit ID: " + visitId);
+
+			return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to check in order: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while checking in order.");
+			return new Message(entranceMessage, Protocol.CHECK_IN_ORDER_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles a park check-out request using a confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. If an open visit exists,
+	 * the server closes it by setting exit_time.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the check-out action
+	 */
+	private Message handleCheckOutVisit(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid check-out request data.");
+			return new Message(null, Protocol.CHECK_OUT_VISIT_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			int visitId = vc.closeVisitByConfirmationCode(
+					entranceMessage.getConfirmationCode(),
+					entranceMessage.getParkId(),
+					entranceMessage.getEmployeeId()
+			);
+
+			if (visitId == -1) {
+				visitId = vc.closeVisitByVisitId(
+						entranceMessage.getVisitId(),
+						entranceMessage.getParkId(),
+						entranceMessage.getEmployeeId()
+				);
+			}
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("No open visit was found for this confirmation code or visit ID.");
+				addLog("Check-out failed. No open visit was found.");
+				return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_FAILURE);
+			}
+
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setVisitId(visitId);
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Check-out completed successfully. Visit ID: " + visitId);
+
+			addLog("Check-out completed successfully. Visit ID: " + visitId);
+
+			return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to check out visit: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while checking out visit.");
+			return new Message(entranceMessage, Protocol.CHECK_OUT_VISIT_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles an occasional visit request.
+	 *
+	 * Occasional visitors do not have an order. The server checks whether the park has
+	 * available capacity before creating the visit.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the occasional visit action
+	 */
+	private Message handleOccasionalVisit(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid occasional visit request data.");
+			return new Message(null, Protocol.OCCASIONAL_VISIT_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			boolean hasCapacity = pc.hasAvailableCapacity(
+					entranceMessage.getParkId(),
+					entranceMessage.getActualNumberOfVisitors()
+			);
+
+			if (!hasCapacity) {
+				entranceMessage.setResponseMessage("The park does not have enough available capacity.");
+				addLog("Occasional visit failed. Not enough capacity.");
+				return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_FAILURE);
+			}
+
+			int visitId = vc.createOccasionalVisit(
+					entranceMessage.getParkId(),
+					entranceMessage.getActualNumberOfVisitors(),
+					entranceMessage.getEmployeeId(),
+					"id_number"
+			);
+
+			if (visitId == -1) {
+				entranceMessage.setResponseMessage("Failed to create occasional visit.");
+				addLog("Occasional visit failed. Visit was not created.");
+				return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_FAILURE);
+			}
+
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setVisitId(visitId);
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Occasional visit created successfully. Visit ID: " + visitId);
+
+			addLog("Occasional visit created successfully. Visit ID: " + visitId);
+
+			return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to create occasional visit: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while creating occasional visit.");
+			return new Message(entranceMessage, Protocol.OCCASIONAL_VISIT_FAILURE);
+		}
+	}
+
+	/*
+	 * Handles a request for the current number of visitors inside a park.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message with the current visitors count
+	 */
+	private Message handleGetCurrentVisitors(Message m) {
+		if (!(m.getData() instanceof ParkEntranceMessage)) {
+			addLog("ERROR - Invalid current visitors request data.");
+			return new Message(null, Protocol.GET_CURRENT_VISITORS_FAILURE);
+		}
+
+		ParkEntranceMessage entranceMessage = (ParkEntranceMessage) m.getData();
+
+		try {
+			int currentVisitors = vc.getCurrentVisitorsInPark(entranceMessage.getParkId());
+
+			entranceMessage.setCurrentVisitors(currentVisitors);
+			entranceMessage.setResponseMessage("Current visitors in park: " + currentVisitors);
+
+			addLog("Current visitors in park " + entranceMessage.getParkId() + ": " + currentVisitors);
+
+			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_SUCCESS);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to get current visitors: " + e.getMessage());
+
+			entranceMessage.setResponseMessage("Server error while loading current visitors.");
+			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_FAILURE);
 		}
 	}
 }

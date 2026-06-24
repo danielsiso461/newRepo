@@ -46,7 +46,7 @@ public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
     }
 
     @Override
-    protected String getTableName() {
+    public String getTableName(){
         return ConstantsDBTableNames.PARK_PARAMETER_CHANGE_REQUEST;
     }
 

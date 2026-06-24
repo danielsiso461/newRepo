@@ -2,7 +2,6 @@ package clientGUI;
 
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
-import javafx.stage.Stage;
 /*
  * this class allows us to make messages to the user burst to the screen
  */

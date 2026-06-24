@@ -544,7 +544,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			}
 		} else {
 			notifLabel.setTextFill(Color.RED);
-			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " succeeded. The order was removed from your list.");
+			notifLabel.setText("Order cancellation for order ID: " + cancelledOrderId + " failed.");
 		}
 
 		// Remove the order from the local waiting list so the UI can be used again.

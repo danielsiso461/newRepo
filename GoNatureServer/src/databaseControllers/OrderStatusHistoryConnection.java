@@ -32,8 +32,9 @@ public class OrderStatusHistoryConnection extends AbstractDBConnection {
         return instance;
     }
 
+   
     @Override
-    protected String getTableName() {
+    public String getTableName() {
         return ConstantsDBTableNames.ORDER_STATUS_HISTORY;
     }
 

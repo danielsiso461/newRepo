@@ -64,7 +64,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * @return the subscriber table name
 	 */
 	@Override
-	protected String getTableName() {
+	public String getTableName() {
 		return ConstantsDBTableNames.SUBSCRIBER;
 	}
 

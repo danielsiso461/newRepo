@@ -34,7 +34,7 @@ public class ReportConnection extends AbstractDBConnection {
      * ReportConnection does not represent one specific table.
      */
     @Override
-    protected String getTableName() {
+    public String getTableName() {
         return "";
     }
 

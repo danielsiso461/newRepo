@@ -61,7 +61,7 @@ public class EmployeeConnection extends AbstractDBConnection {
 	 * @return the employee table name
 	 */
 	@Override
-	protected String getTableName() {
+	public String getTableName() {
 		return ConstantsDBTableNames.EMPLOYEE;
 	}
 

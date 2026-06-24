@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="14.0"
+      xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="clientGUI.ParkEntranceControlController">
+
+   <padding>
+      <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+   </padding>
+
+   <children>
+
+      <!-- Page title. -->
+      <Label text="Park Entrance Control">
+         <font>
+            <Font size="30.0" />
+         </font>
+      </Label>
+
+      <!-- Explanation for the employee. -->
+      <Label text="Use the confirmation code as QR code simulation." wrapText="true">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Label>
+
+      <!-- Input fields. -->
+      <VBox alignment="CENTER" spacing="10.0">
+         <children>
+
+            <!-- Confirmation code used as QR simulation. -->
+            <TextField fx:id="confirmationCodeField"
+                       maxWidth="350.0"
+                       promptText="Confirmation Code / Visit ID" />
+
+            <!-- Park ID where the action is performed. -->
+            <TextField fx:id="parkIdField"
+                       maxWidth="350.0"
+                       promptText="Park ID" />
+
+            <!-- Employee ID of the worker at the entrance. -->
+            <TextField fx:id="employeeIdField"
+                       maxWidth="350.0"
+                       promptText="Employee ID" />
+
+            <!-- Actual number of visitors entering the park. -->
+            <TextField fx:id="visitorsField"
+                       maxWidth="350.0"
+                       promptText="Number of Visitors" />
+
+         </children>
+      </VBox>
+
+      <!-- Action buttons. -->
+      <HBox alignment="CENTER" spacing="12.0">
+         <children>
+
+            <!-- Creates a visit from an existing order. -->
+            <Button fx:id="checkInButton"
+                    mnemonicParsing="false"
+                    onAction="#checkInButtonClick"
+                    text="Check In">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+
+            <!-- Closes an open visit. -->
+            <Button fx:id="checkOutButton"
+                    mnemonicParsing="false"
+                    onAction="#checkOutButtonClick"
+                    text="Check Out">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+
+            <!-- Creates an occasional visit without an order. -->
+            <Button fx:id="occasionalVisitButton"
+                    mnemonicParsing="false"
+                    onAction="#occasionalVisitButtonClick"
+                    text="Occasional Visit">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+
+            <!-- Loads the current number of visitors in the park. -->
+            <Button fx:id="currentVisitorsButton"
+                    mnemonicParsing="false"
+                    onAction="#currentVisitorsButtonClick"
+                    text="Current Visitors">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+			 
+			  <!-- Returns to the park worker home page. -->
+			<Button mnemonicParsing="false"
+			        onAction="#backButtonClick"
+			        text="Back">
+			   <font>
+			      <Font size="16.0" />
+			   </font>
+			</Button>
+
+         </children>
+      </HBox>
+
+      <!-- Displays the current number of visitors in the selected park. -->
+      <Label fx:id="currentVisitorsLabel" text="Current visitors: -">
+         <font>
+            <Font size="20.0" />
+         </font>
+      </Label>
+
+      <!-- Displays success and failure messages. -->
+      <Label fx:id="messageLabel" wrapText="true" maxWidth="650.0">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Label>
+
+   </children>
+</VBox>

@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/25"
+<AnchorPane xmlns="http://javafx.com/javafx/21.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.OrderTableDisplayController"
             stylesheets="@gonature-theme.css"
@@ -115,7 +115,7 @@
                                                 prefWidth="160.0"
                                                 styleClass="secondary-button"
                                                 onAction="#waitingListButtonClick"/>
-                                                
+
                                         <Button fx:id="backButton"
         										text="Logout"
         										prefWidth="120.0"
@@ -128,8 +128,6 @@
 
                         <Label fx:id="notifLabel"
                                text=""
-                               visible="false"
-                               managed="false"
                                styleClass="status-label"/>
 
                     </children>

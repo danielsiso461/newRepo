@@ -104,7 +104,28 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 
 	/* keeps track if the user made an order through this instance of make order controller */
 	private boolean orderMade = false;
+	/*
+	 * Returns the current subscriber ID from the client controller.
+	 * 
+	 * This method prevents the screen from crashing if the ID is missing or invalid.
+	 * 
+	 * @return the subscriber ID, or -1 if the ID is invalid
+	 */
+	private int getCurrentSubscriberId() {
+		if (clientController == null ||
+				clientController.getId() == null ||
+				clientController.getId().trim().isEmpty()) {
+			warningMessage("Invalid subscriber ID.");
+			return -1;
+		}
 
+		try {
+			return Integer.parseInt(clientController.getId().trim());
+		} catch (NumberFormatException e) {
+			warningMessage("Invalid subscriber ID.");
+			return -1;
+		}
+	}
 	/*
 	 * this method triggers when the enter waiting list button is clicked
 	 * @param event the button click event
@@ -134,13 +155,18 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			warningMessage("No Hour Was Picked");
 			return;
 		}
+		int subscriberId = getCurrentSubscriberId();
+
+		if (subscriberId == -1) {
+			return;
+		}
 
 		// create the requested visit date and time from the selected date and hour
 		LocalDateTime requestedOrderDate = datePicker.getValue().atTime(hourPicker.getValue(), 0);
 
 		// create a waiting list request using the park name from the ComboBox
 		WaitingListMessage waitingListMessage = new WaitingListMessage(
-				clientController.getLoggedInSubscriberId(),
+				subscriberId,
 				parkPicker.getValue(),
 				requestedOrderDate,
 				visitorNumberPicker.getValue()
@@ -202,6 +228,11 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			warningMessage("Bad Email");
 			return;
 		}
+		int subscriberId = getCurrentSubscriberId();
+
+		if (subscriberId == -1) {
+			return;
+		}
 
 		if (clientController.getLoggedInSubscriberId() == null) {
 			warningMessage("No logged-in customer was found.");
@@ -217,7 +248,7 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		Order o = new Order(
 				datePicker.getValue(),
 				visitorNumberPicker.getValue(),
-				clientController.getLoggedInSubscriberId(),
+				subscriberId,
 				parkPicker.getValue(),
 				hourPicker.getValue(),
 				email.getText()
@@ -525,7 +556,21 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 			warningMessage("Failed to reject waiting list offer.");
 		}
 	}
-
+	
+	/*
+	 * Handles the result of loading waiting list offers.
+	 *
+	 * This screen does not display waiting list offers, so no UI action is needed
+	 * here at this stage.
+	 *
+	 * @param success true if the offers were loaded successfully
+	 * @param offers  the offered waiting list requests returned from the server
+	 */
+	@Override
+	public void onWaitingOffersReceived(boolean success, List<WaitingListMessage> offers) {
+		// No action is needed here at this stage.
+	}
+	
 	/*
 	 * Handles the result of accepting a waiting list offer.
 	 *
@@ -554,12 +599,6 @@ public class MakeOrderPageController implements MakeOrderObserver, WaitingListOb
 		System.exit(0);
 	}
 
-	@Override
-	public void onWaitingOffersReceived(boolean success, List<WaitingListMessage> offers) {
-		// TODO Auto-generated method stub
-		
-	}
-	
 	@FXML
 	private void handleBack(ActionEvent event) {
 		if (prevScene == null) {

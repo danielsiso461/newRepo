@@ -1,10 +1,12 @@
 package clientGUI;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import clientCommon.OccasionalCustomerAccessObserver;
 import clientController.ClientController;
 import common.OperationResponse;
+import common.Order;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -16,10 +18,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import common.Order;
 
 /*
  * This class is the controller for the occasional customer access screen.
@@ -106,7 +104,13 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		clientController.setLoggedInSubscriberId(Integer.parseInt(customerIdNumber));
 		
 		messageLabel.setText("Checking orders...");
-		
+
+		// Save the current customer ID in the shared ClientController.
+		// This ID is later used by Make Order and Waiting List screens.
+		clientController.setId(customerIdNumber);
+
+		System.out.println("Saved customer ID in ClientController: " + clientController.getId());
+
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);
 	}
 

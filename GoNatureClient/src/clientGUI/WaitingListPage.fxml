@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
@@ -11,36 +14,70 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="clientGUI.WaitingListController">
 
+   <padding>
+      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+   </padding>
+
    <children>
 
       <!-- Page title. -->
-      <Label text="Join Waiting List">
+      <Label text="My Waiting List">
          <font>
             <Font size="28.0" />
          </font>
       </Label>
 
-      <!-- Subscriber ID of the visitor who wants to join the waiting list. -->
-      <TextField fx:id="subscriberIdField" maxWidth="300.0" promptText="Subscriber ID" />
+      <!-- Table that displays active waiting list requests. -->
+      <TableView fx:id="offersTable" prefHeight="330.0" prefWidth="850.0">
+         <columns>
+            <TableColumn fx:id="waitingIdColumn" prefWidth="100.0" text="Waiting ID" />
+            <TableColumn fx:id="parkIdColumn" prefWidth="100.0" text="Park ID" />
+            <TableColumn fx:id="requestedDateColumn" prefWidth="220.0" text="Requested Date" />
+            <TableColumn fx:id="visitorsColumn" prefWidth="120.0" text="Visitors" />
+            <TableColumn fx:id="queuePositionColumn" prefWidth="150.0" text="Queue Position" />
+            <TableColumn fx:id="statusColumn" prefWidth="150.0" text="Status" />
+         </columns>
+      </TableView>
 
-      <!-- Park ID requested by the visitor. -->
-      <TextField fx:id="parkIdField" maxWidth="300.0" promptText="Park ID" />
+      <!-- Buttons for handling the selected offered request. -->
+      <HBox alignment="CENTER" spacing="15.0">
+         <children>
 
-      <!-- Requested visit date and time. Format: yyyy-MM-ddTHH:mm -->
-      <TextField fx:id="requestedDateField" maxWidth="300.0" promptText="Requested Date: 2026-06-15T10:00" />
+            <!-- Accepts the selected offered waiting list request. -->
+            <Button fx:id="acceptButton"
+                    mnemonicParsing="false"
+                    onAction="#acceptSelectedOfferClick"
+                    text="Accept Offer">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
 
-      <!-- Number of visitors requested. -->
-      <TextField fx:id="visitorsField" maxWidth="300.0" promptText="Number of Visitors" />
+            <!-- Rejects the selected offered waiting list request. -->
+            <Button fx:id="rejectButton"
+                    mnemonicParsing="false"
+                    onAction="#rejectSelectedOfferClick"
+                    text="Reject Offer">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
 
-      <!-- Sends the waiting list request to the server. -->
-      <Button fx:id="joinButton" mnemonicParsing="false" onAction="#joinWaitingListClick" text="Join Waiting List">
-         <font>
-            <Font size="20.0" />
-         </font>
-      </Button>
+            <!-- Returns to the order table page. -->
+            <Button fx:id="backButton"
+                    mnemonicParsing="false"
+                    onAction="#backButtonClick"
+                    text="Back">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+
+         </children>
+      </HBox>
 
       <!-- Displays success, failure and validation messages. -->
-      <Label fx:id="messageLabel" wrapText="true" maxWidth="500.0">
+      <Label fx:id="messageLabel" wrapText="true" maxWidth="850.0">
          <font>
             <Font size="16.0" />
          </font>

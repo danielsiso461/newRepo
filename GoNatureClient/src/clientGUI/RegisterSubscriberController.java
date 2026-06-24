@@ -2,8 +2,12 @@ package clientGUI;
 
 import java.io.IOException;
 
+import clientCommon.RegisterSubscriberObserver;
 import clientController.ClientController;
 import common.Employee;
+import common.OperationResponse;
+import common.RegisterSubscriberRequest;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,13 +16,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-import javafx.scene.control.PasswordField;
-import clientCommon.RegisterSubscriberObserver;
-import common.OperationResponse;
-import common.RegisterSubscriberRequest;
-import javafx.application.Platform;
 
 /*
  * This class is the controller for the register subscriber screen.
