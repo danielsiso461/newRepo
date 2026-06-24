@@ -3,146 +3,255 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import common.CancellationReportRow;
+import common.ParkUsageReportRow;
+import common.VisitDurationReportRow;
+import common.VisitorReportRow;
 
 /**
- * This class is the DB connector used when working with report views.
- * 
- * The class is implemented as a Singleton, so the server will use only one
- * database connection object for reports during runtime.
- * 
- * This class does not represent one physical table. Instead, it reads data from
- * different database views that were created for reports, such as visitor
- * reports, visit duration reports, cancellation reports, price calculation
- * reports, and notification reports.
+ * DB connector for report data.
  */
 public class ReportConnection extends AbstractDBConnection {
 
-	/**
-	 * The single instance of ReportConnection.
-	 */
-	private static ReportConnection instance;
+    private static ReportConnection instance;
 
-	/**
-	 * Private constructor for Singleton.
-	 * 
-	 * It creates the database connection once.
-	 * 
-	 * @throws SQLException if the connection to the database fails
-	 */
-	private ReportConnection() throws SQLException {
-		connect();
-	}
+    private ReportConnection() throws SQLException {
+        connect();
+    }
 
-	/**
-	 * Returns the single instance of ReportConnection.
-	 * 
-	 * If no instance exists, or if the existing database connection is closed, a new
-	 * instance is created.
-	 * 
-	 * @return the only ReportConnection instance
-	 * @throws SQLException if creating the database connection fails
-	 */
-	public static ReportConnection getInstance() throws SQLException {
-		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
-			instance = new ReportConnection();
-		}
-		return instance;
-	}
+    public static ReportConnection getInstance() throws SQLException {
+        if (instance == null || instance.conn == null || instance.conn.isClosed()) {
+            instance = new ReportConnection();
+        }
 
-	/**
-	 * Returns the table name used by this DB connector.
-	 * 
-	 * This class works with several report views and not with one specific table,
-	 * so an empty string is returned.
-	 * 
-	 * @return an empty string because this connector does not represent one table
-	 */
-	@Override
-	protected String getTableName() {
-		return "";
-	}
+        return instance;
+    }
 
-	/**
-	 * This method returns the visitor report by visitor/order type.
-	 * 
-	 * The report is based on the visitor_report_by_type view and includes summary
-	 * information such as park ID, park name, order type, number of visits, and total
-	 * number of visitors.
-	 * 
-	 * @return a ResultSet containing the visitor report by type
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getVisitorReportByType() throws SQLException {
-		String sql = "SELECT * FROM visitor_report_by_type;";
+    /**
+     * ReportConnection does not represent one specific table.
+     */
+    @Override
+    public String getTableName() {
+        return "";
+    }
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
-	}
+    /**
+     * Returns visitor report data by visitor type.
+     */
+    public List<VisitorReportRow> getVisitorReport(int parkId, int month, int year)
+            throws SQLException {
 
-	/**
-	 * This method returns the visit duration report.
-	 * 
-	 * The report is based on the visit_duration_report view and includes visit
-	 * information such as order number, park name, subscriber name, entry time, exit
-	 * time, and duration in minutes.
-	 * 
-	 * @return a ResultSet containing the visit duration report
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getVisitDurationReport() throws SQLException {
-		String sql = "SELECT * FROM visit_duration_report;";
+        ensureConnection();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
-	}
+        String sql = """
+                SELECT
+                    p.park_id,
+                    p.park_name,
+                    CASE
+                        WHEN v.visit_type = 'unplanned' THEN 'Unplanned'
+                        WHEN o.order_type = 'organized_group' THEN 'Organized Group'
+                        ELSE 'Private'
+                    END AS visitor_type,
+                    COUNT(v.visit_id) AS number_of_visits,
+                    COALESCE(SUM(v.actual_number_of_visitors), 0) AS total_visitors
+                FROM visit v
+                JOIN park p
+                    ON p.park_id = v.park_id
+                LEFT JOIN `order` o
+                    ON o.order_number = v.order_number
+                WHERE v.park_id = ?
+                  AND MONTH(v.entry_time) = ?
+                  AND YEAR(v.entry_time) = ?
+                GROUP BY
+                    p.park_id,
+                    p.park_name,
+                    CASE
+                        WHEN v.visit_type = 'unplanned' THEN 'Unplanned'
+                        WHEN o.order_type = 'organized_group' THEN 'Organized Group'
+                        ELSE 'Private'
+                    END
+                ORDER BY visitor_type;
+                """;
 
-	/**
-	 * This method returns the cancellation report.
-	 * 
-	 * The report is based on the cancellation_report view and includes orders whose
-	 * status changed to cancelled, expired, or no_show.
-	 * 
-	 * @return a ResultSet containing the cancellation report
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getCancellationReport() throws SQLException {
-		String sql = "SELECT * FROM cancellation_report;";
+        List<VisitorReportRow> rows = new ArrayList<>();
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
-	}
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, month);
+            pstmt.setInt(3, year);
 
-	/**
-	 * This method returns the visit price calculation report.
-	 * 
-	 * The report is based on the visit_price_calculation view and shows how the
-	 * final price of each visit is calculated according to the pricing model,
-	 * including full price, number of paid visitors, discounts, and final price.
-	 * 
-	 * @return a ResultSet containing the visit price calculation report
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getVisitPriceCalculation() throws SQLException {
-		String sql = "SELECT * FROM visit_price_calculation;";
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new VisitorReportRow(
+                            rs.getInt("park_id"),
+                            rs.getString("park_name"),
+                            rs.getString("visitor_type"),
+                            rs.getInt("number_of_visits"),
+                            rs.getInt("total_visitors")
+                    ));
+                }
+            }
+        }
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
-	}
+        return rows;
+    }
 
-	/**
-	 * This method returns the notification report.
-	 * 
-	 * The report is based on the notification_report view and includes simulated
-	 * messages prepared by the system, such as order confirmations, reminders,
-	 * cancellations, and waiting list offers.
-	 * 
-	 * @return a ResultSet containing the notification report
-	 * @throws SQLException if the select query fails
-	 */
-	public ResultSet getNotificationReport() throws SQLException {
-		String sql = "SELECT * FROM notification_report;";
+    /**
+     * Returns cancellation report data by cancellation status.
+     */
+    public List<CancellationReportRow> getCancellationReport(int parkId, int month, int year)
+            throws SQLException {
 
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		return pstmt.executeQuery();
-	}
+        ensureConnection();
+
+        String sql = """
+                SELECT
+                    park_id,
+                    park_name,
+                    new_status,
+                    'All reasons' AS change_reason,
+                    COUNT(*) AS total_cancellations,
+                    ROUND(AVG(DATEDIFF(order_date, DATE(changed_at))), 2)
+                        AS average_days_before_visit
+                FROM cancellation_report
+                WHERE park_id = ?
+                  AND MONTH(changed_at) = ?
+                  AND YEAR(changed_at) = ?
+                  AND new_status IN ('cancelled', 'expired', 'no_show')
+                GROUP BY
+                    park_id,
+                    park_name,
+                    new_status
+                ORDER BY new_status;
+                """;
+
+        List<CancellationReportRow> rows = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, month);
+            pstmt.setInt(3, year);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new CancellationReportRow(
+                            rs.getInt("park_id"),
+                            rs.getString("park_name"),
+                            rs.getString("new_status"),
+                            rs.getString("change_reason"),
+                            rs.getInt("total_cancellations"),
+                            rs.getDouble("average_days_before_visit")
+                    ));
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    /**
+     * Returns average visit duration by visitor type.
+     */
+    public List<VisitDurationReportRow> getVisitDurationReport(int parkId, int month, int year)
+            throws SQLException {
+
+        ensureConnection();
+
+        String sql = """
+                SELECT
+                    p.park_name,
+                    CASE
+                        WHEN v.visit_type = 'unplanned' THEN 'Unplanned'
+                        WHEN o.order_type = 'organized_group' THEN 'Organized Group'
+                        ELSE 'Private'
+                    END AS visitor_type,
+                    COUNT(v.visit_id) AS number_of_visits,
+                    ROUND(AVG(TIMESTAMPDIFF(MINUTE, v.entry_time, v.exit_time)), 2)
+                        AS average_duration_minutes
+                FROM visit v
+                JOIN park p
+                    ON p.park_id = v.park_id
+                LEFT JOIN `order` o
+                    ON o.order_number = v.order_number
+                WHERE v.park_id = ?
+                  AND MONTH(v.entry_time) = ?
+                  AND YEAR(v.entry_time) = ?
+                  AND v.exit_time IS NOT NULL
+                GROUP BY
+                    p.park_name,
+                    CASE
+                        WHEN v.visit_type = 'unplanned' THEN 'Unplanned'
+                        WHEN o.order_type = 'organized_group' THEN 'Organized Group'
+                        ELSE 'Private'
+                    END
+                ORDER BY visitor_type;
+                """;
+
+        List<VisitDurationReportRow> rows = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, month);
+            pstmt.setInt(3, year);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new VisitDurationReportRow(
+                            rs.getString("park_name"),
+                            rs.getString("visitor_type"),
+                            rs.getInt("number_of_visits"),
+                            rs.getDouble("average_duration_minutes")
+                    ));
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    /**
+     * Returns park usage report data.
+     */
+    public List<ParkUsageReportRow> getParkUsageReport(int parkId, int month, int year)
+            throws SQLException {
+
+        ensureConnection();
+
+        String sql = """
+                SELECT
+                    park_name,
+                    COUNT(visit_id) AS number_of_visits,
+                    ROUND(AVG(occupancy_percent), 2) AS average_occupancy_percent,
+                    ROUND(MAX(occupancy_percent), 2) AS max_occupancy_percent
+                FROM park_usage_report
+                WHERE park_id = ?
+                  AND MONTH(entry_time) = ?
+                  AND YEAR(entry_time) = ?
+                GROUP BY park_name;
+                """;
+
+        List<ParkUsageReportRow> rows = new ArrayList<>();
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, parkId);
+            pstmt.setInt(2, month);
+            pstmt.setInt(3, year);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new ParkUsageReportRow(
+                            rs.getString("park_name"),
+                            rs.getInt("number_of_visits"),
+                            rs.getDouble("average_occupancy_percent"),
+                            rs.getDouble("max_occupancy_percent")
+                    ));
+                }
+            }
+        }
+
+        return rows;
+    }
 }

@@ -2,11 +2,11 @@ package clientGUI;
 
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
-/**
+/*
  * this class allows us to make messages to the user burst to the screen
  */
 public class MakePopUp {
-	/**
+	/*
 	 * this method displays a bursting message to the screen, with custom user text
 	 * @param title the title of the window
 	 * @param msg the message to display on the window

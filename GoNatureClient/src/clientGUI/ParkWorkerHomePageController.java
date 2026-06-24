@@ -12,6 +12,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
+import clientCommon.ClientSession;
 import clientGUI.ParkEntranceControlController.EntranceMode;
 
 /*
@@ -29,20 +30,10 @@ public class ParkWorkerHomePageController {
 	@FXML
 	private Label welcomeLabel;
 
-	/*
-	 * Sets the ClientController used by this screen.
-	 * 
-	 * @param clientController the active client controller
-	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
 
-	/*
-	 * Sets the employee that logged in successfully.
-	 * 
-	 * @param employee the logged-in employee
-	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -50,6 +41,7 @@ public class ParkWorkerHomePageController {
 			welcomeLabel.setText("Welcome " + employee.getFirstName() + " " + employee.getLastName());
 		}
 	}
+
 	@FXML
 	private void handleCheckVisitorEntry(ActionEvent event) {
 		openParkEntranceControlPage(event, EntranceMode.CHECK_IN);
@@ -102,21 +94,23 @@ public class ParkWorkerHomePageController {
 		}
 	}
 
-	/*
-	 * Handles logout from the park worker screen.
-	 * 
-	 * For now, this returns the user to the opening screen.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void handleLogout(ActionEvent event) {
 		try {
+			if (clientController != null) {
+				clientController.logoutCurrentUserFromServer();
+			}
+
+			ClientSession.clear();
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/OpeningScreen.fxml")
 			);
 
 			Parent root = loader.load();
+
+			OpeningScreenController controller = loader.getController();
+			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("GoNature");

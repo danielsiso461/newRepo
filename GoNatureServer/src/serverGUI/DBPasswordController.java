@@ -10,7 +10,7 @@ import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
 import serverController.ServerController;
 
-/**
+/*
  * this class is the controller of the DB password screen
  * 
  * the class gets the DB password from the user
@@ -20,19 +20,19 @@ import serverController.ServerController;
  */
 public class DBPasswordController {
 
-	/**
+	/*
 	 * the password field where the user enters the DB password
 	 */
 	@FXML
 	private PasswordField textID;
 
-	/**
+	/*
 	 * the label that shows an error message if the password is wrong
 	 */
 	@FXML
 	private Label errorLabel;
 
-	/**
+	/*
 	 * this function is called when the user clicks the send button
 	 * 
 	 * gets the password from the password field
@@ -70,7 +70,7 @@ public class DBPasswordController {
 		openServerTableScreen();
 	}
 
-	/**
+	/*
 	 * this function opens the main server table screen
 	 * 
 	 * loads the server table FXML file
