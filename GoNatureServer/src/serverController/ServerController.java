@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import common.*;
+import databaseControllers.BillConnection;
 import databaseControllers.DBConnectionPool;
 import databaseControllers.EmployeeConnection;
 import databaseControllers.GuideConnection;
@@ -16,6 +17,7 @@ import databaseControllers.OrderConnection;
 import databaseControllers.OrderExceedsParkCapacityCheck;
 import databaseControllers.ParkConnection;
 import databaseControllers.ParkParameterChangeRequestConnection;
+import databaseControllers.ReportConnection;
 import databaseControllers.SubscriberConnection;
 import databaseControllers.VisitConnection;
 import databaseControllers.WaitingListConnection;
@@ -23,13 +25,41 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
-// this class is the controller that connects 
-// the networking part of the server and the UI part of it. 
-// It is also the logic behind it
+
+/**
+ * This class connects the networking part of the server and the server GUI.
+ *
+ * It handles client requests, updates the server GUI, manages connected users,
+ * and communicates with the database connection classes.
+ */
 public class ServerController implements ServerAndControllerConnection {
+
+	/*
+	 * Park parameter names used by park_parameter_change_request.
+	 */
+	private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
+	private static final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
+			"places_for_unplanned_visitors";
+	private static final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
+			"estimated_visit_duration_hours";
+	private static final String PARAMETER_PROMOTIONS = "promotions";
+
+	/*
+	 * Park parameter request statuses.
+	 */
+	private static final String REQUEST_STATUS_PENDING = "pending";
+
+	/*
+	 * Report type names.
+	 */
+	private static final String REPORT_TYPE_VISITOR = "Visitor Report";
+	private static final String REPORT_TYPE_CANCELLATION = "Cancellation Report";
+	private static final String REPORT_TYPE_VISIT_DURATION = "Visit Duration Report";
+	private static final String REPORT_TYPE_PARK_USAGE = "Park Usage Report";
 
 	private Server server;
 	private Set<User> users = new HashSet<>();
+
 	private OrderConnection oc;
 	private ParkConnection pc;
 	private SubscriberConnection sc;
@@ -37,11 +67,23 @@ public class ServerController implements ServerAndControllerConnection {
 	private GuideConnection gc;
 	private EmployeeConnection ec;
 	private ParkParameterChangeRequestConnection pcrc;
-	private OrderExceedsParkCapacityCheck orderChecker;
-	private int allTimeUserCount = 1;
-	private ClientConnectionTableController serverGUIController;
 	private WaitingListConnection wlc;
+	private ReportConnection rc;
+	private BillConnection bc;
+	private OrderExceedsParkCapacityCheck orderChecker;
 
+	private int allTimeUserCount = 1;
+
+	private ClientConnectionTableController serverGUIController;
+
+	/**
+	 * Creates a ServerController object.
+	 *
+	 * The constructor initializes the server, creates the database connection
+	 * objects, and starts listening for clients.
+	 *
+	 * @param serverGUIController the server GUI controller
+	 */
 	public ServerController(ClientConnectionTableController serverGUIController) {
 		this.serverGUIController = serverGUIController;
 
@@ -59,6 +101,9 @@ public class ServerController implements ServerAndControllerConnection {
 			ec = EmployeeConnection.getInstance();
 			wlc = WaitingListConnection.getInstance();
 			vc = VisitConnection.getInstance();
+			rc = ReportConnection.getInstance();
+			bc = BillConnection.getInstance();
+
 			orderChecker = OrderExceedsParkCapacityCheck.getInstance(pc, oc);
 
 			addLog("Order database connection object created.");
@@ -69,10 +114,12 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("Employee database connection object created.");
 			addLog("Waiting list database connection object created.");
 			addLog("Visit database connection object created.");
+			addLog("Report database connection object created.");
+			addLog("Bill database connection object created.");
 			addLog("Order checker object created.");
 			addLog("All database connection objects were created successfully.");
-		
-		}catch (SQLException e) {
+
+		} catch (SQLException e) {
 			e.printStackTrace();
 			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
 		}
@@ -86,9 +133,9 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * this method adds a message to the server log area in the GUI
-	 * 
+	/**
+	 * Adds a message to the server log area in the GUI.
+	 *
 	 * @param message the message to add to the server log
 	 */
 	public void addLog(String message) {
@@ -97,34 +144,45 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * this method presents the connection details of the server
-	 * 
-	 * @param hostName 	the server's hostName
-	 * @param ip		the server's ip
+	/**
+	 * Presents the server connection details in the GUI.
+	 *
+	 * @param hostName the server host name
+	 * @param ip the server IP address
 	 */
 	@Override
 	public void presentServerConnection(String hostName, String ip) {
-		serverGUIController.setLabels(hostName, ip);
+		if (serverGUIController != null) {
+			serverGUIController.setLabels(hostName, ip);
+		}
+
 		addLog("Server connection details updated. Host: " + hostName + ", IP: " + ip);
 	}
 
-	/*
-	 * this method adds a user to the set of users on the server if this user is not
-	 * already in the set, it sets the userNumber then it calls the UI handler for
-	 * new User on the server
-	 * 
-	 * @param u an instance of user to add to the server
+	/**
+	 * Adds a connected user to the server connected users set.
+	 *
+	 * @param u the connected user
+	 * @return true if the user was added successfully, false otherwise
 	 */
 	@Override
 	public boolean addUserOnUserConnected(User u) {
+		if (u == null) {
+			addLog("Tried to connect a null user.");
+			return false;
+		}
+
 		addLog("Trying to connect user: " + u);
 
 		boolean userIdNotConnected = users.add(u);
 
 		if (userIdNotConnected) {
 			u.setUserNumber(allTimeUserCount++);
-			serverGUIController.onUserConnected(u);
+
+			if (serverGUIController != null) {
+				serverGUIController.onUserConnected(u);
+			}
+
 			addLog("User connected successfully: " + u);
 		} else {
 			addLog("User is already connected: " + u);
@@ -133,12 +191,10 @@ public class ServerController implements ServerAndControllerConnection {
 		return userIdNotConnected;
 	}
 
-	/*
-	 * this method removes a user from the set of users on the server if this user
-	 * has a userNumber it sets their status to false = disconnected then it calls
-	 * the UI handler for updating User data
-	 * 
-	 * @param u an instance of user to remove from the server
+	/**
+	 * Removes a disconnected user from the server connected users set.
+	 *
+	 * @param u the disconnected user
 	 */
 	@Override
 	public void removeUserOnUserDisconnected(User u) {
@@ -151,7 +207,11 @@ public class ServerController implements ServerAndControllerConnection {
 
 		if (u.getUserNumber() != null) {
 			u.setStatus(false);
-			serverGUIController.onUserDisconnected(u);
+
+			if (serverGUIController != null) {
+				serverGUIController.onUserDisconnected(u);
+			}
+
 			addLog("User status updated to disconnected: " + u);
 		}
 
@@ -159,30 +219,29 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("User removed from connected users set.");
 	}
 
-	/*
-	 * this method prints all connected users to the console
-	 * 
-	 * @param s the message to print before the users list
+	/**
+	 * Prints all connected users to the console and log.
+	 *
+	 * @param message the message to print before the users list
 	 */
-	private void printUsers(String s) {
-		System.out.println(s);
-		addLog(s);
+	private void printUsers(String message) {
+		System.out.println(message);
+		addLog(message);
 
-		for (User u : users) {
-			System.out.println(u.toString());
-			addLog("Connected user: " + u);
+		for (User user : users) {
+			System.out.println(user.toString());
+			addLog("Connected user: " + user);
 		}
 	}
 
-	/*
-	 * This method notifies all connected clients that the public park data was
-	 * updated.
+	/**
+	 * Notifies all connected clients that public park data was updated.
 	 */
 	public void notifyParksUpdated() {
 		try {
 			addLog("Loading updated active parks before notifying clients.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Loaded " + parks.size() + " active parks for update notification.");
 
@@ -196,10 +255,29 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * this method parses the request received by server and handles it accordingly
-	 * 
-	 * @param m an instance Message from the client
+	/**
+	 * Notifies all connected clients that park visitor counters were updated.
+	 */
+	private void notifyParkVisitorCountersUpdated() {
+		try {
+			server.sendToAllClients(
+					new Message(null, Protocol.PARK_VISITOR_COUNTERS_UPDATED)
+			);
+
+			addLog("PARK_VISITOR_COUNTERS_UPDATED message was sent to all connected clients.");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to notify clients about visitor counter update: "
+					+ e.getMessage());
+		}
+	}
+
+	/**
+	 * Handles a request received from a client.
+	 *
+	 * @param m the message received from the client
+	 * @return a response message to send back to the client
 	 */
 	@Override
 	public Message handleRequest(Message m) {
@@ -218,11 +296,9 @@ public class ServerController implements ServerAndControllerConnection {
 			return m;
 
 		case UPDATE_ORDER:
-			addLog("Client requested order update.");
 			return handleUpdateOrder(m);
 
 		case CANCEL_ORDER:
-			addLog("Client requested order cancellation.");
 			return handleCancelOrder(m);
 
 		case RETURN_ORDER:
@@ -268,7 +344,6 @@ public class ServerController implements ServerAndControllerConnection {
 			return handleRegisterSubscriber(m);
 
 		case JOIN_WAITING_LIST_REQUEST:
-			addLog("Client requested to join the waiting list.");
 			return handleJoinWaitingList(m);
 
 		case GET_WAITING_OFFERS_REQUEST:
@@ -276,11 +351,9 @@ public class ServerController implements ServerAndControllerConnection {
 			return handleGetWaitingOffers(m);
 
 		case REJECT_WAITING_OFFER_REQUEST:
-			addLog("Client requested to reject a waiting list offer.");
 			return handleRejectWaitingOffer(m);
 
 		case ACCEPT_WAITING_OFFER_REQUEST:
-			addLog("Client requested to accept a waiting list offer.");
 			return handleAcceptWaitingOffer(m);
 
 		case CHECK_IN_ORDER_REQUEST:
@@ -299,19 +372,46 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("Client requested current visitors count.");
 			return handleGetCurrentVisitors(m);
 
+		case GET_REPORT_REQUEST:
+			return handleGetReport(m);
+
+		case CREATE_PARK_PARAMETER_CHANGE_REQUEST:
+			return handleCreateParkParameterChangeRequest(m);
+
+		case GET_PENDING_PARK_PARAMETER_CHANGE_REQUESTS:
+			return handleGetPendingParkParameterChangeRequests(m);
+
+		case CALCULATE_ENTRY_PRICE_REQUEST:
+			return handleCalculateEntryPrice(m);
+
+		case GET_PARK_VISITOR_COUNTERS_REQUEST:
+			return handleGetParkVisitorCounters(m);
+
+		case UPDATE_PARK_VISITOR_COUNTER_REQUEST:
+			return handleUpdateParkVisitorCounter(m);
+
+		case GET_PARK_ORDERS_REQUEST:
+			return handleGetParkOrders(m);	
+
+		case GET_ALL_ORDERS_REQUEST:
+			return handleGetAllOrdersForServiceRepresentative();	
+
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
 			return null;
 		}
 	}
-	/*
-	 * Handles a request to update an existing order.
-	 * 
+
+	/**
+	 * Handles an order update request.
+	 *
 	 * @param m the client message
-	 * @return a message with update success or failure
+	 * @return update success or failure message
 	 */
 	private Message handleUpdateOrder(Message m) {
+		addLog("Client requested order update.");
+
 		Protocol typeRet = Protocol.UPDATE_ORDER_SUCCESS;
 		UpdateMessage um = (UpdateMessage) m.getData();
 
@@ -327,9 +427,9 @@ public class ServerController implements ServerAndControllerConnection {
 		return new Message(m.getData(), typeRet);
 	}
 
-	/*
+	/**
 	 * Handles a request for returning user orders.
-	 * 
+	 *
 	 * @param m the client message
 	 * @return a message containing the user's orders, or null if loading failed
 	 */
@@ -355,9 +455,9 @@ public class ServerController implements ServerAndControllerConnection {
 		return null;
 	}
 
-	/*
+	/**
 	 * Handles a request for getting park names.
-	 * 
+	 *
 	 * @param m the client message
 	 * @return a message containing a list of park names
 	 */
@@ -376,6 +476,7 @@ public class ServerController implements ServerAndControllerConnection {
 
 			addLog("Active parks name list loaded from database.");
 			addLog("Returning active parks name list to client.");
+
 			return new Message(parkNames, Protocol.RETURN_PARK_NAMES_SUCCESS);
 
 		} catch (SQLException e) {
@@ -385,9 +486,40 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * Handles a request for making order.
-	 * 
+	/**
+	 * Handles a park manager request for viewing orders of a specific park.
+	 *
+	 * @param m the client message containing park ID
+	 * @return a message containing the park orders
+	 */
+	private Message handleGetParkOrders(Message m) {
+		addLog("Client requested park orders.");
+
+		try {
+			if (!(m.getData() instanceof Integer)) {
+				addLog("ERROR - Invalid park ID for park orders request.");
+				return new Message(null, Protocol.GET_PARK_ORDERS_RESPONSE);
+			}
+
+			int parkId = (Integer) m.getData();
+
+			List<Order> orders = oc.getOrdersByPark(parkId);
+
+			addLog("Returning " + orders.size() + " orders for park ID: " + parkId);
+
+			return new Message(orders, Protocol.GET_PARK_ORDERS_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to load park orders: " + e.getMessage());
+
+			return new Message(null, Protocol.GET_PARK_ORDERS_RESPONSE);
+		}
+	}
+
+	/**
+	 * Handles a request for making an order.
+	 *
 	 * @param m the client message
 	 * @return a message containing the user order on success, or a fail message
 	 */
@@ -437,6 +569,7 @@ public class ServerController implements ServerAndControllerConnection {
 			}
 
 			o.setGuideId(guideId);
+
 		} else if (o.getGuideId() != null) {
 			o.setGuideId(null);
 		}
@@ -494,13 +627,14 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			oc.bookOrder(o);
 		} catch (SQLException e) {
-			o.setOrderStatus("pending");
+			o.setOrderStatus(REQUEST_STATUS_PENDING);
 			addLog("Make Order Request Failed - SQL error.");
 			e.printStackTrace();
 			return new Message(null, Protocol.MAKE_ORDER_FAIL);
 		} catch (Exception e) {
-			o.setOrderStatus("pending");
+			o.setOrderStatus(REQUEST_STATUS_PENDING);
 			addLog("Make Order Request Failed - resource allocation error.");
+			e.printStackTrace();
 			return new Message(null, Protocol.MAKE_ORDER_FAIL);
 		}
 
@@ -527,9 +661,9 @@ public class ServerController implements ServerAndControllerConnection {
 		return new Message(o, Protocol.MAKE_ORDER_SUCCESS);
 	}
 
-	/*
+	/**
 	 * Handles a request for all active parks.
-	 * 
+	 *
 	 * @return a message containing active parks, or a failure message
 	 */
 	private Message handleGetActiveParks() {
@@ -538,7 +672,7 @@ public class ServerController implements ServerAndControllerConnection {
 		try {
 			addLog("Loading active parks from database.");
 
-			List<ParkInfo> parks = pc.getAllActiveParksInfo();
+			List<Park> parks = pc.getAllActiveParksInfo();
 
 			addLog("Active parks list loaded from database. Number of parks: " + parks.size());
 			addLog("Returning active parks list to client.");
@@ -553,98 +687,11 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * Handles approval of a park parameter change request.
-	 * 
-	 * @param m the client message
-	 * @return approval result message
-	 */
-	private Message handleApproveParkParameterChangeRequest(Message m) {
-		addLog("Client requested approval of park parameter change request.");
-
-		try {
-			Object[] data = (Object[]) m.getData();
-
-			int requestId = (int) data[0];
-			int approvedByEmployeeId = (int) data[1];
-			String reviewNote = (String) data[2];
-
-			addLog("Approving park parameter change request. Request ID: " + requestId
-					+ ", approved by employee ID: " + approvedByEmployeeId);
-
-			boolean approved = pcrc.approveRequest(requestId, approvedByEmployeeId, reviewNote);
-
-			if (approved) {
-				addLog("Park parameter change request approved successfully. Request ID: " + requestId);
-				addLog("Park data may have changed. Notifying all clients.");
-
-				notifyParksUpdated();
-
-				return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_APPROVED);
-			}
-
-			addLog("Park parameter change request approval failed. Request ID: " + requestId);
-			return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			addLog("ERROR - Failed to approve park parameter change request: " + e.getMessage());
-			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
-		} catch (Exception e) {
-			e.printStackTrace();
-			addLog("ERROR - Invalid approval request data: " + e.getMessage());
-			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
-		}
-	}
-
-	/*
-	 * Handles rejection of a park parameter change request.
-	 * 
-	 * @param m the client message
-	 * @return rejection result message
-	 */
-	private Message handleRejectParkParameterChangeRequest(Message m) {
-		addLog("Client requested rejection of park parameter change request.");
-
-		try {
-			Object[] data = (Object[]) m.getData();
-
-			int requestId = (int) data[0];
-			int approvedByEmployeeId = (int) data[1];
-			String reviewNote = (String) data[2];
-
-			addLog("Rejecting park parameter change request. Request ID: " + requestId
-					+ ", reviewed by employee ID: " + approvedByEmployeeId);
-
-			boolean rejected = pcrc.rejectRequest(requestId, approvedByEmployeeId, reviewNote);
-
-			if (rejected) {
-				addLog("Park parameter change request rejected successfully. Request ID: " + requestId);
-				return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_REJECTED);
-			}
-
-			addLog("Park parameter change request rejection failed. Request ID: " + requestId);
-			return new Message(requestId, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			addLog("ERROR - Failed to reject park parameter change request: " + e.getMessage());
-			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
-		} catch (Exception e) {
-			e.printStackTrace();
-			addLog("ERROR - Invalid rejection request data: " + e.getMessage());
-			return new Message(e.getMessage(), Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
-		}
-	}
-
 	/**
-	 * Handles a search subscriber request received from the client.
-	 * 
-	 * The method receives subscriber id, searches it in the subscriber table,
-	 * and returns the subscriber details if found.
-	 * 
-	 * @param m the message received from the client, containing subscriber id
-	 * @return a Message with an OperationResponse containing the search result
+	 * Handles a client request to search for a subscriber by subscriber ID.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the search result
 	 */
 	private Message handleSearchSubscriber(Message m) {
 		int subscriberId = (int) m.getData();
@@ -682,10 +729,11 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to register an existing subscriber as a guide.
-	 * 
-	 * @param m the message received from the client, containing a guide registration request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the registration result
 	 */
 	private Message handleRegisterGuide(Message m) {
 		GuideRegistrationRequest request = (GuideRegistrationRequest) m.getData();
@@ -730,15 +778,11 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to cancel an existing order.
 	 *
-	 * The order is not deleted from the database. Instead, its order_status is
-	 * updated to "cancelled" using OrderConnection.cancelOrder(...). This keeps the
-	 * order available for monthly reports and order status history.
-	 *
-	 * @param m the message received from the client, containing CancelOrderMessage
-	 * @return a message with CANCEL_ORDER_SUCCESS or CANCEL_ORDER_FAILURE
+	 * @param m the message received from the client
+	 * @return a message with cancellation success or failure
 	 */
 	private Message handleCancelOrder(Message m) {
 		if (!(m.getData() instanceof CancelOrderMessage)) {
@@ -748,23 +792,11 @@ public class ServerController implements ServerAndControllerConnection {
 
 		CancelOrderMessage cancelOrderMessage = (CancelOrderMessage) m.getData();
 
-		/*
-		 * The current database method requires an employee ID for status history.
-		 * Since this cancellation is requested by the visitor through the client,
-		 * we use employee ID 1 as a system/default updater.
-		 * If the team has a specific system employee in the DB, replace this value.
-		 */
 		int changedByEmployeeId = 1;
 
 		try {
 			expireOldWaitingOffers();
 
-			/*
-			 * Loads the order details before cancelling it.
-			 * 
-			 * These details are needed after the cancellation, so the server can check if
-			 * the cancelled order freed places for a visitor in the waiting list.
-			 */
 			Order cancelledOrder = oc.getOrderByNumber(cancelOrderMessage.getOrderId());
 
 			boolean cancelled = oc.cancelOrder(
@@ -776,10 +808,6 @@ public class ServerController implements ServerAndControllerConnection {
 			if (cancelled) {
 				addLog("Order cancelled successfully. Order ID: " + cancelOrderMessage.getOrderId());
 
-				/*
-				 * After a successful cancellation, the server checks if the cancelled order
-				 * freed enough places for the first matching visitor in the waiting list.
-				 */
 				if (cancelledOrder != null
 						&& cancelledOrder.getParkId() != null
 						&& cancelledOrder.getOrderDate() != null
@@ -805,24 +833,22 @@ public class ServerController implements ServerAndControllerConnection {
 
 			addLog("Order cancellation failed. Order was not found or was not updated. Order ID: "
 					+ cancelOrderMessage.getOrderId());
+
 			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 			addLog("ERROR - Failed to cancel order: " + e.getMessage());
+
 			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to join the waiting list.
 	 *
-	 * The request data is received as a WaitingListMessage.
-	 * The server inserts the request into the waiting_list table, assigns the next
-	 * queue position, and returns success or failure to the client.
-	 *
-	 * @param m the message received from the client, containing WaitingListMessage
-	 * @return a message with JOIN_WAITING_LIST_SUCCESS or JOIN_WAITING_LIST_FAILURE
+	 * @param m the message received from the client
+	 * @return a message with waiting list success or failure
 	 */
 	private Message handleJoinWaitingList(Message m) {
 		if (!(m.getData() instanceof WaitingListMessage)) {
@@ -837,10 +863,6 @@ public class ServerController implements ServerAndControllerConnection {
 
 			int parkId = waitingListMessage.getParkId();
 
-			/*
-			 * If the client sent only the park name, the server resolves the matching
-			 * park ID before inserting the request into the waiting_list table.
-			 */
 			if (parkId <= 0
 					&& waitingListMessage.getParkName() != null
 					&& !waitingListMessage.getParkName().trim().isEmpty()) {
@@ -849,9 +871,6 @@ public class ServerController implements ServerAndControllerConnection {
 				waitingListMessage.setParkId(parkId);
 			}
 
-			/*
-			 * If the park ID is still invalid, the waiting list request cannot be saved.
-			 */
 			if (parkId <= 0) {
 				addLog("ERROR - Failed to add visitor to waiting list: invalid park ID.");
 				return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
@@ -863,6 +882,7 @@ public class ServerController implements ServerAndControllerConnection {
 					waitingListMessage.getRequestedOrderDate(),
 					waitingListMessage.getNumberOfVisitors()
 			);
+
 			if (queuePosition == -1) {
 				waitingListMessage.setWaitingStatus("duplicate");
 
@@ -871,7 +891,6 @@ public class ServerController implements ServerAndControllerConnection {
 				return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
 			}
 
-			// Updates the message with the queue position assigned by the database layer.
 			waitingListMessage.setQueuePosition(queuePosition);
 			waitingListMessage.setWaitingStatus("waiting");
 
@@ -889,6 +908,7 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(waitingListMessage, Protocol.JOIN_WAITING_LIST_FAILURE);
 		}
 	}
+
 	/*
 	 * Handles a client request to get all offered waiting list requests for a
 	 * specific subscriber.
@@ -925,15 +945,12 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
 		}
 	}
-	/*
+
+	/**
 	 * Handles a client request to reject an offered waiting list request.
 	 *
-	 * The request data is received as a WaitingListMessage that contains the waiting
-	 * list request ID. If the request is rejected successfully, the server also tries
-	 * to offer the available place to the next matching visitor in the waiting list.
-	 *
-	 * @param m the message received from the client, containing WaitingListMessage
-	 * @return a message with REJECT_WAITING_OFFER_SUCCESS or REJECT_WAITING_OFFER_FAILURE
+	 * @param m the message received from the client
+	 * @return a message with reject success or failure
 	 */
 	private Message handleRejectWaitingOffer(Message m) {
 		if (!(m.getData() instanceof WaitingListMessage)) {
@@ -970,15 +987,11 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Handles a client request to accept an offered waiting list request.
 	 *
-	 * The request data is received as a WaitingListMessage that contains the waiting
-	 * list request ID. If the request is accepted successfully, the waiting list row
-	 * is changed from "offered" to "accepted".
-	 *
-	 * @param m the message received from the client, containing WaitingListMessage
-	 * @return a message with ACCEPT_WAITING_OFFER_SUCCESS or ACCEPT_WAITING_OFFER_FAILURE
+	 * @param m the message received from the client
+	 * @return a message with accept success or failure
 	 */
 	private Message handleAcceptWaitingOffer(Message m) {
 		if (!(m.getData() instanceof WaitingListMessage)) {
@@ -1015,11 +1028,8 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
+	/**
 	 * Expires old waiting list offers before handling waiting list actions.
-	 *
-	 * This keeps the waiting list updated by moving expired offers to "expired" and
-	 * offering the available places to the next matching visitors.
 	 */
 	private void expireOldWaitingOffers() {
 		try {
@@ -1034,16 +1044,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
- * Handles an occasional customer access request received from the client.
- * 
- * The occasional customer identifies himself using an ID number.
- * The method searches all orders that belong to this ID number and returns
- * them to the client.
- * 
- * @param m the message received from the client, containing customer ID number
- * @return a Message with an OperationResponse containing the access result
- */
+	/**
+	 * Handles an occasional customer access request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the access result
+	 */
 	private Message handleOccasionalCustomerAccess(Message m) {
 		try {
 			String customerIdNumber = (String) m.getData();
@@ -1064,14 +1070,16 @@ public class ServerController implements ServerAndControllerConnection {
 			OperationResponse response =
 					new OperationResponse(false, "No orders found for this ID number", null);
 
-			addLog("Occasional customer access denied. No orders found for ID number: " + customerIdNumber);
+			addLog("Occasional customer access denied. No orders found for ID number: "
+					+ customerIdNumber);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 
 		} catch (SQLException e) {
 			e.printStackTrace();
 
-			addLog("ERROR - Database error while searching occasional customer orders: " + e.getMessage());
+			addLog("ERROR - Database error while searching occasional customer orders: "
+					+ e.getMessage());
 
 			OperationResponse response =
 					new OperationResponse(false, "Database error while searching orders.", null);
@@ -1081,7 +1089,8 @@ public class ServerController implements ServerAndControllerConnection {
 		} catch (Exception e) {
 			e.printStackTrace();
 
-			addLog("ERROR - Unexpected error while handling occasional customer access: " + e.getMessage());
+			addLog("ERROR - Unexpected error while handling occasional customer access: "
+					+ e.getMessage());
 
 			OperationResponse response =
 					new OperationResponse(false, "Unexpected server error while searching orders.", null);
@@ -1089,15 +1098,12 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 		}
 	}
-	
-	/*
-	 * Handles an employee login request received from the client.
-	 * 
-	 * The method receives username and password from the client, checks them
-	 * against the employee table, and returns the employee data if login succeeds.
-	 * 
-	 * @param m the message received from the client, containing EmployeeLoginRequest
-	 * @return a Message with an OperationResponse containing the login result
+
+	/**
+	 * Handles an employee login request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the login result
 	 */
 	private Message handleEmployeeLogin(Message m) {
 		EmployeeLoginRequest request = (EmployeeLoginRequest) m.getData();
@@ -1134,15 +1140,12 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(response, Protocol.EMPLOYEE_LOGIN_RESPONSE);
 		}
 	}
-	
-	/*
-	 * Handles an existing customer login request received from the client.
-	 * 
-	 * The method receives username and password from the client, checks them
-	 * against the subscriber table, and returns the subscriber data if login succeeds.
-	 * 
-	 * @param m the message received from the client, containing ExistingCustomerLoginRequest
-	 * @return a Message with an OperationResponse containing the login result
+
+	/**
+	 * Handles an existing customer login request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the login result
 	 */
 	private Message handleExistingCustomerLogin(Message m) {
 		ExistingCustomerLoginRequest request = (ExistingCustomerLoginRequest) m.getData();
@@ -1178,15 +1181,12 @@ public class ServerController implements ServerAndControllerConnection {
 			return new Message(response, Protocol.EXISTING_CUSTOMER_LOGIN_RESPONSE);
 		}
 	}
-	
-	/*
-	 * Handles a register subscriber request received from the client.
-	 * 
-	 * The method checks that the username and ID number are not already used.
-	 * If the details are valid, it inserts a new subscriber into the database.
-	 * 
-	 * @param m the message received from the client, containing RegisterSubscriberRequest
-	 * @return a Message with an OperationResponse containing the registration result
+
+	/**
+	 * Handles a register subscriber request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the registration result
 	 */
 	private Message handleRegisterSubscriber(Message m) {
 		RegisterSubscriberRequest request = (RegisterSubscriberRequest) m.getData();
@@ -1207,7 +1207,8 @@ public class ServerController implements ServerAndControllerConnection {
 				OperationResponse response =
 						new OperationResponse(false, "ID number already exists.", null);
 
-				addLog("Register subscriber failed. ID number already exists: " + request.getIdNumber());
+				addLog("Register subscriber failed. ID number already exists: "
+						+ request.getIdNumber());
 
 				return new Message(response, Protocol.REGISTER_SUBSCRIBER_RESPONSE);
 			}
@@ -1233,36 +1234,877 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
-	/*
-	 * this method checks if the details of a given order are valid
-	 * 
+	/**
+	 * Handles a report request.
+	 *
+	 * @param m the client message
+	 * @return report response message
+	 */
+	private Message handleGetReport(Message m) {
+		addLog("Client requested report.");
+
+		try {
+			if (!(m.getData() instanceof ReportRequest)) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid report request", null);
+
+				return new Message(response, Protocol.GET_REPORT_RESPONSE);
+			}
+
+			ReportRequest request = (ReportRequest) m.getData();
+
+			if (!isReportRequestValid(request)) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid report parameters", null);
+
+				return new Message(response, Protocol.GET_REPORT_RESPONSE);
+			}
+
+			if (!isEmployeeAllowedToViewReport(request)) {
+				addLog("Employee is not allowed to view this report. Employee ID: "
+						+ request.getEmployeeId() + ", Park ID: " + request.getParkId());
+
+				OperationResponse response =
+						new OperationResponse(false,
+								"You are not allowed to view this park report",
+								null);
+
+				return new Message(response, Protocol.GET_REPORT_RESPONSE);
+			}
+
+			Object reportData;
+
+			switch (request.getReportType()) {
+
+			case REPORT_TYPE_VISITOR:
+				reportData = rc.getVisitorReport(
+						request.getParkId(),
+						request.getMonth(),
+						request.getYear()
+				);
+				break;
+
+			case REPORT_TYPE_CANCELLATION:
+				reportData = rc.getCancellationReport(
+						request.getParkId(),
+						request.getMonth(),
+						request.getYear()
+				);
+				break;
+
+			case REPORT_TYPE_VISIT_DURATION:
+				reportData = rc.getVisitDurationReport(
+						request.getParkId(),
+						request.getMonth(),
+						request.getYear()
+				);
+				break;
+
+			case REPORT_TYPE_PARK_USAGE:
+				reportData = rc.getParkUsageReport(
+						request.getParkId(),
+						request.getMonth(),
+						request.getYear()
+				);
+				break;
+
+			default:
+				OperationResponse response =
+						new OperationResponse(false, "Unknown report type", null);
+
+				return new Message(response, Protocol.GET_REPORT_RESPONSE);
+			}
+
+			OperationResponse response =
+					new OperationResponse(true, "Report loaded successfully", reportData);
+
+			addLog("Report loaded successfully.");
+
+			return new Message(response, Protocol.GET_REPORT_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while loading report: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Database error while loading report", null);
+
+			return new Message(response, Protocol.GET_REPORT_RESPONSE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to handle report request: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, "Failed to load report", null);
+
+			return new Message(response, Protocol.GET_REPORT_RESPONSE);
+		}
+	}
+
+	/**
+	 * Checks if the report request basic parameters are valid.
+	 *
+	 * @param request the report request
+	 * @return true if valid, false otherwise
+	 * @throws SQLException if checking the park fails
+	 */
+	private boolean isReportRequestValid(ReportRequest request) throws SQLException {
+		if (request == null) {
+			return false;
+		}
+
+		if (request.getParkId() <= 0) {
+			return false;
+		}
+
+		if (request.getMonth() < 1 || request.getMonth() > 12) {
+			return false;
+		}
+
+		if (request.getYear() < 2000) {
+			return false;
+		}
+
+		if (request.getEmployeeId() <= 0) {
+			return false;
+		}
+
+		if (request.getReportType() == null || request.getReportType().isBlank()) {
+			return false;
+		}
+
+		Park park = pc.getFullParkById(request.getParkId());
+
+		return park != null;
+	}
+
+	/**
+	 * Checks whether an employee is allowed to view the requested report.
+	 *
+	 * @param request the report request
+	 * @return true if allowed, false otherwise
+	 * @throws SQLException if checking employee details fails
+	 */
+	private boolean isEmployeeAllowedToViewReport(ReportRequest request) throws SQLException {
+		int employeeId = request.getEmployeeId();
+		int requestedParkId = request.getParkId();
+
+		if (ec.isDepartmentManager(employeeId)) {
+			return true;
+		}
+
+		if (ec.isParkManager(employeeId)) {
+			int employeeParkId = ec.getEmployeeParkId(employeeId);
+
+			return employeeParkId == requestedParkId
+					&& isReportAllowedForParkManager(request.getReportType());
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks whether a park manager is allowed to view the requested report type.
+	 *
+	 * @param reportType the report type
+	 * @return true if allowed
+	 */
+	private boolean isReportAllowedForParkManager(String reportType) {
+		return REPORT_TYPE_VISITOR.equals(reportType)
+				|| REPORT_TYPE_CANCELLATION.equals(reportType);
+	}
+
+	/**
+	 * Handles creating a park parameter change request.
+	 *
+	 * @param m the client message
+	 * @return success or failure response
+	 */
+	private Message handleCreateParkParameterChangeRequest(Message m) {
+		addLog("Client requested to create park parameter change request.");
+
+		try {
+			if (!(m.getData() instanceof Object[])) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Invalid park parameter change request data",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			Object[] data = (Object[]) m.getData();
+
+			int parkId = (int) data[0];
+			int requestedByEmployeeId = (int) data[1];
+			String parameterName = data[2] == null ? null : data[2].toString().trim();
+			String newValue = data[3] == null ? null : data[3].toString().trim();
+
+			if (!ec.isParkManager(requestedByEmployeeId)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Only park managers can request park parameter changes",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			int employeeParkId = ec.getEmployeeParkId(requestedByEmployeeId);
+
+			if (employeeParkId != parkId) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Park manager can request changes only for his own park",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			Park park = pc.getFullParkById(parkId);
+
+			if (park == null) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Park was not found",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			String oldValue = getCurrentParkParameterValue(park, parameterName);
+
+			if (oldValue == null) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Unknown park parameter",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			boolean created = pcrc.createChangeRequest(
+					parkId,
+					requestedByEmployeeId,
+					parameterName,
+					oldValue,
+					newValue
+			);
+
+			if (!created) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Failed to create park parameter change request",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			OperationResponse response = new OperationResponse(
+					true,
+					"Park parameter change request was created successfully",
+					null
+			);
+
+			addLog("Park parameter change request was created successfully. Parameter: "
+					+ parameterName + ", old value: " + oldValue + ", new value: " + newValue);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_CREATED);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to create park parameter change request: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Database error while creating park parameter change request",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Invalid park parameter change request data: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Failed to create park parameter change request",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+		}
+	}
+
+	/**
+	 * Returns the current value of a park parameter before creating a change request.
+	 *
+	 * @param park the park
+	 * @param parameterName the requested parameter name
+	 * @return the current parameter value as String
+	 */
+	private String getCurrentParkParameterValue(Park park, String parameterName) {
+		if (park == null || parameterName == null) {
+			return null;
+		}
+
+		switch (parameterName) {
+
+		case PARAMETER_MAX_CAPACITY:
+			return String.valueOf(park.getMaxCapacity());
+
+		case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
+			return String.valueOf(park.getPlacesForUnplannedVisitors());
+
+		case PARAMETER_ESTIMATED_VISIT_DURATION_HOURS:
+			return String.valueOf((int) park.getEstimatedVisitDurationHours());
+
+		case PARAMETER_PROMOTIONS:
+			return String.valueOf(park.getPromotions());
+
+		default:
+			return null;
+		}
+	}
+
+	/**
+	 * Handles loading pending park parameter change requests.
+	 *
+	 * @param m the client message
+	 * @return pending requests response
+	 */
+	private Message handleGetPendingParkParameterChangeRequests(Message m) {
+		addLog("Client requested pending park parameter change requests.");
+
+		try {
+			if (!(m.getData() instanceof Integer)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Invalid employee id",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			int employeeId = (Integer) m.getData();
+
+			if (!ec.isDepartmentManager(employeeId)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Only department managers can view pending parameter change requests",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			List<ParkParameterChangeRequest> requests = pcrc.getPendingRequests();
+
+			OperationResponse response = new OperationResponse(
+					true,
+					"Pending park parameter change requests loaded successfully",
+					requests
+			);
+
+			return new Message(response, Protocol.PENDING_PARK_PARAMETER_CHANGE_REQUESTS_RESULT);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to load pending park parameter change requests: "
+					+ e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Database error while loading pending requests",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to load pending park parameter change requests: "
+					+ e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Failed to load pending requests",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+		}
+	}
+
+	/**
+	 * Handles approval of a park parameter change request.
+	 *
+	 * @param m the client message
+	 * @return approval success or failure message
+	 */
+	private Message handleApproveParkParameterChangeRequest(Message m) {
+		addLog("Client requested approval of park parameter change request.");
+
+		try {
+			if (!(m.getData() instanceof Object[])) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid approval request data", null);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			Object[] data = (Object[]) m.getData();
+
+			int requestId = (int) data[0];
+			int approvedByEmployeeId = (int) data[1];
+			String reviewNote = (String) data[2];
+
+			addLog("Approving park parameter change request. Request ID: " + requestId
+					+ ", approved by employee ID: " + approvedByEmployeeId);
+
+			boolean approved = pcrc.approveRequest(requestId, approvedByEmployeeId, reviewNote);
+
+			if (approved) {
+				addLog("Park parameter change request approved successfully. Request ID: " + requestId);
+				addLog("Park data may have changed. Notifying all clients.");
+
+				notifyParksUpdated();
+
+				OperationResponse response =
+						new OperationResponse(true, "Park parameter change request approved", requestId);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_APPROVED);
+			}
+
+			addLog("Park parameter change request approval failed. Request ID: " + requestId);
+
+			OperationResponse response =
+					new OperationResponse(false, "Park parameter change request approval failed", requestId);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to approve park parameter change request: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, e.getMessage(), null);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Invalid approval request data: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, e.getMessage(), null);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+		}
+	}
+
+	/**
+	 * Handles rejection of a park parameter change request.
+	 *
+	 * @param m the client message
+	 * @return rejection success or failure message
+	 */
+	private Message handleRejectParkParameterChangeRequest(Message m) {
+		addLog("Client requested rejection of park parameter change request.");
+
+		try {
+			if (!(m.getData() instanceof Object[])) {
+				OperationResponse response =
+						new OperationResponse(false, "Invalid rejection request data", null);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+			}
+
+			Object[] data = (Object[]) m.getData();
+
+			int requestId = (int) data[0];
+			int reviewedByEmployeeId = (int) data[1];
+			String reviewNote = (String) data[2];
+
+			addLog("Rejecting park parameter change request. Request ID: " + requestId
+					+ ", reviewed by employee ID: " + reviewedByEmployeeId);
+
+			boolean rejected = pcrc.rejectRequest(requestId, reviewedByEmployeeId, reviewNote);
+
+			if (rejected) {
+				addLog("Park parameter change request rejected successfully. Request ID: " + requestId);
+
+				OperationResponse response =
+						new OperationResponse(true, "Park parameter change request rejected", requestId);
+
+				return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_REJECTED);
+			}
+
+			addLog("Park parameter change request rejection failed. Request ID: " + requestId);
+
+			OperationResponse response =
+					new OperationResponse(false, "Park parameter change request rejection failed", requestId);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to reject park parameter change request: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, e.getMessage(), null);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Invalid rejection request data: " + e.getMessage());
+
+			OperationResponse response =
+					new OperationResponse(false, e.getMessage(), null);
+
+			return new Message(response, Protocol.PARK_PARAMETER_CHANGE_REQUEST_FAILURE);
+		}
+	}
+
+	/**
+	 * Handles entry price calculation.
+	 *
+	 * @param m the client message
+	 * @return entry price response
+	 */
+	private Message handleCalculateEntryPrice(Message m) {
+		addLog("Client requested entry price calculation.");
+
+		try {
+			if (!(m.getData() instanceof EntryPriceRequest)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Invalid entry price request",
+						null
+				);
+
+				return new Message(response, Protocol.CALCULATE_ENTRY_PRICE_RESPONSE);
+			}
+
+			EntryPriceRequest request = (EntryPriceRequest) m.getData();
+
+			EntryPriceReceipt receipt =
+					bc.calculateReceiptByOrderNumber(request.getOrderNumber());
+
+			OperationResponse response = new OperationResponse(
+					true,
+					"Entry price calculated successfully",
+					receipt
+			);
+
+			addLog("Entry price calculated successfully for order number: "
+					+ request.getOrderNumber());
+
+			return new Message(response, Protocol.CALCULATE_ENTRY_PRICE_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to calculate entry price: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					e.getMessage(),
+					null
+			);
+
+			return new Message(response, Protocol.CALCULATE_ENTRY_PRICE_RESPONSE);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to calculate entry price: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Failed to calculate entry price",
+					null
+			);
+
+			return new Message(response, Protocol.CALCULATE_ENTRY_PRICE_RESPONSE);
+		}
+	}
+
+	/**
+	 * Handles loading park visitor counters.
+	 *
+	 * @param m the client message
+	 * @return visitor counters response
+	 */
+	private Message handleGetParkVisitorCounters(Message m) {
+		addLog("Client requested park visitor counters.");
+
+		try {
+			if (!(m.getData() instanceof Integer)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Invalid employee id",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_VISITOR_COUNTERS_RESULT);
+			}
+
+			int employeeId = (Integer) m.getData();
+
+			List<ParkVisitorCounterSnapshot> counters;
+
+			if (ec.isDepartmentManager(employeeId)) {
+				counters = pc.getAllParkVisitorCounters();
+
+			} else if (ec.isParkManager(employeeId)) {
+				int employeeParkId = ec.getEmployeeParkId(employeeId);
+
+				ParkVisitorCounterSnapshot counter =
+						pc.getParkVisitorCounter(employeeParkId);
+
+				counters = new ArrayList<>();
+
+				if (counter != null) {
+					counters.add(counter);
+				}
+
+			} else {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Only park managers and department managers can view park visitor counters",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_VISITOR_COUNTERS_RESULT);
+			}
+
+			OperationResponse response = new OperationResponse(
+					true,
+					"Park visitor counters loaded successfully",
+					counters
+			);
+
+			return new Message(response, Protocol.PARK_VISITOR_COUNTERS_RESULT);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to load park visitor counters: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Database error while loading park visitor counters",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_VISITOR_COUNTERS_RESULT);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to load park visitor counters: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Failed to load park visitor counters",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_VISITOR_COUNTERS_RESULT);
+		}
+	}
+
+	/**
+	 * Handles updating park visitor counter.
+	 *
+	 * @param m the client message
+	 * @return update response
+	 */
+	private Message handleUpdateParkVisitorCounter(Message m) {
+		addLog("Client requested park visitor counter update.");
+
+		try {
+			if (!(m.getData() instanceof ParkVisitorCounterUpdateRequest)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Invalid park visitor counter update request",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_VISITOR_COUNTER_UPDATE_RESULT);
+			}
+
+			ParkVisitorCounterUpdateRequest request =
+					(ParkVisitorCounterUpdateRequest) m.getData();
+
+			if (!canEmployeeUpdateParkVisitorCounter(
+					request.getEmployeeId(),
+					request.getParkId())) {
+
+				OperationResponse response = new OperationResponse(
+						false,
+						"Employee is not allowed to update this park visitor counter",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_VISITOR_COUNTER_UPDATE_RESULT);
+			}
+
+			boolean updated = pc.updateCurrentVisitors(
+					request.getParkId(),
+					request.getEmployeeId(),
+					request.getActionType(),
+					request.getAmount()
+			);
+
+			if (!updated) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Failed to update park visitor counter",
+						null
+				);
+
+				return new Message(response, Protocol.PARK_VISITOR_COUNTER_UPDATE_RESULT);
+			}
+
+			ParkVisitorCounterSnapshot updatedCounter =
+					pc.getParkVisitorCounter(request.getParkId());
+
+			OperationResponse response = new OperationResponse(
+					true,
+					"Park visitor counter updated successfully",
+					updatedCounter
+			);
+
+			addLog("Park visitor counter updated successfully. Park ID: "
+					+ request.getParkId()
+					+ ", action: " + request.getActionType()
+					+ ", amount: " + request.getAmount());
+
+			notifyParkVisitorCountersUpdated();
+
+			return new Message(response, Protocol.PARK_VISITOR_COUNTER_UPDATE_RESULT);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to update park visitor counter: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					e.getMessage(),
+					null
+			);
+
+			return new Message(response, Protocol.PARK_VISITOR_COUNTER_UPDATE_RESULT);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Failed to update park visitor counter: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Failed to update park visitor counter",
+					null
+			);
+
+			return new Message(response, Protocol.PARK_VISITOR_COUNTER_UPDATE_RESULT);
+		}
+	}
+
+	/**
+	 * Checks whether an employee may update a specific park visitor counter.
+	 *
+	 * @param employeeId the employee ID
+	 * @param parkId the park ID
+	 * @return true if allowed, otherwise false
+	 * @throws SQLException if checking employee details fails
+	 */
+	private boolean canEmployeeUpdateParkVisitorCounter(int employeeId, int parkId)
+			throws SQLException {
+
+		if (ec.isDepartmentManager(employeeId)) {
+			return true;
+		}
+
+		if (ec.isParkManager(employeeId) || ec.isParkWorker(employeeId)) {
+			int employeeParkId = ec.getEmployeeParkId(employeeId);
+
+			return employeeParkId == parkId;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if the details of a given order are valid.
+	 *
 	 * @param o the order to check
-	 * @return true if valid and false otherwise
+	 * @return true if valid, false otherwise
 	 */
 	private boolean checkOrderDetailsAreValid(Order o) {
 		if (o.getOrderDate().isBefore(LocalDate.now())) {
 			return false;
 		}
+
 		if (o.getVisitorNumber() > CommonConstants.MAX_VISITOR_COUNT
 				|| o.getVisitorNumber() < CommonConstants.MIN_VISITOR_COUNT) {
 			return false;
 		}
+
 		if (o.getOrderHour() > CommonConstants.MAX_HOUR
 				|| o.getOrderHour() < CommonConstants.MIN_HOUR) {
 			return false;
 		}
+
 		if (!(o.getOrderStatus().equals(Order.ORDER_STATUS_PENDING))) {
 			return false;
 		}
 
 		return true;
 	}
+
+	private Message handleGetAllOrdersForServiceRepresentative() {
+		addLog("Service representative requested all customer orders.");
+
+		try {
+			List<Order> orders = oc.getAllOrders();
+
+			addLog("Returning " + orders.size() + " customer orders to service representative.");
+
+			return new Message(orders, Protocol.GET_ALL_ORDERS_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to load all customer orders: " + e.getMessage());
+
+			return new Message(null, Protocol.GET_ALL_ORDERS_RESPONSE);
+		}
+	}
+
 	/**
 	 * Closes all database connections safely.
-	 * 
-	 * Each database connector returns its connection to the connection pool.
-	 * After all connectors are closed, the connection pool closes all available
-	 * database connections.
 	 */
 	private void closeDBConnection() {
 		try {
@@ -1282,10 +2124,10 @@ public class ServerController implements ServerAndControllerConnection {
 				pcrc.close();
 				addLog("Park parameter change request database connection returned to pool.");
 			}
-			
+
 			if (ec != null) {
 				ec.close();
-				addLog("Employee database connection closed.");
+				addLog("Employee database connection returned to pool.");
 			}
 
 			if (sc != null) {
@@ -1300,21 +2142,36 @@ public class ServerController implements ServerAndControllerConnection {
 
 			if (wlc != null) {
 				wlc.close();
-				addLog("Waiting list database connection closed.");
+				addLog("Waiting list database connection returned to pool.");
+			}
+
+			if (vc != null) {
+				vc.close();
+				addLog("Visit database connection returned to pool.");
+			}
+
+			if (rc != null) {
+				rc.close();
+				addLog("Report database connection returned to pool.");
+			}
+
+			if (bc != null) {
+				bc.close();
+				addLog("Bill database connection returned to pool.");
 			}
 
 			DBConnectionPool.getInstance().closeAllConnections();
 			addLog("All database pool connections were closed.");
-
 			addLog("Database connections closed successfully.");
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 			addLog("ERROR - Failed to close database connection: " + e.getMessage());
 		}
 	}
 
-	/*
-	 * this method takes care to close all relevant parts of the server properly
+	/**
+	 * Closes all relevant server parts properly.
 	 */
 	@Override
 	public void closeServer() {
@@ -1337,6 +2194,7 @@ public class ServerController implements ServerAndControllerConnection {
 			closeDBConnection();
 		}
 	}
+
 	/*
 	 * Handles a park check-in request using a confirmation code.
 	 *

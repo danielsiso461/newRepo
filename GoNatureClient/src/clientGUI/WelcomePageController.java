@@ -124,18 +124,6 @@ public class WelcomePageController {
     private void launchOpeningScreen() {
     	Stage stage = (Stage) inputField.getScene().getWindow();
 
-    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
-
-    	Parent root = null;
-
-    	try {
-    		root = loader.load();
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    		Platform.exit();
-    		System.exit(1);
-    	}
-
     	ClientController clientController;
 
     	try {
@@ -145,13 +133,13 @@ public class WelcomePageController {
     		 */
     		clientController = new ClientController(address, common.CommonConstants.DEFAULT_PORT, "");
 
-    		// Gives the occasional customer access screen the active ClientController, so it can send requests to the server.
+    		// Gives the occasional customer access screen the active ClientController.
     		OccasionalCustomerAccessController.setClientController(clientController);
-    		
-    		// Gives the employee login screen the active ClientController, so it can send login requests to the server.
+
+    		// Gives the employee login screen the active ClientController.
     		EmployeeLoginController.setClientController(clientController);
-    		
-    		// Gives the registered customer login screen the active ClientController, so it can send requests to the server.
+
+    		// Gives the registered customer login screen the active ClientController.
     		ExistingCustomerLoginController.setClientController(clientController);
 
     	} catch (IOException e) {
@@ -159,6 +147,22 @@ public class WelcomePageController {
     		messageLabel.setText("Bad server address");
     		inputField.clear();
     		return;
+    	}
+
+    	FXMLLoader loader = new FXMLLoader(getClass().getResource("/clientGUI/OpeningScreen.fxml"));
+
+    	Parent root = null;
+
+    	try {
+    		root = loader.load();
+
+    		OpeningScreenController controller = loader.getController();
+    		controller.setClientController(clientController);
+
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		Platform.exit();
+    		System.exit(1);
     	}
 
     	Scene scene = new Scene(root);

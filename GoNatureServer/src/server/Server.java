@@ -90,6 +90,24 @@ public final class Server extends AbstractServer {
 			Message returnMessage = serverController.handleRequest(m);
 
 			if (returnMessage != null) {
+				bindClientAfterSuccessfulLogin(m, returnMessage, client);
+
+				if (returnMessage.getType() == Protocol.UPDATE_ORDER_SUCCESS
+						|| returnMessage.getType() == Protocol.UPDATE_ORDER_FAILURE) {
+
+					User user = (User) client.getInfo("User");
+
+					if (user != null) {
+						String messageId = user.getUserId();
+						ConnectionToClient c = currIdConnection.get(messageId);
+
+						if (c != null) {
+							c.sendToClient(returnMessage);
+							return;
+						}
+					}
+				}
+
 				client.sendToClient(returnMessage);
 			} else {
 				System.out.println("Error: request handling failure");
@@ -98,6 +116,7 @@ public final class Server extends AbstractServer {
 			System.out.println(e.getMessage());
 		}
 	}
+
 	/*
 	 * Registers the client in the server user table once an identifying value is
 	 * available in the received message.
@@ -146,6 +165,9 @@ public final class Server extends AbstractServer {
 	 * The server table should show the user once the client enters the system,
 	 * even if the first request is not RETURN_ORDER.
 	 *
+	 * Login requests are not bound here. They are bound only after the login
+	 * response succeeds, so a failed login will not appear as a connected user.
+	 *
 	 * @param m the message received from the client
 	 * @return the user identifier, or null if the message does not contain one
 	 */
@@ -157,8 +179,6 @@ public final class Server extends AbstractServer {
 		switch (m.getType()) {
 		case RETURN_ORDER:
 		case OCCASIONAL_CUSTOMER_ACCESS_REQUEST:
-			return String.valueOf(m.getData());
-
 		case GET_WAITING_OFFERS_REQUEST:
 			return String.valueOf(m.getData());
 
@@ -190,27 +210,107 @@ public final class Server extends AbstractServer {
 			}
 			break;
 
-		case EMPLOYEE_LOGIN_REQUEST:
-			if (m.getData() instanceof EmployeeLoginRequest) {
-				EmployeeLoginRequest request = (EmployeeLoginRequest) m.getData();
-				return "employee: " + request.getUsername();
-			}
-			break;
-
-		case EXISTING_CUSTOMER_LOGIN_REQUEST:
-			if (m.getData() instanceof ExistingCustomerLoginRequest) {
-				ExistingCustomerLoginRequest request = (ExistingCustomerLoginRequest) m.getData();
-				return "customer: " + request.getUsername();
-			}
-			break;
-
 		default:
 			break;
 		}
 
 		return null;
 	}
-	
+
+	/*
+	 * Binds a user id to the current client connection.
+	 *
+	 * This method is used after successful login responses, so employees and
+	 * existing customers appear in the server's connected users table only after
+	 * their login was accepted.
+	 *
+	 * @param id the user id
+	 * @param client the client connection
+	 */
+	private void bindIdToClientConnection(String id, ConnectionToClient client) {
+		if (id == null || id.trim().isEmpty() || client == null) {
+			return;
+		}
+
+		if (client.getInfo("User") != null) {
+			return;
+		}
+
+		User u = makeUserFromConnectionToClient(client);
+		u.setUserId(id);
+
+		if (!serverController.addUserOnUserConnected(u)) {
+			System.out.println("User ID is already connected: " + id);
+
+			try {
+				client.sendToClient(new Message(null, Protocol.CLIENT_DISCONNECT_SERVER));
+				client.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			return;
+		}
+
+		client.setInfo("User", u);
+
+		if (!currIdConnection.containsKey(id)) {
+			currIdConnection.put(id, client);
+		}
+
+		System.out.println("Bound user ID " + id + " to client connection.");
+	}
+
+	/*
+	 * Binds the client connection after a successful login response.
+	 *
+	 * @param requestMessage the original request message
+	 * @param responseMessage the response returned from the server controller
+	 * @param client the client connection
+	 */
+	private void bindClientAfterSuccessfulLogin(Message requestMessage,
+			Message responseMessage,
+			ConnectionToClient client) {
+
+		if (requestMessage == null || responseMessage == null) {
+			return;
+		}
+
+		if (!(responseMessage.getData() instanceof OperationResponse)) {
+			return;
+		}
+
+		OperationResponse response = (OperationResponse) responseMessage.getData();
+
+		if (!response.isSuccess() || response.getData() == null) {
+			return;
+		}
+
+		if (requestMessage.getType() == Protocol.EXISTING_CUSTOMER_LOGIN_REQUEST
+				&& response.getData() instanceof Subscriber) {
+
+			Subscriber subscriber = (Subscriber) response.getData();
+
+			bindIdToClientConnection(
+					String.valueOf(subscriber.getSubscriberId()),
+					client
+			);
+
+			return;
+		}
+
+		if (requestMessage.getType() == Protocol.EMPLOYEE_LOGIN_REQUEST
+				&& response.getData() instanceof Employee) {
+
+			Employee employee = (Employee) response.getData();
+
+			bindIdToClientConnection(
+					String.valueOf(employee.getEmployeeId()),
+					client
+			);
+		}
+	}
+
 	/**
 	 * This method is called when a client disconnects from the server in an orderly way.
 	 * 
@@ -320,9 +420,6 @@ public final class Server extends AbstractServer {
 				client.isAlive());
 	}
 
-	
-	
-	
 	/**
 	 * Prevents cloning of the Singleton instance.
 	 */

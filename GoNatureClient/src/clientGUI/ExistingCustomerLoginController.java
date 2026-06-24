@@ -156,6 +156,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 			 * Gives the order table screen the active ClientController.
 			 */
 			controller.setClientController(clientController);
+			controller.configureForCustomerView();
 
 			Scene scene = new Scene(root);
 
@@ -197,6 +198,9 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 			);
 
 			Parent root = loader.load();
+
+			CustomerAccessController controller = loader.getController();
+			controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("Customer Access");

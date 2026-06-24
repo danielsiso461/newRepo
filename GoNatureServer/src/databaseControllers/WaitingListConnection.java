@@ -48,23 +48,21 @@ public class WaitingListConnection extends AbstractDBConnection {
 	 * @return the waiting_list table name
 	 */
 	@Override
-	protected String getTableName() {
+	public String getTableName() {
 		return TABLE_NAME;
 	}
-
 	/*
 	 * Makes sure the database connection is open before running a query.
 	 *
 	 * @throws SQLException if the connection cannot be opened
 	 */
-	private void ensureConnection() throws SQLException {
+	public void ensureConnection() throws SQLException {
 		if (conn == null || conn.isClosed()) {
 			connect();
 		}
 	}
 
-	/*
-	 * Calculates the next queue position for a specific park and requested date.
+	 /* Calculates the next queue position for a specific park and requested date.
 	 *
 	 * The next position is calculated by taking the current maximum queue_position
 	 * for the same park and requested date and adding 1.
@@ -246,7 +244,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 				UPDATE waiting_list
 				SET waiting_status = 'offered',
 				    offered_at = NOW(),
-				    offer_expires_at = DATE_ADD(NOW(), INTERVAL 1 DAY)
+				   offer_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
 				WHERE waiting_id = ?;
 				""";
 
