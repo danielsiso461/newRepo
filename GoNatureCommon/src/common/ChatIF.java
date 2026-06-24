@@ -17,6 +17,7 @@ public interface ChatIF
   /**
    * Method that when overriden is used to display objects onto
    * a UI.
+   * @param m the message from the server
    */
   public abstract void display(Message m);
 }
