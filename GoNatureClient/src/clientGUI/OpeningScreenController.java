@@ -10,17 +10,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import clientController.ClientController;
 /**
  * controller for the opening screen welcoming the user
  */
 public class OpeningScreenController {
-	
-	private ClientController clientController;
-
-	public void setClientController(ClientController clientController) {
-		this.clientController = clientController;
-	}
 
 	/**
 	 * Handles the click on the Employee Login button.
@@ -39,7 +32,7 @@ public class OpeningScreenController {
 			Parent root = loader.load();
 
 			EmployeeLoginController controller = loader.getController();
-			controller.setClientController(clientController);
+			//controller.setClientController(clientController);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("Employee Login");
@@ -58,25 +51,29 @@ public class OpeningScreenController {
      * 
      * @param event the button click event
      */
-    @FXML
-    private void handleCustomerAccess(ActionEvent event) {
-    	try {
-    		FXMLLoader loader = new FXMLLoader(
-    				getClass().getResource("/clientGUI/CustomerAccess.fxml")
-    		);
+	@FXML
+	private void handleCustomerAccess(ActionEvent event) {
+		try {
+			System.out.println("OpeningScreen clientController = " + clientController);
 
-    		Parent root = loader.load();
-    		
-    		CustomerAccessController controller = loader.getController();
-    		controller.setClientController(clientController);
-    		
-    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    		stage.setTitle("Customer Access");
-    		stage.setScene(new Scene(root));
-    		stage.show();
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/CustomerAccess.fxml")
+			);
 
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    	}
-    }
+			Parent root = loader.load();
+
+			CustomerAccessController controller = loader.getController();
+			controller.setClientController(clientController);
+
+			System.out.println("CustomerAccessController received clientController = " + clientController);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Customer Access");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }
