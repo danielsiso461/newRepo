@@ -29,6 +29,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
+
 /**
  * Controls the park parameter approval page.
  * 
@@ -103,6 +104,11 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
+
+		if (this.clientController != null) {
+			this.clientController.addParkParameterObserver(this);
+			requestPendingRequests(false);
+		}
 	}
 
 	public void setLoggedInEmployee(Employee employee) {
@@ -145,9 +151,6 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 				new PropertyValueFactory<>("parkId")
 		);
 
-		requestedByColumn.setCellValueFactory(cellData ->
-				new SimpleStringProperty("-")
-		);
 
 		statusColumn.setCellValueFactory(
 				new PropertyValueFactory<>("requestStatus")
@@ -482,6 +485,10 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 	@FXML
 	private void handleBack(ActionEvent event) {
 		try {
+			if (clientController != null) {
+				clientController.removeParkParameterObserver(this);
+			}
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/DepartmentManagerHomePage.fxml")
 			);
@@ -490,7 +497,6 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 
 			DepartmentManagerHomePageController controller = loader.getController();
 			controller.setClientController(clientController);
-			controller.setLoggedInEmployee(loggedInEmployee);
 
 			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 			stage.setTitle("Department Manager Dashboard");
@@ -499,6 +505,7 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			statusLabel.setText("Status: Could not return to department manager dashboard.");
 		}
 	}
 }

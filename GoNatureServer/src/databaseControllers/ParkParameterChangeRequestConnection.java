@@ -27,11 +27,15 @@ public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 	private final String STATUS_REJECTED = "rejected";
 
 	private final String PARK_TABLE = ConstantsDBTableNames.PARK;
+
 	private final String PARAMETER_MAX_CAPACITY = "max_capacity";
+
 	private final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
 			"places_for_unplanned_visitors";
+
 	private final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
 			"estimated_visit_duration_hours";
+
 	private final String PARAMETER_PROMOTIONS = "promotions";
 
 	private ParkParameterChangeRequestConnection() throws SQLException {
@@ -53,9 +57,9 @@ public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 
 	/**
 	 * Creates a new park parameter change request.
-	 * 
-	 * requestedByEmployeeId is used by the server for permission checks, but it is
-	 * not stored here because the current DB table does not contain this column.
+	 *
+	 * requestedByEmployeeId is used by the server for permission checks.
+	 * The oldValue is the value that existed when the request was created.
 	 */
 	public boolean createChangeRequest(int parkId, int requestedByEmployeeId,
 			String parameterName, String oldValue, String newValue) throws SQLException {
@@ -95,10 +99,6 @@ public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 
 	/**
 	 * Approves a pending request.
-	 * 
-	 * approvedByEmployeeId and reviewNote are kept for compatibility with the
-	 * server code, but they are not stored because the current DB table does not
-	 * contain matching columns.
 	 */
 	public boolean approveRequest(int requestId, int approvedByEmployeeId,
 			String reviewNote) throws SQLException {
@@ -156,10 +156,6 @@ public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 
 	/**
 	 * Rejects a pending request.
-	 * 
-	 * approvedByEmployeeId and reviewNote are kept for compatibility with the
-	 * server code, but they are not stored because the current DB table does not
-	 * contain matching columns.
 	 */
 	public boolean rejectRequest(int requestId, int approvedByEmployeeId,
 			String reviewNote) throws SQLException {
@@ -369,14 +365,62 @@ public class ParkParameterChangeRequestConnection extends AbstractDBConnection {
 	private ParkParameterChangeRequest convertResultSetToRequest(ResultSet rs)
 			throws SQLException {
 
-		return new ParkParameterChangeRequest(
-				rs.getInt(REQUEST_ID),
-				rs.getInt(PARK_ID),
-				rs.getString(PARAMETER_NAME),
-				rs.getString(OLD_VALUE),
-				rs.getString(NEW_VALUE),
-				rs.getString(REQUEST_STATUS)
+		int requestId = rs.getInt(REQUEST_ID);
+		int parkId = rs.getInt(PARK_ID);
+		String parameterName = rs.getString(PARAMETER_NAME);
+		String oldValue = rs.getString(OLD_VALUE);
+		String newValue = rs.getString(NEW_VALUE);
+		String requestStatus = rs.getString(REQUEST_STATUS);
+
+		ParkParameterChangeRequest request = new ParkParameterChangeRequest(
+				requestId,
+				parkId,
+				parameterName,
+				oldValue,
+				newValue,
+				requestStatus
 		);
+
+		String currentValue = getCurrentParkParameterValue(parkId, parameterName);
+		request.setCurrentValue(currentValue);
+
+		return request;
+	}
+
+	/**
+	 * Gets the current value of the requested parameter from the park table.
+	 *
+	 * This is used only for display in the approval screen.
+	 * It does not replace old_value.
+	 */
+	private String getCurrentParkParameterValue(int parkId, String parameterName)
+			throws SQLException {
+
+		if (parkId <= 0 || parameterName == null || !isSupportedParameter(parameterName)) {
+			return "-";
+		}
+
+		String sql = "SELECT `" + parameterName + "` AS current_value "
+				+ "FROM `" + PARK_TABLE + "` "
+				+ "WHERE `" + PARK_ID + "` = ?";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					Object currentValue = rs.getObject("current_value");
+
+					if (currentValue == null) {
+						return "-";
+					}
+
+					return currentValue.toString();
+				}
+			}
+		}
+
+		return "-";
 	}
 
 	private static class RequestData {

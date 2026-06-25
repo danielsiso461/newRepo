@@ -1,6 +1,7 @@
 package clientGUI;
 
 import java.io.IOException;
+
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -18,6 +19,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import javafx.scene.control.TableView;
 
 /*
  * this class controls the welcome page of the client application

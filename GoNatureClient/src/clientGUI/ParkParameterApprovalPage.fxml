@@ -12,10 +12,10 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
-            xmlns="http://javafx.com/javafx/25"
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.ParkParameterApprovalPageController"
-            stylesheets="@park-parameters.css"
+            stylesheets="@gonature-theme.css"
             styleClass="root-pane">
 
     <children>
@@ -28,11 +28,29 @@
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#handleBack"/>
+                    </children>
+                </HBox>
+            </top>
+
             <center>
-                <VBox styleClass="page-container" BorderPane.alignment="CENTER">
+                <VBox alignment="CENTER"
+                      spacing="22.0"
+                      styleClass="page-container"
+                      maxWidth="Infinity"
+                      maxHeight="Infinity">
+
                     <children>
 
-                        <VBox alignment="CENTER" spacing="10.0">
+                        <VBox alignment="CENTER" spacing="8.0">
                             <children>
                                 <Label fx:id="headerLabel"
                                        text="Park Parameter Change Approval"
@@ -48,44 +66,60 @@
                             </children>
                         </VBox>
 
-                        <VBox styleClass="card, table-card">
+                        <VBox spacing="16.0"
+                              maxWidth="1050.0"
+                              maxHeight="Infinity"
+                              styleClass="card"
+                              VBox.vgrow="ALWAYS">
+
                             <children>
                                 <TableView fx:id="requestsTableView"
-                                           prefHeight="360.0"
-                                           minHeight="300.0">
+                                           prefHeight="340.0"
+                                           minHeight="280.0"
+                                           maxWidth="Infinity"
+                                           maxHeight="Infinity"
+                                           VBox.vgrow="ALWAYS">
+
                                     <columns>
                                         <TableColumn fx:id="requestIdColumn"
-                                                     text="Request ID"
-                                                     prefWidth="95.0"/>
+                                                     text="Req ID"
+                                                     prefWidth="80.0"/>
+
                                         <TableColumn fx:id="parkIdColumn"
                                                      text="Park ID"
-                                                     prefWidth="85.0"/>
-                                        <TableColumn fx:id="requestedByColumn"
-                                                     text="Requested By"
-                                                     prefWidth="125.0"/>
+                                                     prefWidth="80.0"/>
+
+
                                         <TableColumn fx:id="parameterColumn"
                                                      text="Parameter"
-                                                     prefWidth="260.0"/>
+                                                     prefWidth="250.0"/>
+
                                         <TableColumn fx:id="oldValueColumn"
-                                                     text="Current Value"
-                                                     prefWidth="135.0"/>
+                                                     text="Current"
+                                                     prefWidth="130.0"/>
+
                                         <TableColumn fx:id="newValueColumn"
-                                                     text="Requested Value"
-                                                     prefWidth="145.0"/>
+                                                     text="Requested"
+                                                     prefWidth="140.0"/>
+
                                         <TableColumn fx:id="statusColumn"
                                                      text="Status"
-                                                     prefWidth="120.0"/>
+                                                     prefWidth="100.0"/>
                                     </columns>
                                 </TableView>
 
-                                <Region prefHeight="8.0"/>
+                                <Region prefHeight="6.0"/>
 
-                                <Label text="Review note" styleClass="field-label"/>
+                                <Label text="Review Note"
+                                       styleClass="field-label"/>
 
                                 <TextArea fx:id="reviewNoteArea"
                                           prefRowCount="4"
                                           wrapText="true"
+                                          maxWidth="Infinity"
                                           promptText="Optional note for approval or rejection"/>
+
+                                <Region prefHeight="6.0"/>
 
                                 <HBox alignment="CENTER" spacing="15.0">
                                     <children>
@@ -106,11 +140,6 @@
                                                 prefWidth="165.0"
                                                 styleClass="danger-button"
                                                 onAction="#handleReject"/>
-                                                
-                                        <Button text="Back"
-        										prefWidth="120.0"
-        										styleClass="secondary-button"
-        										onAction="#handleBack"/>        
                                     </children>
                                 </HBox>
                             </children>
@@ -121,10 +150,11 @@
             </center>
 
             <bottom>
-                <HBox alignment="CENTER" prefHeight="60.0">
+                <HBox alignment="CENTER" prefHeight="70.0">
                     <children>
                         <Label fx:id="statusLabel"
                                text="Status: Ready"
+                               wrapText="true"
                                styleClass="status-label"/>
                     </children>
                 </HBox>

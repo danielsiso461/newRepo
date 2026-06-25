@@ -4,6 +4,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -27,62 +28,90 @@
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button fx:id="OrderUpdatePageCancelButton"
+                                text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#OrderUpdatePageCancelButtonHandler"/>
+                    </children>
+                </HBox>
+            </top>
+
             <center>
-                <VBox alignment="CENTER" spacing="24.0" styleClass="page-container">
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      styleClass="page-container">
+
                     <children>
 
-                        <VBox alignment="CENTER" spacing="10.0">
+                        <VBox alignment="CENTER" spacing="8.0">
                             <children>
-                                <Label text="Update Order" styleClass="page-title"/>
+                                <Label text="Update Order"
+                                       styleClass="page-title"/>
+
                                 <Label text="Choose which order details you want to update"
                                        styleClass="page-subtitle"/>
+
+                                <Separator prefWidth="460.0"/>
                             </children>
                         </VBox>
 
-                        <VBox alignment="CENTER" spacing="18.0" maxWidth="620.0" styleClass="card">
+                        <VBox alignment="CENTER"
+                              spacing="18.0"
+                              maxWidth="620.0"
+                              styleClass="card">
+
                             <children>
 
                                 <HBox styleClass="form-row">
                                     <children>
-                                        <Label text="Order date" minWidth="180.0" styleClass="field-label"/>
-                                        <DatePicker fx:id="OrderUpdatePageDatePicker" prefWidth="240.0"/>
-                                        <CheckBox fx:id="OrderUpdatePageDateCheckBox" text="Update Date"/>
+                                        <Label text="Order date"
+                                               minWidth="180.0"
+                                               styleClass="field-label"/>
+
+                                        <DatePicker fx:id="OrderUpdatePageDatePicker"
+                                                    prefWidth="240.0"/>
+
+                                        <CheckBox fx:id="OrderUpdatePageDateCheckBox"
+                                                  text="Update Date"/>
                                     </children>
                                 </HBox>
 
                                 <HBox styleClass="form-row">
                                     <children>
-                                        <Label text="Number of visitors" minWidth="180.0" styleClass="field-label"/>
+                                        <Label text="Number of visitors"
+                                               minWidth="180.0"
+                                               styleClass="field-label"/>
+
                                         <Spinner fx:id="OrderUpdatePageSpinner"
                                                  editable="false"
                                                  prefWidth="240.0"/>
-                                        <CheckBox fx:id="OrderUpdatePageVisitorsCheckBox" text="Update Visitors"/>
+
+                                        <CheckBox fx:id="OrderUpdatePageVisitorsCheckBox"
+                                                  text="Update Visitors"/>
                                     </children>
                                 </HBox>
 
                                 <Region prefHeight="10.0"/>
 
-                                <HBox alignment="CENTER" spacing="15.0">
-                                    <children>
-                                        <Button fx:id="OrderUpdatePageUpdateButton"
-                                                text="Update"
-                                                prefWidth="150.0"
-                                                styleClass="primary-button"
-                                                onAction="#OrderUpdatePageUpdateButtonHandler"/>
-
-                                        <Button fx:id="OrderUpdatePageCancelButton"
-                                                text="Cancel"
-                                                prefWidth="150.0"
-                                                styleClass="secondary-button"
-                                                onAction="#OrderUpdatePageCancelButtonHandler"/>
-                                    </children>
-                                </HBox>
+                                <Button fx:id="OrderUpdatePageUpdateButton"
+                                        text="Update"
+                                        prefWidth="180.0"
+                                        styleClass="primary-button"
+                                        onAction="#OrderUpdatePageUpdateButtonHandler"/>
 
                                 <Label fx:id="updateLabel"
-								       text=""
-								       visible="false"
-								       managed="false"
-								       styleClass="status-label"/>
+                                       text=""
+                                       visible="false"
+                                       managed="false"
+                                       wrapText="true"
+                                       maxWidth="520.0"
+                                       styleClass="status-label"/>
 
                             </children>
                         </VBox>

@@ -127,6 +127,8 @@ public class WaitingListController implements WaitingListObserver {
 		queuePositionColumn.setCellValueFactory(new PropertyValueFactory<>("queuePosition"));
 		statusColumn.setCellValueFactory(new PropertyValueFactory<>("waitingStatus"));
 
+		offersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
 		acceptButton.setDisable(true);
 		rejectButton.setDisable(true);
 
@@ -400,8 +402,13 @@ public class WaitingListController implements WaitingListObserver {
 		Platform.runLater(() -> {
 			if (success) {
 				messageLabel.setTextFill(Color.GREEN);
-				messageLabel.setText("Waiting list offer accepted successfully.");
+				messageLabel.setText("Waiting list offer accepted successfully. The order was added to your orders.");
+
 				loadWaitingListRequests();
+
+				if (clientController != null) {
+					clientController.requestOrders();
+				}
 			} else {
 				messageLabel.setTextFill(Color.RED);
 				messageLabel.setText("Failed to accept waiting list offer.");

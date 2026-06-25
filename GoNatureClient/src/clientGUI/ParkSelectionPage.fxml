@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -25,29 +26,74 @@
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button fx:id="backButton"
+                                text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#goBack"/>
+                    </children>
+                </HBox>
+            </top>
+
             <center>
-                <VBox alignment="CENTER" spacing="24.0" styleClass="page-container">
+                <VBox alignment="CENTER"
+                      spacing="22.0"
+                      styleClass="page-container"
+                      maxWidth="Infinity"
+                      maxHeight="Infinity">
+
                     <children>
 
-                        <VBox alignment="CENTER" spacing="10.0">
+                        <VBox alignment="CENTER" spacing="8.0">
                             <children>
-                                <Label text="Available Parks" styleClass="page-title"/>
-                                <Label text="Choose a park for your order" styleClass="page-subtitle"/>
+                                <Label text="Available Parks"
+                                       styleClass="page-title"/>
+
+                                <Label text="Choose a park for your order"
+                                       styleClass="page-subtitle"/>
+
+                                <Separator prefWidth="460.0"/>
                             </children>
                         </VBox>
 
-                        <VBox spacing="16.0" maxWidth="760.0" styleClass="card">
+                        <VBox spacing="16.0"
+                              maxWidth="780.0"
+                              maxHeight="Infinity"
+                              styleClass="card"
+                              VBox.vgrow="ALWAYS">
+
                             <children>
-                                <TableView fx:id="parksTable" prefHeight="340.0">
+                                <TableView fx:id="parksTable"
+                                           prefHeight="360.0"
+                                           maxWidth="Infinity"
+                                           maxHeight="Infinity"
+                                           VBox.vgrow="ALWAYS">
+
                                     <columns>
-                                        <TableColumn fx:id="parkIdColumn" prefWidth="90.0" text="Park ID"/>
-                                        <TableColumn fx:id="parkNameColumn" prefWidth="280.0" text="Park Name"/>
-                                        <TableColumn fx:id="estimatedDurationColumn" prefWidth="190.0" text="Estimated Duration"/>
-                                        <TableColumn fx:id="fullEntryPriceColumn" prefWidth="170.0" text="Full Entry Price"/>
+                                        <TableColumn fx:id="parkIdColumn"
+                                                     prefWidth="90.0"
+                                                     text="Park ID"/>
+
+                                        <TableColumn fx:id="parkNameColumn"
+                                                     prefWidth="280.0"
+                                                     text="Park Name"/>
+
+                                        <TableColumn fx:id="estimatedDurationColumn"
+                                                     prefWidth="190.0"
+                                                     text="Duration"/>
+
+                                        <TableColumn fx:id="fullEntryPriceColumn"
+                                                     prefWidth="170.0"
+                                                     text="Entry Price"/>
                                     </columns>
                                 </TableView>
 
-                                <HBox alignment="CENTER" spacing="12.0">
+                                <HBox alignment="CENTER" spacing="14.0">
                                     <children>
                                         <Button fx:id="refreshButton"
                                                 text="Refresh Parks"
@@ -60,22 +106,26 @@
                                                 prefWidth="150.0"
                                                 styleClass="primary-button"
                                                 onAction="#selectPark"/>
-
-                                        <Button fx:id="backButton"
-                                                text="Back"
-                                                prefWidth="120.0"
-                                                styleClass="secondary-button"
-                                                onAction="#goBack"/>
                                     </children>
                                 </HBox>
-
-                                <Label fx:id="messageLabel" text="" styleClass="error-label"/>
                             </children>
                         </VBox>
 
                     </children>
                 </VBox>
             </center>
+
+            <bottom>
+                <HBox alignment="CENTER" prefHeight="70.0">
+                    <children>
+                        <Label fx:id="messageLabel"
+                               text=""
+                               wrapText="true"
+                               styleClass="status-label"/>
+                    </children>
+                </HBox>
+            </bottom>
+
         </BorderPane>
     </children>
 </AnchorPane>

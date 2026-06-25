@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -14,119 +13,113 @@
 <AnchorPane xmlns="http://javafx.com/javafx/25"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.ParkVisitorCounterViewPageController"
-            stylesheets="@gonature-theme.css">
-
-    <styleClass>
-        <String fx:value="root-pane"/>
-    </styleClass>
+            stylesheets="@gonature-theme.css"
+            styleClass="root-pane">
 
     <children>
-        <BorderPane AnchorPane.topAnchor="0.0"
+        <BorderPane prefWidth="1050.0"
+                    prefHeight="720.0"
+                    minWidth="850.0"
+                    minHeight="580.0"
+                    AnchorPane.topAnchor="0.0"
                     AnchorPane.bottomAnchor="0.0"
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#handleBack"/>
+                    </children>
+                </HBox>
+            </top>
+
             <center>
                 <VBox alignment="CENTER"
-                      spacing="24.0"
-                      maxWidth="950.0">
-
-                    <styleClass>
-                        <String fx:value="page-container"/>
-                    </styleClass>
-
-                    <padding>
-                        <Insets top="30.0" right="40.0" bottom="30.0" left="40.0"/>
-                    </padding>
+                      spacing="22.0"
+                      styleClass="page-container"
+                      maxWidth="Infinity"
+                      maxHeight="Infinity">
 
                     <children>
 
                         <VBox alignment="CENTER" spacing="8.0">
                             <children>
-                                <Label text="Park Visitor Counter">
-                                    <styleClass>
-                                        <String fx:value="page-title"/>
-                                    </styleClass>
-                                </Label>
+                                <Label text="Park Visitor Counter"
+                                       styleClass="page-title"/>
 
-                                <Label text="View real-time visitor count in the park">
-                                    <styleClass>
-                                        <String fx:value="page-subtitle"/>
-                                    </styleClass>
-                                </Label>
+                                <Label text="View real-time visitor count in each park"
+                                       styleClass="page-subtitle"/>
+
+                                <Separator prefWidth="560.0"/>
                             </children>
                         </VBox>
 
-                        <VBox spacing="18.0"
-                              maxWidth="820.0">
-
-                            <styleClass>
-                                <String fx:value="card"/>
-                            </styleClass>
-
-                            <padding>
-                                <Insets top="24.0" right="28.0" bottom="24.0" left="28.0"/>
-                            </padding>
+                        <VBox spacing="16.0"
+                              maxWidth="950.0"
+                              maxHeight="Infinity"
+                              styleClass="card"
+                              VBox.vgrow="ALWAYS">
 
                             <children>
 
-                                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                                <HBox alignment="CENTER_RIGHT">
                                     <children>
                                         <Button fx:id="refreshButton"
                                                 text="Refresh"
-                                                prefWidth="120.0"
-                                                onAction="#handleRefresh">
-                                            <styleClass>
-                                                <String fx:value="secondary-button"/>
-                                            </styleClass>
-                                        </Button>
-                                        
-                                        <Button text="Back"
-        										prefWidth="120.0"
-        										onAction="#handleBack">
-    										<styleClass>
-       											 <String fx:value="secondary-button"/>
-  								 			</styleClass>
-										</Button>
+                                                prefWidth="130.0"
+                                                styleClass="secondary-button"
+                                                onAction="#handleRefresh"/>
                                     </children>
                                 </HBox>
 
                                 <TableView fx:id="counterTableView"
-                                           prefHeight="360.0">
+                                           prefHeight="420.0"
+                                           maxWidth="Infinity"
+                                           maxHeight="Infinity"
+                                           VBox.vgrow="ALWAYS">
 
                                     <columns>
                                         <TableColumn fx:id="parkNameColumn"
                                                      text="Park"
-                                                     prefWidth="250.0"/>
+                                                     prefWidth="280.0"/>
 
                                         <TableColumn fx:id="currentVisitorsColumn"
                                                      text="Current Visitors"
-                                                     prefWidth="170.0"/>
+                                                     prefWidth="210.0"/>
 
                                         <TableColumn fx:id="maxCapacityColumn"
                                                      text="Max Capacity"
-                                                     prefWidth="160.0"/>
+                                                     prefWidth="190.0"/>
 
                                         <TableColumn fx:id="availablePlacesColumn"
                                                      text="Available Places"
-                                                     prefWidth="170.0"/>
+                                                     prefWidth="210.0"/>
                                     </columns>
                                 </TableView>
 
                             </children>
                         </VBox>
 
-                        <Label fx:id="statusLabel"
-                               text="Status: Ready">
-                            <styleClass>
-                                <String fx:value="status-label"/>
-                                <String fx:value="status-info"/>
-                            </styleClass>
-                        </Label>
-
                     </children>
                 </VBox>
             </center>
+
+            <bottom>
+                <HBox alignment="CENTER" prefHeight="70.0">
+                    <children>
+                        <Label fx:id="statusLabel"
+                               text="Status: Ready"
+                               wrapText="true"
+                               styleClass="status-label"/>
+                    </children>
+                </HBox>
+            </bottom>
 
         </BorderPane>
     </children>

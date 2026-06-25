@@ -427,6 +427,165 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return offers;
 	}
+	
+	
+	public int acceptWaitingOfferAndCreateOrder(int waitingId) throws SQLException {
+		ensureConnection();
+
+		boolean previousAutoCommit = conn.getAutoCommit();
+
+		try {
+			conn.setAutoCommit(false);
+
+			String selectSql = selectByFieldsForUpdate(
+					new String[] {
+							WAITING_ID,
+							SUBSCRIBER_ID,
+							PARK_ID,
+							REQUESTED_ORDER_DATE,
+							NUMBER_OF_VISITORS,
+							OFFER_EXPIRES_AT
+					},
+					new String[] {
+							WAITING_ID,
+							WAITING_STATUS
+					}
+			);
+
+			Integer subscriberId = null;
+			Integer parkId = null;
+			LocalDateTime requestedOrderDate = null;
+			Integer numberOfVisitors = null;
+			LocalDateTime offerExpiresAt = null;
+
+			try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+				pstmt.setInt(1, waitingId);
+				pstmt.setString(2, STATUS_OFFERED);
+
+				try (ResultSet rs = pstmt.executeQuery()) {
+					if (rs.next()) {
+						subscriberId = rs.getInt(SUBSCRIBER_ID);
+						parkId = rs.getInt(PARK_ID);
+						requestedOrderDate =
+								rs.getTimestamp(REQUESTED_ORDER_DATE).toLocalDateTime();
+						numberOfVisitors = rs.getInt(NUMBER_OF_VISITORS);
+
+						if (rs.getTimestamp(OFFER_EXPIRES_AT) != null) {
+							offerExpiresAt =
+									rs.getTimestamp(OFFER_EXPIRES_AT).toLocalDateTime();
+						}
+					}
+				}
+			}
+
+			if (subscriberId == null
+					|| parkId == null
+					|| requestedOrderDate == null
+					|| numberOfVisitors == null) {
+				conn.rollback();
+				return -1;
+			}
+
+			if (offerExpiresAt != null && offerExpiresAt.isBefore(LocalDateTime.now())) {
+				conn.rollback();
+				return -1;
+			}
+
+			if (numberOfVisitors < 1 || numberOfVisitors > 15) {
+				conn.rollback();
+				return -1;
+			}
+
+			int newOrderNumber = getNextOrderNumberForWaitingAcceptedOrder();
+			int confirmationCode = newOrderNumber % 100000 + 100000;
+
+			insertFieldsInTable(
+					"order",
+					new String[] {
+							"order_number",
+							"order_date",
+							"number_of_visitors",
+							"confirmation_code",
+							"subscriber_id",
+							"date_of_placing_order",
+							"park_id",
+							"guide_id",
+							"order_status",
+							"order_type",
+							"order_hour",
+							"customer_id",
+							"email"
+					},
+					List.of(
+							newOrderNumber,
+							java.sql.Date.valueOf(requestedOrderDate.toLocalDate()),
+							numberOfVisitors,
+							confirmationCode,
+							subscriberId,
+							java.sql.Date.valueOf(LocalDate.now()),
+							parkId,
+							null,
+							"approved",
+							"private",
+							requestedOrderDate.getHour(),
+							subscriberId,
+							""
+					)
+			);
+
+			boolean updatedWaitingRequest = updateFields(
+					new String[] {
+							WAITING_STATUS
+					},
+					List.of(
+							STATUS_CONFIRMED
+					),
+					new String[] {
+							WAITING_ID,
+							WAITING_STATUS
+					},
+					List.of(
+							waitingId,
+							STATUS_OFFERED
+					)
+			);
+
+			if (!updatedWaitingRequest) {
+				conn.rollback();
+				return -1;
+			}
+
+			conn.commit();
+			return newOrderNumber;
+
+		} catch (SQLException e) {
+			conn.rollback();
+			throw e;
+
+		} finally {
+			conn.setAutoCommit(previousAutoCommit);
+		}
+	}
+
+	private int getNextOrderNumberForWaitingAcceptedOrder() throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT COALESCE(MAX(order_number), 0) + 1 AS next_order_number
+				FROM `order`;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
+
+			if (rs.next()) {
+				return rs.getInt("next_order_number");
+			}
+		}
+
+		return 1;
+	}
+	
 
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
