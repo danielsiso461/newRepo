@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -37,71 +38,149 @@ import javafx.stage.Stage;
  */
 public class ParkParameterApprovalPageController implements ParkParameterObserver {
 
+	/**
+	 * the parameter name for maximum capacity
+	 */
 	private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
+
+	/**
+	 * the parameter name for places for unplanned visitors
+	 */
 	private static final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
 			"places_for_unplanned_visitors";
+
+	/**
+	 * the parameter name for estimated visit duration
+	 */
 	private static final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
 			"estimated_visit_duration_hours";
+
+	/**
+	 * the parameter name for promotions
+	 */
 	private static final String PARAMETER_PROMOTIONS = "promotions";
 
+	/**
+	 * the role name of a department manager
+	 */
 	private static final String ROLE_DEPARTMENT_MANAGER = "department_manager";
 
+	/**
+	 * the client controller used to communicate with the server
+	 */
 	private ClientController clientController;
 
+	/**
+	 * the currently logged-in employee
+	 */
 	private Employee loggedInEmployee;
 
+	/**
+	 * the last review note submitted by the department manager
+	 */
 	private String lastSubmittedReviewNote = "";
+
+	/**
+	 * the last operation message that should stay after refreshing the table
+	 */
 	private String lastOperationMessageToKeep;
 
+	/**
+	 * the label used to display the page header
+	 */
 	@FXML
 	private Label headerLabel;
 
+	/**
+	 * the label used to display the page sub-header
+	 */
 	@FXML
 	private Label subHeaderLabel;
 
+	/**
+	 * the table view that displays park parameter change requests
+	 */
 	@FXML
 	private TableView<ParkParameterChangeRequest> requestsTableView;
 
+	/**
+	 * the column that displays the request ID
+	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, Integer> requestIdColumn;
 
+	/**
+	 * the column that displays the park ID
+	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, Integer> parkIdColumn;
 
-	/*
+	/**
 	 * The current DB table no longer stores requested_by_employee_id.
 	 * This column is kept only so the existing FXML will not break.
 	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, String> requestedByColumn;
 
+	/**
+	 * the column that displays the parameter name
+	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, String> parameterColumn;
 
+	/**
+	 * the column that displays the old parameter value
+	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, String> oldValueColumn;
 
+	/**
+	 * the column that displays the new parameter value
+	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, String> newValueColumn;
 
+	/**
+	 * the column that displays the request status
+	 */
 	@FXML
 	private TableColumn<ParkParameterChangeRequest, String> statusColumn;
 
+	/**
+	 * the text area used to enter a review note
+	 */
 	@FXML
 	private TextArea reviewNoteArea;
 
+	/**
+	 * the button used to approve a request
+	 */
 	@FXML
 	private Button approveButton;
 
+	/**
+	 * the button used to reject a request
+	 */
 	@FXML
 	private Button rejectButton;
 
+	/**
+	 * the button used to refresh the pending requests table
+	 */
 	@FXML
 	private Button refreshButton;
 
+	/**
+	 * the label used to display status messages
+	 */
 	@FXML
 	private Label statusLabel;
 
+	/**
+	 * Sets the client controller.
+	 *
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 
@@ -111,10 +190,21 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		}
 	}
 
+	/**
+	 * Sets the logged-in employee.
+	 *
+	 * @param employee the logged-in employee
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 	}
 
+	/**
+	 * Initializes the park parameter approval page.
+	 *
+	 * This method sets the page labels, prepares the table,
+	 * and checks department manager permissions.
+	 */
 	@FXML
 	private void initialize() {
 		headerLabel.setText("Park Parameter Change Approval");
@@ -142,6 +232,9 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		setInfoStatus("Ready");
 	}
 
+	/**
+	 * Sets the table column value factories.
+	 */
 	private void setupTableColumns() {
 		requestIdColumn.setCellValueFactory(
 				new PropertyValueFactory<>("requestId")
@@ -182,6 +275,9 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		);
 	}
 
+	/**
+	 * Sets the selection listener for the requests table.
+	 */
 	private void setupSelectionListener() {
 		requestsTableView.getSelectionModel().selectedItemProperty().addListener(
 				(observable, oldValue, selectedRequest) -> {
@@ -196,6 +292,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		);
 	}
 
+	/**
+	 * Formats a parameter name for display in the table.
+	 *
+	 * @param parameterName the parameter name from the database
+	 * @return the formatted parameter name
+	 */
 	private String formatParameterName(String parameterName) {
 		if (parameterName == null) {
 			return "-";
@@ -220,6 +322,13 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		}
 	}
 
+	/**
+	 * Formats a parameter value for display in the table.
+	 *
+	 * @param parameterName the parameter name
+	 * @param value the parameter value
+	 * @return the formatted parameter value
+	 */
 	private String formatParameterValue(String parameterName, String value) {
 		if (value == null || value.isBlank()) {
 			return "-";
@@ -237,11 +346,20 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		return value;
 	}
 
+	/**
+	 * Handles the click on the refresh button.
+	 */
 	@FXML
 	private void handleRefresh() {
 		requestPendingRequests(true);
 	}
 
+	/**
+	 * Handles the click on the approve button.
+	 *
+	 * This method validates the selected request and sends an approval request
+	 * to the server.
+	 */
 	@FXML
 	private void handleApprove() {
 		ParkParameterChangeRequest selectedRequest =
@@ -274,6 +392,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		);
 	}
 
+	/**
+	 * Handles the click on the reject button.
+	 *
+	 * This method validates the selected request and sends a rejection request
+	 * to the server.
+	 */
 	@FXML
 	private void handleReject() {
 		ParkParameterChangeRequest selectedRequest =
@@ -306,6 +430,11 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		);
 	}
 
+	/**
+	 * Requests pending park parameter change requests from the server.
+	 *
+	 * @param showLoadingStatus true if a loading status should be displayed
+	 */
 	private void requestPendingRequests(boolean showLoadingStatus) {
 		if (clientController == null) {
 			setErrorStatus("Client is not connected.");
@@ -331,6 +460,11 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		);
 	}
 
+	/**
+	 * This method is called when pending park parameter requests are received.
+	 *
+	 * @param requests the list of pending park parameter change requests
+	 */
 	@Override
 	public void onPendingParkParameterRequestsReceived(
 			List<ParkParameterChangeRequest> requests) {
@@ -361,6 +495,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		}
 	}
 
+	/**
+	 * This method is called when the server returns a park parameter operation response.
+	 *
+	 * @param response the operation response received from the server
+	 * @param responseType the protocol type of the response
+	 */
 	@Override
 	public void onParkParameterOperationResponse(
 			OperationResponse response, Protocol responseType) {
@@ -408,6 +548,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		showInfoAlert("Operation Completed", message);
 	}
 
+	/**
+	 * Normalizes a review note.
+	 *
+	 * @param reviewNote the review note
+	 * @return the normalized review note
+	 */
 	private String normalizeReviewNote(String reviewNote) {
 		if (reviewNote == null) {
 			return "";
@@ -419,6 +565,13 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 	/*
 	 * The review note is currently not stored in the DB because the matching column
 	 * no longer exists. It is only shown in the current operation message.
+	 */
+	/**
+	 * Builds an operation message with the review note.
+	 *
+	 * @param baseMessage the base operation message
+	 * @param reviewNote the review note
+	 * @return the full operation message
 	 */
 	private String buildMessageWithReviewNote(String baseMessage, String reviewNote) {
 		String safeBaseMessage = baseMessage == null || baseMessage.isBlank()
@@ -432,21 +585,42 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		return safeBaseMessage + " Review note: \"" + reviewNote.trim() + "\"";
 	}
 
+	/**
+	 * Sets an information status message.
+	 *
+	 * @param message the status message
+	 */
 	private void setInfoStatus(String message) {
 		updateStatusLabel(message, "status-info");
 		System.out.println("[ParkParameterApprovalPage] " + message);
 	}
 
+	/**
+	 * Sets a success status message.
+	 *
+	 * @param message the status message
+	 */
 	private void setSuccessStatus(String message) {
 		updateStatusLabel(message, "status-success");
 		System.out.println("[ParkParameterApprovalPage] SUCCESS - " + message);
 	}
 
+	/**
+	 * Sets an error status message.
+	 *
+	 * @param message the status message
+	 */
 	private void setErrorStatus(String message) {
 		updateStatusLabel(message, "status-error");
 		System.out.println("[ParkParameterApprovalPage] ERROR - " + message);
 	}
 
+	/**
+	 * Updates the status label text and style.
+	 *
+	 * @param message the status message
+	 * @param statusStyleClass the status style class
+	 */
 	private void updateStatusLabel(String message, String statusStyleClass) {
 		statusLabel.setText("Status: " + message);
 
@@ -459,6 +633,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		}
 	}
 
+	/**
+	 * Shows an information alert.
+	 *
+	 * @param title the alert title
+	 * @param message the alert message
+	 */
 	private void showInfoAlert(String title, String message) {
 		Alert alert = new Alert(Alert.AlertType.INFORMATION);
 		alert.setTitle(title);
@@ -467,6 +647,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		alert.showAndWait();
 	}
 
+	/**
+	 * Shows a warning alert.
+	 *
+	 * @param title the alert title
+	 * @param message the alert message
+	 */
 	private void showWarningAlert(String title, String message) {
 		Alert alert = new Alert(Alert.AlertType.WARNING);
 		alert.setTitle(title);
@@ -475,6 +661,12 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		alert.showAndWait();
 	}
 
+	/**
+	 * Shows an error alert.
+	 *
+	 * @param title the alert title
+	 * @param message the alert message
+	 */
 	private void showErrorAlert(String title, String message) {
 		Alert alert = new Alert(Alert.AlertType.ERROR);
 		alert.setTitle(title);
@@ -483,6 +675,13 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		alert.showAndWait();
 	}
 
+	/**
+	 * Handles the click on the back button.
+	 *
+	 * This method removes the observer and returns to the department manager dashboard.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleBack(ActionEvent event) {
 		try {
@@ -510,3 +709,4 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		}
 	}
 }
+

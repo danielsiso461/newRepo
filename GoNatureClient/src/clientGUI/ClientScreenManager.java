@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -15,49 +16,97 @@ import javafx.stage.Stage;
  */
 public final class ClientScreenManager {
 
+    /**
+     * the main stage of the client application
+     */
     private static Stage primaryStage;
+
+    /**
+     * the client controller used by the screens
+     */
     private static ClientController clientController;
 
+    /**
+     * Private constructor to prevent creating ClientScreenManager objects.
+     */
     private ClientScreenManager() {
     }
 
+    /**
+     * Sets the primary stage of the application.
+     *
+     * @param stage the primary stage
+     */
     public static void setPrimaryStage(Stage stage) {
         primaryStage = stage;
     }
 
+    /**
+     * Sets the client controller used by the screen manager.
+     *
+     * @param controller the client controller
+     */
     public static void setClientController(ClientController controller) {
         clientController = controller;
     }
 
+    /**
+     * Returns the client controller used by the screen manager.
+     *
+     * @return the client controller
+     */
     public static ClientController getClientController() {
         return clientController;
     }
 
+    /**
+     * Shows the welcome page.
+     */
     public static void showWelcomePage() {
         loadPage("/clientGUI/WelcomePage.fxml", "Welcome");
     }
 
+    /**
+     * Shows the order table display page.
+     */
     public static void showOrderTableDisplayPage() {
         loadPage("/clientGUI/OrderTableDisplayPage.fxml", "Orders");
     }
 
+    /**
+     * Shows the order update page.
+     */
     public static void showOrderUpdatePage() {
         loadPage("/clientGUI/OrderUpdatePage.fxml", "Update Order");
     }
 
+    /**
+     * Shows the make order page.
+     */
     public static void showMakeOrderPage() {
         loadPage("/clientGUI/MakeOrderPage.fxml", "Make Order");
         
     }
 
+    /**
+     * Shows the park selection page.
+     */
     public static void showParkSelectionPage() {
         loadPage("/clientGUI/ParkSelectionPage.fxml", "Park Selection");
     }
 
+    /**
+     * Shows the reports page.
+     */
     public static void showReportsPage() {
         loadPage("/clientGUI/ReportsPage.fxml", "Reports");
     }
 
+    /**
+     * Shows the entry payment page.
+     *
+     * The page is opened only if an employee is logged in.
+     */
     public static void showEntryPaymentPage() {
         if (!ClientSession.isEmployeeLoggedIn()) {
             System.out.println("Access denied: only employees can open entry payment page.");
@@ -67,6 +116,11 @@ public final class ClientScreenManager {
         loadPage("/clientGUI/EntryPaymentPage.fxml", "Entry Payment");
     }
     
+    /**
+     * Shows the park visitor counter view page.
+     *
+     * The page is opened only for park managers and department managers.
+     */
     public static void showParkVisitorCounterViewPage() {
         String role = ClientSession.getEmployeeRole();
 
@@ -79,6 +133,11 @@ public final class ClientScreenManager {
         loadPage("/clientGUI/ParkVisitorCounterViewPage.fxml", "Park Visitor Counter");
     }
 
+    /**
+     * Shows the park visitor counter update page.
+     *
+     * The page is opened only for park workers and park managers.
+     */
     public static void showParkVisitorCounterUpdatePage() {
         String role = ClientSession.getEmployeeRole();
 
@@ -91,6 +150,11 @@ public final class ClientScreenManager {
         loadPage("/clientGUI/ParkVisitorCounterUpdatePage.fxml", "Update Visitor Counter");
     }
 
+    /**
+     * Shows the park parameter request page.
+     *
+     * The page is opened only for park managers.
+     */
     public static void showParkParameterRequestPage() {
         if (!"park_manager".equals(ClientSession.getEmployeeRole())) {
             System.out.println("Access denied: only park managers can open parameter request page.");
@@ -100,6 +164,11 @@ public final class ClientScreenManager {
         loadPage("/clientGUI/ParkParameterRequestPage.fxml", "Park Parameter Request");
     }
 
+    /**
+     * Shows the park parameter approval page.
+     *
+     * The page is opened only for department managers.
+     */
     public static void showParkParameterApprovalPage() {
         if (!"department_manager".equals(ClientSession.getEmployeeRole())) {
             System.out.println("Access denied: only department managers can open parameter approval page.");
@@ -109,6 +178,12 @@ public final class ClientScreenManager {
         loadPage("/clientGUI/ParkParameterApprovalPage.fxml", "Park Parameter Approval");
     }
 
+    /**
+     * Loads an FXML page and displays it on the primary stage.
+     *
+     * @param fxmlPath the path of the FXML file
+     * @param title the title of the window
+     */
     private static void loadPage(String fxmlPath, String title) {
         try {
             if (primaryStage == null) {
@@ -140,6 +215,11 @@ public final class ClientScreenManager {
         }
     }
 
+    /**
+     * Connects the loaded page controller to the client controller.
+     *
+     * @param controller the loaded page controller
+     */
     private static void connectController(Object controller) {
         if (controller == null || clientController == null) {
             return;

@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -13,27 +14,33 @@ import javafx.stage.Stage;
 import clientController.ClientController;
 
 
-/*
- * This class is the controller for the customer access selection screen.
- * 
- * The screen allows the customer to choose between two access options:
- * existing customer login using username and password, or occasional customer
- * access using an order number.
+/**
+ * Controller for the customer access selection screen.
+ *
+ * This screen allows the customer to choose between existing customer login
+ * and occasional customer access.
  */
 public class CustomerAccessController {
 	
-	
+	/**
+	 * the client controller used to communicate with the server
+	 */
 	private ClientController clientController;
 
+	/**
+	 * Sets the client controller.
+	 *
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
 
-	/*
+	/**
 	 * Handles the click on the Existing Customer Login button.
-	 * 
+	 *
 	 * This method navigates the user to the existing customer login screen.
-	 * 
+	 *
 	 * @param event the button click event
 	 */
 	@FXML
@@ -57,11 +64,11 @@ public class CustomerAccessController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Occasional Customer Access button.
-	 * 
+	 *
 	 * This method navigates the user to the occasional customer access screen.
-	 * 
+	 *
 	 * @param event the button click event
 	 */
 	@FXML
@@ -86,11 +93,11 @@ public class CustomerAccessController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Back button.
-	 * 
+	 *
 	 * This method navigates the user back to the opening screen.
-	 * 
+	 *
 	 * @param event the button click event
 	 */
 	@FXML

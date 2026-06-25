@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.net.URL;
@@ -21,46 +22,113 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+
+/**
+ * Controller for the order update page.
+ *
+ * This screen allows the user to update the order date,
+ * the number of visitors, or both.
+ */
 @SuppressWarnings("deprecation")
 public class OrderUpdateController {
  
+    /**
+     * the resource bundle used by the FXML loader
+     */
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
 
+    /**
+     * the location URL used by the FXML loader
+     */
     @FXML // URL location of the FXML file that was given to the FXMLLoader
     private URL location;
 
+    /**
+     * the cancel button of the order update page
+     */
     @FXML // fx:id="OrderUpdatePageCancelButton"
     private Button OrderUpdatePageCancelButton; // Value injected by FXMLLoader
 
+    /**
+     * the date picker used to select the updated order date
+     */
     @FXML // fx:id="OrderUpdatePageDatePicker"
     private DatePicker OrderUpdatePageDatePicker; // Value injected by FXMLLoader
 
+    /**
+     * the spinner used to select the updated number of visitors
+     */
     @FXML // fx:id="OrderUpdatePageSpinner"
     private Spinner<Integer> OrderUpdatePageSpinner; // Value injected by FXMLLoader
 
+    /**
+     * the update button of the order update page
+     */
     @FXML // fx:id="OrderUpdatePageUpdateButton"
     private Button OrderUpdatePageUpdateButton; // Value injected by FXMLLoader
 
+    /**
+     * the checkbox used to choose whether to update the order date
+     */
     @FXML // fx:id="OrderUpdatePageDateCheckBox"
     private CheckBox OrderUpdatePageDateCheckBox; // Value injected by FXMLLoader
 
+    /**
+     * the checkbox used to choose whether to update the number of visitors
+     */
     @FXML // fx:id="OrderUpdatePageVisitorsCheckBox"
     private CheckBox OrderUpdatePageVisitorsCheckBox; // Value injected by FXMLLoader
     
+    /**
+     * the label used to display update messages
+     */
     @FXML // fx:id="updateLabel"
     private Label updateLabel; // Value injected by FXMLLoader
     
+    /**
+     * the ID of the user who made the order
+     */
     private String ordererId;
-    private int orderId, orderNumber;
+
+    /**
+     * the order ID of the selected order
+     */
+    private int orderId;
+    
+    /**
+     * the order number of the selected order
+     */
+    private int orderNumber;
+    
+
+    /**
+     * the original date of the order
+     */
     private LocalDate originalDate;
+
+    /**
+     * the original number of visitors in the order
+     */
     private int originalVisitors;
+
+    /**
+     * the client controller used to communicate with the server
+     */
     private ClientController clientController;
+
+    /**
+     * the previous stage that should be shown after closing this page
+     */
     private Stage prevStage;
+
+    /**
+     * the previous controller used to update the order table page
+     */
     private OrderTableDisplayController prevController;
     
-    /*
-     * setter that sets the ClientController on the UI side
+    /**
+     * Sets the ClientController on the UI side.
      * 
      * @param controller the ClientController
      */
@@ -68,32 +136,38 @@ public class OrderUpdateController {
         this.clientController = controller;
     }
     
-    /*
-     * setter that sets the previous stage, 
-     * used for when the update is done to load the order table again
+    /**
+     * Sets the previous stage.
+     *
+     * This stage is used when the update page is closed
+     * and the order table page should be shown again.
      * 
      * @param prevStage the previous stage
      */
     public void setPrevStage(Stage prevStage) {
         this.prevStage = prevStage;
     }
-    /*
-     * setter that sets the previous UI page's controller, 
-     * used for when the update is done to load the order table again
+
+    /**
+     * Sets the previous UI page controller.
+     *
+     * This controller is used when the update page is closed
+     * and the order table page should be updated.
      * 
-     * @param prevController the previous stage's controller
+     * @param prevController the previous page controller
      */
     public void setPrevController(OrderTableDisplayController prevController) {
         this.prevController = prevController;
     }
-    /*
-     * this method sets up the update page and relevant order data
+
+    /**
+     * Sets the order data for the update page.
      * 
-     * @param orderId 			the ID of the order
-     * @param orderDate 		the date of the order
-     * @param numberOfVisitors	the number of visitors of the order
-     * @param orderNumber		the number of the order in the order table of the user
-     * @param ordererId 		the ID of the user
+     * @param orderId the ID of the order
+     * @param orderDate the date of the order
+     * @param numberOfVisitors the number of visitors of the order
+     * @param orderNumber the number of the order in the order table of the user
+     * @param ordererId the ID of the user
      */
     public void setOrderData(int orderId, LocalDate orderDate, int numberOfVisitors,
     		int orderNumber, String ordererId) {
@@ -107,10 +181,10 @@ public class OrderUpdateController {
         OrderUpdatePageSpinner.getValueFactory().setValue(numberOfVisitors);
     }
     
-    /*
-     * this function handles pressing the cancel button
+    /**
+     * Handles the click on the cancel button.
      * 
-     * @param event		the event of pressing the cancel button
+     * @param event the button click event
      */
     @FXML
     void OrderUpdatePageCancelButtonHandler(ActionEvent event) {
@@ -121,10 +195,13 @@ public class OrderUpdateController {
         returnToOrderTable(OrderUpdatePageCancelButton);
     }
     
-    /*
-     * this function handles pressing the update button
+    /**
+     * Handles the click on the update button.
+     *
+     * This method checks which fields were selected for update,
+     * validates that an actual change was made, and sends the update request.
      * 
-     * @param event		the event of pressing the update button
+     * @param event the button click event
      */
     @FXML
     void OrderUpdatePageUpdateButtonHandler(ActionEvent event) {
@@ -167,10 +244,10 @@ public class OrderUpdateController {
         returnToOrderTable(OrderUpdatePageUpdateButton);
     }
     
-    /*
-     * this function handles changing the scene to order table
+    /**
+     * Returns to the order table page.
      * 
-     * @param btn		the button clicked
+     * @param btn the button that was clicked
      */
     void returnToOrderTable(Button btn) {
     	Stage currentStage = (Stage) btn.getScene().getWindow();
@@ -181,6 +258,9 @@ public class OrderUpdateController {
         }
     }
     
+    /**
+     * Updates the visibility of the update label.
+     */
     private void updateUpdateLabelVisibility() {
         boolean hasMessage = updateLabel.getText() != null
                 && !updateLabel.getText().isBlank();
@@ -189,6 +269,12 @@ public class OrderUpdateController {
         updateLabel.setManaged(hasMessage);
     }
 
+    /**
+     * Initializes the order update page.
+     *
+     * This method sets the spinner, date picker, label visibility,
+     * and close request behavior.
+     */
     @FXML // This method is called by the FXMLLoader when initialization is complete
     void initialize() {
         assert OrderUpdatePageCancelButton != null : "fx:id=\"OrderUpdatePageCancelButton\" was not injected: check your FXML file 'OrderUpdatePage.fxml'.";
@@ -239,3 +325,4 @@ public class OrderUpdateController {
      	});
     }
 }
+

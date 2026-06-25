@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -153,6 +154,13 @@ public class DepartmentManagerHomePageController {
 		}
 	}
 	
+	/**
+	 * Handles click on the view user information button.
+	 * 
+	 * This screen allows the department manager to search and view user information.
+	 * 
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleViewUserInformation(ActionEvent event) {
 		try {
@@ -216,3 +224,4 @@ public class DepartmentManagerHomePageController {
 		}
 	}
 }
+

@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -18,67 +19,159 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+/**
+ * Controller for the park entrance control page.
+ *
+ * This screen allows a park worker to check in visitors, check out visitors,
+ * create occasional visits, and view the current number of visitors in the park.
+ */
 public class ParkEntranceControlController implements ParkEntranceObserver {
 
+	/**
+	 * the minimum number of visitors allowed
+	 */
 	private static final int MIN_VISITORS = 1;
+
+	/**
+	 * the maximum number of visitors allowed
+	 */
 	private static final int MAX_VISITORS = 15;
 
+	/**
+	 * Represents the possible modes of the park entrance screen.
+	 */
 	public enum EntranceMode {
+		/**
+		 * mode for checking in visitors with an existing order
+		 */
 		CHECK_IN,
+
+		/**
+		 * mode for creating an occasional visit
+		 */
 		OCCASIONAL_VISIT,
+
+		/**
+		 * mode for checking visitors out of the park
+		 */
 		CHECK_OUT,
+
+		/**
+		 * mode for viewing the current number of visitors
+		 */
 		CURRENT_VISITORS
 	}
 
+	/**
+	 * the client controller used to communicate with the server
+	 */
 	private ClientController clientController;
+
+	/**
+	 * the currently logged-in employee
+	 */
 	private Employee loggedInEmployee;
+
+	/**
+	 * the current entrance mode of the screen
+	 */
 	private EntranceMode entranceMode;
 
+	/**
+	 * the label used to display the screen instructions
+	 */
 	@FXML
 	private Label instructionLabel;
 
+	/**
+	 * the label for the confirmation code field
+	 */
 	@FXML
 	private Label confirmationCodeLabel;
 
+	/**
+	 * the text field for entering the confirmation code
+	 */
 	@FXML
 	private TextField confirmationCodeField;
 
+	/**
+	 * the label for the park ID field
+	 */
 	@FXML
 	private Label parkIdLabel;
 
+	/**
+	 * the text field for displaying the park ID
+	 */
 	@FXML
 	private TextField parkIdField;
 
+	/**
+	 * the label for the employee ID field
+	 */
 	@FXML
 	private Label employeeIdLabel;
 
+	/**
+	 * the text field for displaying the employee ID
+	 */
 	@FXML
 	private TextField employeeIdField;
 
+	/**
+	 * the label for the visitors field
+	 */
 	@FXML
 	private Label visitorsLabel;
 
+	/**
+	 * the text field for entering the number of visitors
+	 */
 	@FXML
 	private TextField visitorsField;
 
+	/**
+	 * the button used to check in visitors
+	 */
 	@FXML
 	private Button checkInButton;
 
+	/**
+	 * the button used to check out visitors
+	 */
 	@FXML
 	private Button checkOutButton;
 
+	/**
+	 * the button used to create an occasional visit
+	 */
 	@FXML
 	private Button occasionalVisitButton;
 
+	/**
+	 * the button used to load the current visitors count
+	 */
 	@FXML
 	private Button currentVisitorsButton;
 
+	/**
+	 * the label used to display the current number of visitors
+	 */
 	@FXML
 	private Label currentVisitorsLabel;
 
+	/**
+	 * the label used to display status and error messages
+	 */
 	@FXML
 	private Label messageLabel;
 
+	/**
+	 * Sets the client controller.
+	 *
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 
@@ -87,6 +180,13 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Sets the logged-in employee.
+	 *
+	 * This method also fills the employee ID and park ID fields when possible.
+	 *
+	 * @param loggedInEmployee the logged-in employee
+	 */
 	public void setLoggedInEmployee(Employee loggedInEmployee) {
 		this.loggedInEmployee = loggedInEmployee;
 
@@ -101,11 +201,22 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		applyEntranceMode();
 	}
 
+	/**
+	 * Sets the entrance mode of the screen.
+	 *
+	 * @param entranceMode the entrance mode to set
+	 */
 	public void setEntranceMode(EntranceMode entranceMode) {
 		this.entranceMode = entranceMode;
 		applyEntranceMode();
 	}
 
+	/**
+	 * Initializes the park entrance control page.
+	 *
+	 * This method checks that all FXML fields were injected and prepares
+	 * the default screen state.
+	 */
 	@FXML
 	void initialize() {
 		assert instructionLabel != null : "fx:id=\"instructionLabel\" was not injected.";
@@ -131,6 +242,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		showInfo("Choose an entrance action.");
 	}
 
+	/**
+	 * Applies the current entrance mode to the screen.
+	 *
+	 * This method shows and hides the relevant fields and buttons
+	 * according to the selected entrance action.
+	 */
 	private void applyEntranceMode() {
 		if (entranceMode == null
 				|| checkInButton == null
@@ -211,18 +328,34 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Shows a button.
+	 *
+	 * @param button the button to show
+	 */
 	private void showButton(Button button) {
 		button.setDisable(false);
 		button.setVisible(true);
 		button.setManaged(true);
 	}
 
+	/**
+	 * Hides a button.
+	 *
+	 * @param button the button to hide
+	 */
 	private void hideButton(Button button) {
 		button.setDisable(false);
 		button.setVisible(false);
 		button.setManaged(false);
 	}
 
+	/**
+	 * Shows a label and its matching text field.
+	 *
+	 * @param label the label to show
+	 * @param field the text field to show
+	 */
 	private void showField(Label label, TextField field) {
 		label.setVisible(true);
 		label.setManaged(true);
@@ -230,6 +363,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		field.setManaged(true);
 	}
 
+	/**
+	 * Hides a label and its matching text field.
+	 *
+	 * @param label the label to hide
+	 * @param field the text field to hide
+	 */
 	private void hideField(Label label, TextField field) {
 		label.setVisible(false);
 		label.setManaged(false);
@@ -238,6 +377,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		field.clear();
 	}
 
+	/**
+	 * Handles the click on the check-in button.
+	 *
+	 * This method validates the entered details and sends a check-in request
+	 * to the server.
+	 */
 	@FXML
 	void checkInButtonClick() {
 		if (clientController == null) {
@@ -273,6 +418,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Handles the click on the check-out button.
+	 *
+	 * This method validates the entered details and sends a check-out request
+	 * to the server.
+	 */
 	@FXML
 	void checkOutButtonClick() {
 		if (clientController == null) {
@@ -305,6 +456,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Handles the click on the occasional visit button.
+	 *
+	 * This method validates the entered details and sends an occasional visit
+	 * request to the server.
+	 */
 	@FXML
 	void occasionalVisitButtonClick() {
 		if (clientController == null) {
@@ -342,6 +499,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Handles the click on the current visitors button.
+	 *
+	 * This method validates the park ID and sends a request for the current
+	 * number of visitors in the park.
+	 */
 	@FXML
 	void currentVisitorsButtonClick() {
 		if (clientController == null) {
@@ -369,10 +532,21 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Checks whether the visitors amount is valid.
+	 *
+	 * @param visitors the number of visitors
+	 * @return true if the number of visitors is valid
+	 */
 	private boolean isVisitorsAmountValid(int visitors) {
 		return visitors >= MIN_VISITORS && visitors <= MAX_VISITORS;
 	}
 
+	/**
+	 * Updates the current visitors label.
+	 *
+	 * @param parkEntranceMessage the park entrance message with the current visitors count
+	 */
 	private void updateCurrentVisitors(ParkEntranceMessage parkEntranceMessage) {
 		if (parkEntranceMessage != null) {
 			currentVisitorsLabel.setVisible(true);
@@ -382,6 +556,13 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Returns a safe message to display.
+	 *
+	 * @param message the original message
+	 * @param defaultMessage the default message
+	 * @return the original message if it is valid, otherwise the default message
+	 */
 	private String safeMessage(String message, String defaultMessage) {
 		if (message == null || message.trim().isEmpty()) {
 			return defaultMessage;
@@ -390,6 +571,11 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		return message;
 	}
 
+	/**
+	 * Shows an information status message.
+	 *
+	 * @param message the status message
+	 */
 	private void showInfo(String message) {
 		messageLabel.getStyleClass().removeAll(
 				"status-success",
@@ -410,6 +596,11 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		messageLabel.setText(message);
 	}
 
+	/**
+	 * Shows a success status message.
+	 *
+	 * @param message the status message
+	 */
 	private void showSuccess(String message) {
 		messageLabel.getStyleClass().removeAll(
 				"status-info",
@@ -430,6 +621,11 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		messageLabel.setText(message);
 	}
 
+	/**
+	 * Shows an error status message.
+	 *
+	 * @param message the status message
+	 */
 	private void showError(String message) {
 		messageLabel.getStyleClass().removeAll(
 				"status-info",
@@ -450,6 +646,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		messageLabel.setText(message);
 	}
 
+	/**
+	 * This method is called when the server returns the check-in result.
+	 *
+	 * @param success true if the check-in was successful
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
 	@Override
 	public void onCheckInOrderResult(boolean success,
 			ParkEntranceMessage parkEntranceMessage) {
@@ -474,6 +676,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 	}
 	
 	
+	/**
+	 * This method is called when the server returns the check-out result.
+	 *
+	 * @param success true if the check-out was successful
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
 	@Override
 	public void onCheckOutVisitResult(boolean success,
 			ParkEntranceMessage parkEntranceMessage) {
@@ -500,6 +708,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		});
 	}
 
+	/**
+	 * This method is called when the server returns the occasional visit result.
+	 *
+	 * @param success true if the occasional visit was successful
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
 	@Override
 	public void onOccasionalVisitResult(boolean success,
 			ParkEntranceMessage parkEntranceMessage) {
@@ -526,6 +740,12 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		});
 	}
 
+	/**
+	 * This method is called when the server returns the current visitors result.
+	 *
+	 * @param success true if the current visitors count was loaded successfully
+	 * @param parkEntranceMessage the response data returned from the server
+	 */
 	@Override
 	public void onCurrentVisitorsReceived(boolean success,
 			ParkEntranceMessage parkEntranceMessage) {
@@ -552,6 +772,13 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		});
 	}
 
+	/**
+	 * Handles the click on the back button.
+	 *
+	 * This method removes the observer and returns to the park worker home page.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void backButtonClick(ActionEvent event) {
 		try {
@@ -580,6 +807,9 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
+	/**
+	 * Handles server shutdown or disconnect.
+	 */
 	@Override
 	public void handleExit() {
 		Platform.runLater(() -> {
@@ -588,3 +818,4 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		});
 	}
 }
+

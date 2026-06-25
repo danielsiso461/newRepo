@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import clientCommon.ClientSession;
@@ -24,22 +25,45 @@ import javafx.stage.Stage;
  */
 public class EntryPaymentPageController implements EntryPriceObserver {
 
+    /**
+     * the client controller used to communicate with the server
+     */
     private ClientController clientController;
     
+    /**
+     * the previous scene used for returning back
+     */
     private Scene prevScene;
 
+    /**
+     * the text field for entering the order number
+     */
     @FXML
     private TextField orderNumberField;
 
+    /**
+     * the button used to calculate the entry price
+     */
     @FXML
     private Button calculateButton;
 
+    /**
+     * the text area used to display the entry price receipt
+     */
     @FXML
     private TextArea receiptTextArea;
 
+    /**
+     * the label used to display the current status
+     */
     @FXML
     private Label statusLabel;
 
+    /**
+     * Sets the client controller.
+     *
+     * @param clientController the client controller
+     */
     public void setClientController(ClientController clientController) {
         this.clientController = clientController;
 
@@ -48,10 +72,20 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         }
     }
     
+    /**
+     * Sets the previous scene.
+     *
+     * @param prevScene the previous scene
+     */
     public void setPrevScene(Scene prevScene) {
     	this.prevScene = prevScene;
     }
 
+    /**
+     * Initializes the entry payment page.
+     *
+     * This method checks employee access and prepares the page status.
+     */
     @FXML
     private void initialize() {
         boolean testMode = Boolean.getBoolean("entryPaymentTestMode");
@@ -71,6 +105,12 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         }
     }
 
+    /**
+     * Handles the click on the calculate price button.
+     *
+     * This method validates the order number and sends a price calculation
+     * request to the server.
+     */
     @FXML
     private void handleCalculatePrice() {
         if (clientController == null) {
@@ -119,6 +159,11 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         clientController.calculateEntryPrice(orderNumber);
     }
 
+    /**
+     * This method is called when the server returns the entry price calculation result.
+     *
+     * @param response the response received from the server
+     */
     @Override
     public void onEntryPriceCalculated(OperationResponse response) {
         if (response == null) {
@@ -147,21 +192,42 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         setSuccessStatus("Price calculated successfully.");
     }
 
+    /**
+     * Sets an information status message.
+     *
+     * @param message the status message
+     */
     private void setInfoStatus(String message) {
         updateStatusLabel(message, "status-info");
         System.out.println("[EntryPaymentPage] " + message);
     }
 
+    /**
+     * Sets a success status message.
+     *
+     * @param message the status message
+     */
     private void setSuccessStatus(String message) {
         updateStatusLabel(message, "status-success");
         System.out.println("[EntryPaymentPage] SUCCESS - " + message);
     }
 
+    /**
+     * Sets an error status message.
+     *
+     * @param message the status message
+     */
     private void setErrorStatus(String message) {
         updateStatusLabel(message, "status-error");
         System.out.println("[EntryPaymentPage] ERROR - " + message);
     }
 
+    /**
+     * Updates the status label text and style.
+     *
+     * @param message the status message
+     * @param statusStyleClass the status style class
+     */
     private void updateStatusLabel(String message, String statusStyleClass) {
         statusLabel.setText("Status: " + message);
 
@@ -174,6 +240,12 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         }
     }
 
+    /**
+     * Shows a warning alert.
+     *
+     * @param title the alert title
+     * @param message the alert message
+     */
     private void showWarningAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(title);
@@ -182,6 +254,12 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         alert.showAndWait();
     }
 
+    /**
+     * Shows an error alert.
+     *
+     * @param title the alert title
+     * @param message the alert message
+     */
     private void showErrorAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -190,6 +268,13 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         alert.showAndWait();
     }
     
+    /**
+     * Handles the click on the Back button.
+     *
+     * This method removes the observer and returns to the previous scene.
+     *
+     * @param event the button click event
+     */
     @FXML
     private void handleBack(ActionEvent event) {
     	if (clientController != null) {
@@ -207,3 +292,4 @@ public class EntryPaymentPageController implements EntryPriceObserver {
     	stage.show();
     }
 }
+

@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.util.List;
@@ -33,36 +34,78 @@ import javafx.stage.Stage;
  */
 public class ParkVisitorCounterViewPageController implements ParkVisitorCounterObserver {
 
+	/**
+	 * the role name of a park worker
+	 */
 	private static final String ROLE_PARK_WORKER = "park_worker";
+
+	/**
+	 * the role name of a park manager
+	 */
 	private static final String ROLE_PARK_MANAGER = "park_manager";
+
+	/**
+	 * the role name of a department manager
+	 */
 	private static final String ROLE_DEPARTMENT_MANAGER = "department_manager";
 
+    /**
+     * the client controller used to communicate with the server
+     */
     private ClientController clientController;
     
+    /**
+     * the currently logged-in employee
+     */
     private Employee loggedInEmployee;
 
-
+    /**
+     * the table view that displays park visitor counters
+     */
     @FXML
     private TableView<ParkVisitorCounterSnapshot> counterTableView;
 
+    /**
+     * the column that displays the park name
+     */
     @FXML
     private TableColumn<ParkVisitorCounterSnapshot, String> parkNameColumn;
 
+    /**
+     * the column that displays the current number of visitors
+     */
     @FXML
     private TableColumn<ParkVisitorCounterSnapshot, Integer> currentVisitorsColumn;
 
+    /**
+     * the column that displays the maximum park capacity
+     */
     @FXML
     private TableColumn<ParkVisitorCounterSnapshot, Integer> maxCapacityColumn;
 
+    /**
+     * the column that displays the number of available places
+     */
     @FXML
     private TableColumn<ParkVisitorCounterSnapshot, Integer> availablePlacesColumn;
 
+    /**
+     * the button used to refresh the visitor counters
+     */
     @FXML
     private Button refreshButton;
 
+    /**
+     * the label used to display status messages
+     */
     @FXML
     private Label statusLabel;
 
+    /**
+     * Sets the client controller.
+     *
+     * @param clientController the client controller
+     */
     public void setClientController(ClientController clientController) {
     	this.clientController = clientController;
 
@@ -72,10 +115,21 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
     	}
     }
     
+    /**
+     * Sets the logged-in employee.
+     *
+     * @param employee the logged-in employee
+     */
     public void setLoggedInEmployee(Employee employee) {
     	this.loggedInEmployee = employee;
     }
 
+    /**
+     * Initializes the visitor counter view page.
+     *
+     * This method sets the table columns, placeholder,
+     * and checks whether the current employee can view the page.
+     */
     @FXML
     private void initialize() {
         setupTableColumns();
@@ -93,6 +147,9 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         setInfoStatus("Ready");
     }
 
+    /**
+     * Sets the table column value factories.
+     */
     private void setupTableColumns() {
         parkNameColumn.setCellValueFactory(
                 new PropertyValueFactory<>("parkName")
@@ -113,6 +170,11 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         counterTableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
+    /**
+     * Checks whether the current employee can view visitor counters.
+     *
+     * @return true if the current employee can view visitor counters
+     */
     private boolean canCurrentEmployeeViewCounters() {
     	if (!isTestMode() && !ClientSession.isEmployeeLoggedIn()) {
     		return false;
@@ -125,11 +187,17 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
     			|| ROLE_DEPARTMENT_MANAGER.equals(role);
     }
 
+    /**
+     * Handles the click on the refresh button.
+     */
     @FXML
     private void handleRefresh() {
         requestCounters();
     }
 
+    /**
+     * Requests visitor counter data from the server.
+     */
     private void requestCounters() {
         if (clientController == null) {
             setErrorStatus("Client is not connected.");
@@ -153,6 +221,11 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         clientController.requestParkVisitorCounters(employeeId);
     }
 
+    /**
+     * This method is called when park visitor counters are received from the server.
+     *
+     * @param counters the list of visitor counter snapshots
+     */
     @Override
     public void onParkVisitorCountersReceived(
             List<ParkVisitorCounterSnapshot> counters) {
@@ -173,6 +246,12 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         }
     }
 
+    /**
+     * This method is called when the server returns a visitor counter operation response.
+     *
+     * @param response the operation response received from the server
+     * @param responseType the protocol type of the response
+     */
     @Override
     public void onParkVisitorCounterOperationResponse(
             OperationResponse response, Protocol responseType) {
@@ -193,15 +272,28 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         }
     }
 
+    /**
+     * This method is called when park visitor counters are updated.
+     */
     @Override
     public void onParkVisitorCountersUpdated() {
         requestCounters();
     }
 
+    /**
+     * Checks whether visitor counter test mode is active.
+     *
+     * @return true if test mode is active
+     */
     private boolean isTestMode() {
         return Boolean.getBoolean("visitorCounterTestMode");
     }
 
+    /**
+     * Returns the current employee role.
+     *
+     * @return the current employee role
+     */
     private String getCurrentEmployeeRole() {
         if (isTestMode()) {
             return System.getProperty("visitorCounterTestRole", "");
@@ -210,6 +302,11 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         return ClientSession.getEmployeeRole();
     }
 
+    /**
+     * Returns the current employee ID.
+     *
+     * @return the current employee ID
+     */
     private int getCurrentEmployeeId() {
         if (isTestMode()) {
             return Integer.getInteger("visitorCounterTestEmployeeId", -1);
@@ -218,21 +315,42 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         return ClientSession.getEmployeeId();
     }
 
+    /**
+     * Sets an information status message.
+     *
+     * @param message the status message
+     */
     private void setInfoStatus(String message) {
         updateStatusLabel(message, "status-info");
         System.out.println("[ParkVisitorCounterViewPage] " + message);
     }
 
+    /**
+     * Sets a success status message.
+     *
+     * @param message the status message
+     */
     private void setSuccessStatus(String message) {
         updateStatusLabel(message, "status-success");
         System.out.println("[ParkVisitorCounterViewPage] SUCCESS - " + message);
     }
 
+    /**
+     * Sets an error status message.
+     *
+     * @param message the status message
+     */
     private void setErrorStatus(String message) {
         updateStatusLabel(message, "status-error");
         System.out.println("[ParkVisitorCounterViewPage] ERROR - " + message);
     }
 
+    /**
+     * Updates the status label text and style.
+     *
+     * @param message the status message
+     * @param statusStyleClass the status style class
+     */
     private void updateStatusLabel(String message, String statusStyleClass) {
         statusLabel.setText("Status: " + message);
 
@@ -245,6 +363,14 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
         }
     }
     
+    /**
+     * Handles the click on the back button.
+     *
+     * This method returns the user to the correct dashboard
+     * according to the current employee role.
+     *
+     * @param event the button click event
+     */
     @FXML
     private void handleBack(ActionEvent event) {
     	try {
@@ -299,3 +425,4 @@ public class ParkVisitorCounterViewPageController implements ParkVisitorCounterO
     	}
     }
 }
+

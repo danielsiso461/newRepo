@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -38,86 +39,185 @@ import javafx.stage.WindowEvent;
 /*
  * This class is the UI controller for the order table page.
  */
+/**
+ * Controller for the order table page.
+ *
+ * This screen displays orders and allows the user to make, update,
+ * cancel, or view orders according to the current screen mode.
+ */
 @SuppressWarnings("deprecation")
 public class OrderTableDisplayController implements OrderObserver, Runnable {
 
+	/**
+	 * the client controller used to communicate with the server
+	 */
 	private ClientController clientController;
 
+	/**
+	 * the currently logged-in employee
+	 */
 	private Employee loggedInEmployee;
 
+	/**
+	 * indicates whether the screen is shown for a park manager
+	 */
 	private boolean parkManagerView = false;
 
+	/**
+	 * indicates whether the screen is shown for a service representative
+	 */
 	private boolean serviceRepresentativeView = false;
 
+	/**
+	 * indicates whether the screen is shown for a customer
+	 */
 	private boolean customerView = false;
 
+	/**
+	 * indicates whether the screen is shown for an occasional customer
+	 */
 	private boolean occasionalCustomerView = false;
 
+	/**
+	 * the set of order IDs that are waiting for update results
+	 */
 	private Set<Integer> awaitingUpdate = new HashSet<>();
 
+	/**
+	 * the set of order IDs that are waiting for cancellation results
+	 */
 	private Set<Integer> awaitingCancel = new HashSet<>();
 
+	/**
+	 * the observable list of orders displayed in the table
+	 */
 	private ObservableList<Order> data = FXCollections.observableArrayList();
 
+	/**
+	 * the currently selected order row
+	 */
 	private Order selectedRow = null;
 
+	/**
+	 * the resource bundle used by the FXML loader
+	 */
 	@FXML
 	private ResourceBundle resources;
 
+	/**
+	 * the location URL used by the FXML loader
+	 */
 	@FXML
 	private URL location;
 
+	/**
+	 * the table view that displays the orders
+	 */
 	@FXML
 	private TableView<Order> orderTable;
 
+	/**
+	 * the column that displays the order number
+	 */
 	@FXML
 	private TableColumn<Order, Integer> orderNumber;
 
+	/**
+	 * the column that displays the order ID
+	 */
 	@FXML
 	private TableColumn<Order, Integer> orderId;
 
+	/**
+	 * the column that displays the park ID
+	 */
 	@FXML
 	private TableColumn<Order, Integer> parkIdColumn;
 
+	/**
+	 * the column that displays the order date
+	 */
 	@FXML
 	private TableColumn<Order, LocalDate> orderDate;
 
+	/**
+	 * the column that displays the number of visitors
+	 */
 	@FXML
 	private TableColumn<Order, Integer> visitorNumber;
 
+	/**
+	 * the column that displays the confirmation code
+	 */
 	@FXML
 	private TableColumn<Order, Integer> confCode;
 
+	/**
+	 * the column that displays the user ID
+	 */
 	@FXML
 	private TableColumn<Order, Integer> userId;
 
+	/**
+	 * the column that displays the placement date
+	 */
 	@FXML
 	private TableColumn<Order, LocalDate> placementDate;
 
+	/**
+	 * the column that displays the order status
+	 */
 	@FXML
 	private TableColumn<Order, String> orderStatus;
 
+	/**
+	 * the button used to update an order
+	 */
 	@FXML
 	private Button updateButton;
 
+	/**
+	 * the button used to make a new order
+	 */
 	@FXML
 	private Button makeOrderButton;
 
+	/**
+	 * the button used to cancel an order
+	 */
 	@FXML
 	private Button cancelButton;
 
+	/**
+	 * the button used to open the waiting list page
+	 */
 	@FXML
 	private Button waitingListButton;
 
+	/**
+	 * the button used to return to the previous screen
+	 */
 	@FXML
 	private Button backButton;
 	
+	/**
+	 * the button used to open the customer details page
+	 */
 	@FXML
 	private Button myDetailsButton;
 
+	/**
+	 * the label used to display status messages
+	 */
 	@FXML
 	private Label notifLabel;
 
+	/**
+	 * Initializes the order table page.
+	 *
+	 * This method sets the table columns, hides action buttons,
+	 * and prepares the row selection listener.
+	 */
 	@FXML
 	void initialize() {
 		assert confCode != null : "fx:id=\"confCode\" was not injected.";
@@ -158,6 +258,14 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		showInfo("Ready");
 	}
 
+	/**
+	 * Handles the click on the update button.
+	 *
+	 * This method opens the order update page for the selected order.
+	 *
+	 * @param event the button click event
+	 * @throws Exception if the update page cannot be opened
+	 */
 	@FXML
 	void updateButtonClick(ActionEvent event) throws Exception {
 		if (selectedRow == null) {
@@ -195,6 +303,13 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		primaryStage.show();
 	}
 
+	/**
+	 * Handles the click on the make order button.
+	 *
+	 * This method opens the make order page.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	void makeOrderButtonClick(ActionEvent event) {
 		try {
@@ -225,6 +340,13 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 
+	/**
+	 * Handles the click on the waiting list button.
+	 *
+	 * This method opens the waiting list page.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	void waitingListButtonClick(ActionEvent event) {
 		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -260,6 +382,13 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		stage.show();
 	}
 
+	/**
+	 * Handles the click on the cancel button.
+	 *
+	 * This method sends an order cancellation request to the server.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	void cancelButtonClick(ActionEvent event) {
 		if (selectedRow == null) {
@@ -289,6 +418,13 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		showInfo("Cancellation request was sent for order ID: " + orderId);
 	}
 
+	/**
+	 * Handles row selection in the order table.
+	 *
+	 * @param obs the observable selection value
+	 * @param oldSelection the previous selected order
+	 * @param newSelection the new selected order
+	 */
 	private void handleRowSelection(ObservableValue<? extends Order> obs,
 			Order oldSelection, Order newSelection) {
 
@@ -301,6 +437,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 
+	/**
+	 * Handles the selected order row.
+	 *
+	 * @param row the selected order row
+	 */
 	private void onRowSelected(Order row) {
 		selectedRow = row;
 
@@ -347,6 +488,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	 * this method handles closing the client program if the server 
 	 * closed the user connection
 	 */
+	/**
+	 * Handles server shutdown or disconnect.
+	 */
 	public void handleExit() {
 		Platform.runLater(() -> {
 			Platform.exit();
@@ -354,6 +498,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		});
 	}
 
+	/**
+	 * Sets the close request behavior for the order table window.
+	 */
 	@Override
 	public void run() {
 		Stage stage = (Stage) orderTable.getScene().getWindow();
@@ -367,11 +514,19 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		});
 	}
 
+	/**
+	 * Handles a disconnect requested by the user.
+	 */
 	private void userIssuedDisconnect() {
 		clientController.setUserIssuedDisconnect(true);
 		clientController.disconnectFromServer();
 	}
 
+	/**
+	 * Sets the order table data.
+	 *
+	 * @param rows the list of orders to display
+	 */
 	public void setData(List<Order> rows) {
 		Platform.runLater(() -> {
 			data.setAll(rows);
@@ -385,6 +540,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		});
 	}
 
+	/**
+	 * Sets the client controller.
+	 *
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 
@@ -393,26 +553,52 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 
+	/**
+	 * Sets the logged-in employee.
+	 *
+	 * @param employee the logged-in employee
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 		backButton.setText("Back");
 	}
 
+	/**
+	 * Adds an order to the update waiting list.
+	 *
+	 * @param orderNumber the order number
+	 */
 	private void addOrderToUpdateWaitingList(int orderNumber) {
 		awaitingUpdate.add(orderNumber);
 		hideButton(updateButton);
 		hideButton(cancelButton);
 	}
 
+	/**
+	 * Removes an order from the update waiting list.
+	 *
+	 * @param orderNumber the order number
+	 */
 	protected void removeOrderFromUpdateWaitingList(int orderNumber) {
 		awaitingUpdate.remove(orderNumber);
 	}
 
+	/**
+	 * This method is called when orders are received from the server.
+	 *
+	 * @param rows the list of orders
+	 */
 	@Override
 	public void onOrdersReceived(List<Order> rows) {
 		setData(rows);
 	}
 
+	/**
+	 * This method is called when the server returns an order update result.
+	 *
+	 * @param success whether the update was successful
+	 * @param updateMessage the update message data
+	 */
 	@Override
 	public void onUpdateResult(boolean success, UpdateMessage updateMessage) {
 		if (updateMessage == null) {
@@ -459,6 +645,12 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 
+	/**
+	 * This method is called when the server returns an order cancellation result.
+	 *
+	 * @param success whether the cancellation was successful
+	 * @param cancelOrderMessage the cancellation message data
+	 */
 	@Override
 	public void onCancelResult(boolean success, CancelOrderMessage cancelOrderMessage) {
 		if (cancelOrderMessage == null) {
@@ -494,6 +686,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 
+	/**
+	 * Loads orders for a specific park.
+	 *
+	 * @param parkId the park ID
+	 */
 	public void loadOrdersForPark(int parkId) {
 		if (clientController == null) {
 			showError("Client is not connected to server.");
@@ -510,6 +707,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		clientController.requestOrdersByParkId(parkId);
 	}
 
+	/**
+	 * Configures the screen for park manager view.
+	 */
 	public void configureForParkManagerView() {
 		parkManagerView = true;
 		customerView = false;
@@ -524,6 +724,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		backButton.setText("Back");
 	}
 
+	/**
+	 * Configures the screen for service representative view.
+	 */
 	public void configureForServiceRepresentativeView() {
 		serviceRepresentativeView = true;
 		customerView = false;
@@ -538,6 +741,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		backButton.setText("Back");
 	}
 
+	/**
+	 * Configures the screen for customer view.
+	 */
 	public void configureForCustomerView() {
 		customerView = true;
 		parkManagerView = false;
@@ -552,11 +758,17 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		backButton.setText("Logout");
 	}
 
+	/**
+	 * Configures the screen for occasional customer view.
+	 */
 	public void configureForOccasionalCustomerView() {
 		configureForCustomerView();
 		occasionalCustomerView = true;
 	}
 
+	/**
+	 * Loads all orders for a service representative.
+	 */
 	public void loadAllOrdersForServiceRepresentative() {
 		if (clientController == null) {
 			showError("Client is not connected to server.");
@@ -568,6 +780,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		clientController.requestAllOrdersForServiceRepresentative();
 	}
 
+	/**
+	 * Adds an order to the table.
+	 *
+	 * @param order the order to add
+	 */
 	@Override
 	public void addOrder(Order order) {
 		Platform.runLater(() -> {
@@ -577,6 +794,13 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		});
 	}
 
+	/**
+	 * Handles the click on the My Details button.
+	 *
+	 * This method opens the user information page for the current customer.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleMyDetails(ActionEvent event) {
 		try {
@@ -629,6 +853,14 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 	
+	/**
+	 * Handles the click on the back button.
+	 *
+	 * This method returns the user to the correct previous screen
+	 * according to the current screen mode.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	void backButtonClick(ActionEvent event) {
 		try {
@@ -702,6 +934,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 
+	/**
+	 * This method is called when an order was declined from a reminder.
+	 *
+	 * @param order the declined order
+	 */
 	@Override
 	public void reminderDeclined(Order order) {
 		Platform.runLater(() -> {
@@ -715,6 +952,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		});
 	}
 
+	/**
+	 * Shows a button.
+	 *
+	 * @param button the button to show
+	 */
 	private void showButton(Button button) {
 		if (button == null) {
 			return;
@@ -725,6 +967,11 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		button.setManaged(true);
 	}
 
+	/**
+	 * Hides a button.
+	 *
+	 * @param button the button to hide
+	 */
 	private void hideButton(Button button) {
 		if (button == null) {
 			return;
@@ -735,18 +982,39 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		button.setManaged(false);
 	}
 
+	/**
+	 * Shows an information status message.
+	 *
+	 * @param message the status message
+	 */
 	private void showInfo(String message) {
 		updateStatus(message, "status-info");
 	}
 
+	/**
+	 * Shows a success status message.
+	 *
+	 * @param message the status message
+	 */
 	private void showSuccess(String message) {
 		updateStatus(message, "status-success");
 	}
 
+	/**
+	 * Shows an error status message.
+	 *
+	 * @param message the status message
+	 */
 	private void showError(String message) {
 		updateStatus(message, "status-error");
 	}
 
+	/**
+	 * Updates the status label text and style.
+	 *
+	 * @param message the status message
+	 * @param styleClass the style class for the status label
+	 */
 	private void updateStatus(String message, String styleClass) {
 		notifLabel.setText("Status: " + message);
 
@@ -759,3 +1027,4 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		}
 	}
 }
+

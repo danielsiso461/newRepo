@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -38,43 +39,96 @@ import javafx.util.StringConverter;
 public class ParkParameterRequestPageController 
         implements ParkObserver, ParkParameterObserver {
 
+    /**
+     * the parameter name for maximum capacity
+     */
     private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
+
+    /**
+     * the parameter name for places for unplanned visitors
+     */
     private static final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
             "places_for_unplanned_visitors";
+
+    /**
+     * the parameter name for estimated visit duration
+     */
     private static final String PARAMETER_ESTIMATED_VISIT_DURATION_HOURS =
             "estimated_visit_duration_hours";
+
+    /**
+     * the parameter name for promotions
+     */
     private static final String PARAMETER_PROMOTIONS = "promotions";
 
+    /**
+     * the role name of a park manager
+     */
     private static final String ROLE_PARK_MANAGER = "park_manager";
 
+    /**
+     * the client controller used to communicate with the server
+     */
     private ClientController clientController;
 
+    /**
+     * the currently logged-in employee
+     */
     private Employee loggedInEmployee;
 
+    /**
+     * the label used to display the page header
+     */
     @FXML
     private Label headerLabel;
 
+    /**
+     * the label used to display the page sub-header
+     */
     @FXML
     private Label subHeaderLabel;
 
+    /**
+     * the combo box used to select the park
+     */
     @FXML
     private ComboBox<Park> parkComboBox;
 
+    /**
+     * the combo box used to select the parameter
+     */
     @FXML
     private ComboBox<ParameterOption> parameterComboBox;
 
+    /**
+     * the label used to display the current parameter value
+     */
     @FXML
     private Label currentValueLabel;
 
+    /**
+     * the text field used to enter the new parameter value
+     */
     @FXML
     private TextField newValueField;
 
+    /**
+     * the button used to submit the request
+     */
     @FXML
     private Button submitButton;
 
+    /**
+     * the label used to display status messages
+     */
     @FXML
     private Label statusLabel;
 
+    /**
+     * Sets the client controller.
+     *
+     * @param clientController the client controller
+     */
     public void setClientController(ClientController clientController) {
         this.clientController = clientController;
 
@@ -85,10 +139,21 @@ public class ParkParameterRequestPageController
         }
     }
 
+    /**
+     * Sets the logged-in employee.
+     *
+     * @param employee the logged-in employee
+     */
     public void setLoggedInEmployee(Employee employee) {
         this.loggedInEmployee = employee;
     }
 
+    /**
+     * Initializes the park parameter request page.
+     *
+     * This method sets the page labels, combo boxes, listeners,
+     * and checks park manager permissions.
+     */
     @FXML
     private void initialize() {
         headerLabel.setText("Park Parameter Update Request");
@@ -111,6 +176,9 @@ public class ParkParameterRequestPageController
         setInfoStatus("Ready");
     }
 
+    /**
+     * Sets the park combo box converter.
+     */
     private void setupParkComboBox() {
         parkComboBox.setConverter(new StringConverter<Park>() {
 
@@ -130,6 +198,9 @@ public class ParkParameterRequestPageController
         });
     }
 
+    /**
+     * Sets the parameter combo box options and converter.
+     */
     private void setupParameterComboBox() {
         parameterComboBox.setConverter(new StringConverter<ParameterOption>() {
 
@@ -162,6 +233,9 @@ public class ParkParameterRequestPageController
         }
     }
 
+    /**
+     * Sets listeners for updating the current parameter value.
+     */
     private void setupListeners() {
         parkComboBox.valueProperty().addListener(
                 (observable, oldValue, newValue) -> updateCurrentValueLabel()
@@ -172,6 +246,12 @@ public class ParkParameterRequestPageController
         );
     }
 
+    /**
+     * Handles the click on the submit request button.
+     *
+     * This method validates the selected park, selected parameter,
+     * and new value before sending the request to the server.
+     */
     @FXML
     private void handleSubmitRequest() {
         if (clientController == null) {
@@ -244,6 +324,13 @@ public class ParkParameterRequestPageController
         );
     }
 
+    /**
+     * Checks whether the new parameter value is valid.
+     *
+     * @param parameterName the parameter name
+     * @param newValue the new value entered by the user
+     * @return true if the new value is valid
+     */
     private boolean isNewValueValid(String parameterName, String newValue) {
         try {
             switch (parameterName) {
@@ -307,6 +394,9 @@ public class ParkParameterRequestPageController
         }
     }
 
+    /**
+     * Updates the current value label according to the selected park and parameter.
+     */
     private void updateCurrentValueLabel() {
         Park selectedPark = parkComboBox.getValue();
         ParameterOption selectedParameter = parameterComboBox.getValue();
@@ -321,6 +411,13 @@ public class ParkParameterRequestPageController
         );
     }
 
+    /**
+     * Returns the current parameter value text.
+     *
+     * @param park the selected park
+     * @param parameterName the selected parameter name
+     * @return the current value text
+     */
     private String getCurrentValueText(Park park, String parameterName) {
         switch (parameterName) {
 
@@ -341,6 +438,11 @@ public class ParkParameterRequestPageController
         }
     }
 
+    /**
+     * This method is called when parks are received from the server.
+     *
+     * @param parks the list of parks received from the server
+     */
     @Override
     public void onParksReceived(List<Park> parks) {
         ObservableList<Park> visibleParks = FXCollections.observableArrayList();
@@ -369,6 +471,11 @@ public class ParkParameterRequestPageController
         setInfoStatus("Park data loaded successfully.");
     }
 
+    /**
+     * This method is called when pending park parameter requests are received.
+     *
+     * @param requests the list of pending park parameter change requests
+     */
     @Override
     public void onPendingParkParameterRequestsReceived(
             List<ParkParameterChangeRequest> requests) {
@@ -379,6 +486,12 @@ public class ParkParameterRequestPageController
          */
     }
 
+    /**
+     * This method is called when the server returns a park parameter operation response.
+     *
+     * @param response the operation response received from the server
+     * @param responseType the protocol type of the response
+     */
     @Override
     public void onParkParameterOperationResponse(
             OperationResponse response, Protocol responseType) {
@@ -411,21 +524,42 @@ public class ParkParameterRequestPageController
         showInfoAlert("Operation Completed", message);
     }
 
+    /**
+     * Sets an information status message.
+     *
+     * @param message the status message
+     */
     private void setInfoStatus(String message) {
         updateStatusLabel(message, "status-info");
         System.out.println("[ParkParameterRequestPage] " + message);
     }
 
+    /**
+     * Sets a success status message.
+     *
+     * @param message the status message
+     */
     private void setSuccessStatus(String message) {
         updateStatusLabel(message, "status-success");
         System.out.println("[ParkParameterRequestPage] SUCCESS - " + message);
     }
 
+    /**
+     * Sets an error status message.
+     *
+     * @param message the status message
+     */
     private void setErrorStatus(String message) {
         updateStatusLabel(message, "status-error");
         System.out.println("[ParkParameterRequestPage] ERROR - " + message);
     }
 
+    /**
+     * Updates the status label text and style.
+     *
+     * @param message the status message
+     * @param statusStyleClass the status style class
+     */
     private void updateStatusLabel(String message, String statusStyleClass) {
         statusLabel.setText("Status: " + message);
 
@@ -438,6 +572,12 @@ public class ParkParameterRequestPageController
         }
     }
 
+    /**
+     * Shows an information alert.
+     *
+     * @param title the alert title
+     * @param message the alert message
+     */
     private void showInfoAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
@@ -446,6 +586,12 @@ public class ParkParameterRequestPageController
         alert.showAndWait();
     }
 
+    /**
+     * Shows a warning alert.
+     *
+     * @param title the alert title
+     * @param message the alert message
+     */
     private void showWarningAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
         alert.setTitle(title);
@@ -454,6 +600,12 @@ public class ParkParameterRequestPageController
         alert.showAndWait();
     }
 
+    /**
+     * Shows an error alert.
+     *
+     * @param title the alert title
+     * @param message the alert message
+     */
     private void showErrorAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -462,30 +614,68 @@ public class ParkParameterRequestPageController
         alert.showAndWait();
     }
 
+    /**
+     * Represents one parameter option in the parameter combo box.
+     */
     private static class ParameterOption {
 
+        /**
+         * the parameter key used by the system
+         */
         private final String key;
+
+        /**
+         * the parameter display name shown to the user
+         */
         private final String displayName;
 
+        /**
+         * Creates a parameter option.
+         *
+         * @param key the parameter key
+         * @param displayName the parameter display name
+         */
         ParameterOption(String key, String displayName) {
             this.key = key;
             this.displayName = displayName;
         }
 
+        /**
+         * Returns the parameter key.
+         *
+         * @return the parameter key
+         */
         String getKey() {
             return key;
         }
 
+        /**
+         * Returns the parameter display name.
+         *
+         * @return the parameter display name
+         */
         String getDisplayName() {
             return displayName;
         }
 
+        /**
+         * Returns the parameter display name.
+         *
+         * @return the parameter display name
+         */
         @Override
         public String toString() {
             return displayName;
         }
     }
 
+    /**
+     * Handles the click on the back button.
+     *
+     * This method returns to the park manager dashboard.
+     *
+     * @param event the button click event
+     */
     @FXML
     private void handleBack(ActionEvent event) {
         try {
@@ -509,3 +699,4 @@ public class ParkParameterRequestPageController
         }
     }
 }
+

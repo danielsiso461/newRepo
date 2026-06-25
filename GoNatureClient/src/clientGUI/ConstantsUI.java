@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 /**
@@ -41,12 +42,28 @@ public final class ConstantsUI {
 	protected static final String parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
 
 	/**
-	 * Constants for visitor number and hour pickers.
+	 * The minimum number of visitors allowed.
 	 */
 	protected static final int MIN_VISITORS = 1;
+
+	/**
+	 * The maximum number of visitors allowed.
+	 */
 	protected static final int MAX_VISITORS = 15;
+
+	/**
+	 * The default starting number of visitors.
+	 */
 	protected static final int START_VISITORS = 1;
+
+	/**
+	 * The minimum hour value allowed.
+	 */
 	protected static final int MIN_HOUR = 0;
+
+	/**
+	 * The maximum hour value allowed.
+	 */
 	protected static final int MAX_HOUR = 23;
 
 	/**
@@ -55,3 +72,4 @@ public final class ConstantsUI {
 	private ConstantsUI() {
 	}
 }
+

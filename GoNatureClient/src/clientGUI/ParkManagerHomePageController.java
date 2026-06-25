@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.io.IOException;
@@ -15,25 +16,46 @@ import javafx.stage.Stage;
 import clientCommon.ClientSession;
 import javafx.scene.control.Alert;
 
-/*
- * This class is the controller for the park manager home page.
- * 
+/**
+ * Controller for the park manager home page.
+ *
  * The park manager is responsible for managing a specific park,
  * including park parameters, reports, and operational data.
  */
 public class ParkManagerHomePageController {
 
+	/**
+	 * the client controller used to communicate with the server
+	 */
 	private ClientController clientController;
 	
+	/**
+	 * the currently logged-in employee
+	 */
 	private Employee loggedInEmployee;
 
+	/**
+	 * the label used to welcome the logged-in park manager
+	 */
 	@FXML
 	private Label welcomeLabel;
 
+	/**
+	 * Sets the client controller.
+	 *
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
 
+	/**
+	 * Sets the logged-in employee.
+	 *
+	 * This method also updates the welcome label.
+	 *
+	 * @param employee the logged-in employee
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -42,10 +64,12 @@ public class ParkManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles click on the view park orders button.
-	 * 
+	 *
 	 * This screen allows the park manager to view the orders of his assigned park.
+	 *
+	 * @param event the button click event
 	 */
 	@FXML
 	private void handleViewParkOrders(ActionEvent event) {
@@ -77,10 +101,12 @@ public class ParkManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles click on the request park parameter change button.
-	 * 
+	 *
 	 * This screen allows the park manager to request changes for park parameters.
+	 *
+	 * @param event the button click event
 	 */
 	@FXML
 	private void handleRequestParameterChange(ActionEvent event) {
@@ -120,10 +146,12 @@ public class ParkManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles click on the view park reports button.
-	 * 
+	 *
 	 * This screen allows the park manager to view reports for his assigned park.
+	 *
+	 * @param event the button click event
 	 */
 	@FXML
 	private void handleViewParkReports(ActionEvent event) {
@@ -163,6 +191,13 @@ public class ParkManagerHomePageController {
 		}
 	}
 	
+	/**
+	 * Handles click on the view user information button.
+	 *
+	 * This screen allows the park manager to search and view user information.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleViewUserInformation(ActionEvent event) {
 		try {
@@ -190,6 +225,11 @@ public class ParkManagerHomePageController {
 		}
 	}
 	
+	/**
+	 * Shows an error alert.
+	 *
+	 * @param message the error message
+	 */
 	private void showError(String message) {
 		Alert alert = new Alert(Alert.AlertType.ERROR);
 		alert.setTitle("Navigation Error");
@@ -198,11 +238,12 @@ public class ParkManagerHomePageController {
 		alert.showAndWait();
 	}
 
-	/*
+	/**
 	 * Handles logout from the park manager screen.
-	 * 
-	 * For now, this returns the user to the opening screen.
-	 * 
+	 *
+	 * This method notifies the server about logout, clears the client session,
+	 * and returns the user to the opening screen.
+	 *
 	 * @param event the button click event
 	 */
 	@FXML

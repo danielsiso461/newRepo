@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import javafx.scene.control.Label;
@@ -21,30 +22,38 @@ import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
 import javafx.scene.paint.Color;
 
-/*
- * This class is the controller for the existing customer login screen.
- * 
- * The screen allows an existing customer to log in using username and password.
- * The login request is sent to the server and checked against the subscriber
- * table in the database.
+/**
+ * Controller for the existing customer login screen.
+ *
+ * This screen allows an existing customer to log in using username and password.
+ * The login request is sent to the server and checked against the subscriber table.
  */
 public class ExistingCustomerLoginController implements ExistingCustomerLoginObserver {
 
-	/*
-	 * The client controller used for communication with the server.
+	/**
+	 * the client controller used for communication with the server
 	 */
 	private static ClientController clientController;
 
+	/**
+	 * the text field for entering the customer username
+	 */
 	@FXML
 	private TextField usernameField;
 
+	/**
+	 * the password field for entering the customer password
+	 */
 	@FXML
 	private PasswordField passwordField;
 
+	/**
+	 * the label used to display login messages
+	 */
 	@FXML
 	private Label messageLabel;
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param controller the client controller instance
@@ -53,11 +62,11 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		clientController = controller;
 	}
 
-	/*
+	/**
 	 * Initializes the screen.
-	 * 
-	 * This method registers the screen as an observer so it can receive the server
-	 * response for existing customer login.
+	 *
+	 * This method registers the screen as an observer so it can receive
+	 * the existing customer login response from the server.
 	 */
 	@FXML
 	private void initialize() {
@@ -66,9 +75,9 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Login button.
-	 * 
+	 *
 	 * The method validates that the username and password fields are not empty.
 	 * Then it sends an existing customer login request to the server.
 	 * 
@@ -103,9 +112,9 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		clientController.requestExistingCustomerLogin(username.trim(), password.trim());
 	}
 
-	/*
+	/**
 	 * Receives the existing customer login result from the ClientController.
-	 * 
+	 *
 	 * If the customer login succeeds, the method opens the order table screen
 	 * and loads all orders of the logged-in subscriber.
 	 * 
@@ -134,7 +143,7 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		});
 	}
 	
-	/*
+	/**
 	 * Opens the order table screen and loads all orders that belong to the
 	 * logged-in subscriber.
 	 * 
@@ -180,9 +189,9 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Back button.
-	 * 
+	 *
 	 * This method removes this screen from the observer list and navigates the user
 	 * back to the Customer Access screen.
 	 * 

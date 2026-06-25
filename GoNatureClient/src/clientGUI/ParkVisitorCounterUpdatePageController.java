@@ -1,3 +1,4 @@
+
 package clientGUI;
 
 import java.util.List;
@@ -30,39 +31,86 @@ import javafx.stage.Stage;
  */
 public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounterObserver {
 
+    /**
+     * the role name of a park worker
+     */
     private static final String ROLE_PARK_WORKER = "park_worker";
+
+    /**
+     * the role name of a park manager
+     */
     private static final String ROLE_PARK_MANAGER = "park_manager";
 
+    /**
+     * the client controller used to communicate with the server
+     */
     private ClientController clientController;
     
+    /**
+     * the currently logged-in employee
+     */
     private Employee loggedInEmployee;
 
+    /**
+     * the label used to display the park ID
+     */
     @FXML
     private Label parkIdLabel;
 
+    /**
+     * the combo box used to select entry or exit action
+     */
     @FXML
     private ComboBox<String> actionComboBox;
 
+    /**
+     * the slider used to select the number of visitors
+     */
     @FXML
     private Slider amountSlider;
 
+    /**
+     * the label used to display the selected visitor amount
+     */
     @FXML
     private Label amountLabel;
 
+    /**
+     * the button used to update the visitor counter
+     */
     @FXML
     private Button updateButton;
 
+    /**
+     * the label used to display status messages
+     */
     @FXML
     private Label statusLabel;
 
+    /**
+     * Sets the client controller.
+     *
+     * @param clientController the client controller
+     */
     public void setClientController(ClientController clientController) {
         this.clientController = clientController;
     }
     
+    /**
+     * Sets the logged-in employee.
+     *
+     * @param employee the logged-in employee
+     */
     public void setLoggedInEmployee(Employee employee) {
     	this.loggedInEmployee = employee;
     }
 
+    /**
+     * Initializes the visitor counter update page.
+     *
+     * This method prepares the action combo box, slider,
+     * and checks whether the current employee can update the counter.
+     */
     @FXML
     private void initialize() {
         setupActionComboBox();
@@ -86,6 +134,9 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         setInfoStatus("Ready");
     }
 
+    /**
+     * Sets the action combo box options.
+     */
     private void setupActionComboBox() {
         actionComboBox.getItems().setAll(
                 ParkVisitorCounterUpdateRequest.ACTION_ENTRY,
@@ -95,6 +146,9 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         actionComboBox.setValue(ParkVisitorCounterUpdateRequest.ACTION_ENTRY);
     }
 
+    /**
+     * Sets the slider listener.
+     */
     private void setupSlider() {
         amountSlider.valueProperty().addListener(
                 (observable, oldValue, newValue) -> updateAmountLabel()
@@ -103,14 +157,27 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         updateAmountLabel();
     }
 
+    /**
+     * Updates the amount label according to the selected slider value.
+     */
     private void updateAmountLabel() {
         amountLabel.setText(String.valueOf(getSelectedAmount()));
     }
 
+    /**
+     * Returns the selected visitor amount.
+     *
+     * @return the selected visitor amount
+     */
     private int getSelectedAmount() {
         return (int) Math.round(amountSlider.getValue());
     }
 
+    /**
+     * Checks whether the current employee can update the visitor counter.
+     *
+     * @return true if the current employee can update the visitor counter
+     */
     private boolean canCurrentEmployeeUpdateCounter() {
         if (!isTestMode() && !ClientSession.isEmployeeLoggedIn()) {
             return false;
@@ -124,12 +191,23 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
                 || ROLE_PARK_MANAGER.equals(role));
     }
 
+    /**
+     * Enables or disables the page controls.
+     *
+     * @param disabled true if the controls should be disabled
+     */
     private void setControlsDisabled(boolean disabled) {
         updateButton.setDisable(disabled);
         actionComboBox.setDisable(disabled);
         amountSlider.setDisable(disabled);
     }
 
+    /**
+     * Handles the click on the update counter button.
+     *
+     * This method validates permissions and sends a visitor counter update
+     * request to the server.
+     */
     @FXML
     private void handleUpdateCounter() {
         if (clientController == null) {
@@ -166,6 +244,11 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         clientController.updateParkVisitorCounter(request);
     }
 
+    /**
+     * This method is called when park visitor counters are received from the server.
+     *
+     * @param counters the list of visitor counter snapshots
+     */
     @Override
     public void onParkVisitorCountersReceived(
             List<ParkVisitorCounterSnapshot> counters) {
@@ -175,6 +258,12 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
          */
     }
 
+    /**
+     * This method is called when the server returns a visitor counter operation response.
+     *
+     * @param response the operation response received from the server
+     * @param responseType the protocol type of the response
+     */
     @Override
     public void onParkVisitorCounterOperationResponse(
             OperationResponse response, Protocol responseType) {
@@ -207,6 +296,9 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         setSuccessStatus(message);
     }
 
+    /**
+     * This method is called when park visitor counters are updated.
+     */
     @Override
     public void onParkVisitorCountersUpdated() {
         /*
@@ -214,10 +306,20 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
          */
     }
 
+    /**
+     * Checks whether visitor counter test mode is active.
+     *
+     * @return true if test mode is active
+     */
     private boolean isTestMode() {
         return Boolean.getBoolean("visitorCounterTestMode");
     }
 
+    /**
+     * Returns the current employee role.
+     *
+     * @return the current employee role
+     */
     private String getCurrentEmployeeRole() {
         if (isTestMode()) {
             return System.getProperty("visitorCounterTestRole", "");
@@ -226,6 +328,11 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         return ClientSession.getEmployeeRole();
     }
 
+    /**
+     * Returns the current employee ID.
+     *
+     * @return the current employee ID
+     */
     private int getCurrentEmployeeId() {
         if (isTestMode()) {
             return Integer.getInteger("visitorCounterTestEmployeeId", -1);
@@ -234,6 +341,11 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         return ClientSession.getEmployeeId();
     }
 
+    /**
+     * Returns the current employee park ID.
+     *
+     * @return the current employee park ID
+     */
     private int getCurrentEmployeeParkId() {
         if (isTestMode()) {
             return Integer.getInteger("visitorCounterTestParkId", -1);
@@ -242,21 +354,42 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         return ClientSession.getEmployeeParkId();
     }
 
+    /**
+     * Sets an information status message.
+     *
+     * @param message the status message
+     */
     private void setInfoStatus(String message) {
         updateStatusLabel(message, "status-info");
         System.out.println("[ParkVisitorCounterUpdatePage] " + message);
     }
 
+    /**
+     * Sets a success status message.
+     *
+     * @param message the status message
+     */
     private void setSuccessStatus(String message) {
         updateStatusLabel(message, "status-success");
         System.out.println("[ParkVisitorCounterUpdatePage] SUCCESS - " + message);
     }
 
+    /**
+     * Sets an error status message.
+     *
+     * @param message the status message
+     */
     private void setErrorStatus(String message) {
         updateStatusLabel(message, "status-error");
         System.out.println("[ParkVisitorCounterUpdatePage] ERROR - " + message);
     }
 
+    /**
+     * Updates the status label text and style.
+     *
+     * @param message the status message
+     * @param statusStyleClass the status style class
+     */
     private void updateStatusLabel(String message, String statusStyleClass) {
         statusLabel.setText("Status: " + message);
 
@@ -269,6 +402,12 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         }
     }
 
+    /**
+     * Shows an error alert.
+     *
+     * @param title the alert title
+     * @param message the alert message
+     */
     private void showErrorAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -277,6 +416,13 @@ public class ParkVisitorCounterUpdatePageController implements ParkVisitorCounte
         alert.showAndWait();
     }
     
+    /**
+     * Handles the click on the back button.
+     *
+     * This method returns to the park worker dashboard.
+     *
+     * @param event the button click event
+     */
     @FXML
     private void handleBack(ActionEvent event) {
     	try {
