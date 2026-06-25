@@ -20,6 +20,7 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.scene.layout.HBox;
 
+
 /*
  * This controller handles the user information page.
  * 
@@ -128,6 +129,13 @@ public class UserInformationPageController implements UserInformationObserver {
 		if (USER_TYPE_CUSTOMER.equals(selectedUserType)) {
 			if (!searchValue.matches("\\d+")) {
 				messageLabel.setText("Customer ID must contain digits only.");
+				detailsTextArea.setText("");
+				return;
+			}
+
+			if (searchValue.length() != 9) {
+				messageLabel.setText("Customer ID must contain exactly 9 digits.");
+				detailsTextArea.setText("");
 				return;
 			}
 
@@ -139,6 +147,18 @@ public class UserInformationPageController implements UserInformationObserver {
 		}
 
 		if (USER_TYPE_EMPLOYEE.equals(selectedUserType)) {
+			if (!searchValue.matches("\\d+")) {
+				messageLabel.setText("Employee number must contain digits only.");
+				detailsTextArea.setText("");
+				return;
+			}
+
+			if (searchValue.length() != 4) {
+				messageLabel.setText("Employee number must contain exactly 4 digits.");
+				detailsTextArea.setText("");
+				return;
+			}
+
 			messageLabel.setText("Searching employee information...");
 			detailsTextArea.setText("");
 
