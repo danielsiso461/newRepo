@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
  * available capacity for a regular order.
  */
 public class WaitingListMessage implements Serializable {
-
+	/**
+	 * serial version UID for serialization
+	 */
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -58,8 +60,13 @@ public class WaitingListMessage implements Serializable {
 	 * waiting list request, for example rejecting an offered request.
 	 */
 	private int waitingId;
-	
+	/**
+	 * the subscriber's email
+	 */
 	private String subscriberEmail;
+	/**
+	 * the subscriber's phone
+	 */
 	private String subscriberPhone;
 
 	/**
@@ -141,11 +148,17 @@ public class WaitingListMessage implements Serializable {
 	public void setWaitingId(int waitingId) {
 		this.waitingId = waitingId;
 	}
-	
+	/**
+	 * getter for subscriber id
+	 * @return subscriber id
+	 */
 	public int getSubscriberId() {
 		return subscriberId;
 	}
-
+	/**
+	 * getter for park id
+	 * @return park id
+	 */
 	public int getParkId() {
 		return parkId;
 	}
@@ -166,18 +179,31 @@ public class WaitingListMessage implements Serializable {
 	public String getParkName() {
 		return parkName;
 	}
+	/**
+	 * getter for the requested order date
+	 * @return the requested order date
+	 */
 	public LocalDateTime getRequestedOrderDate() {
 		return requestedOrderDate;
 	}
-
+	/**
+	 * getter for the number of visitors
+	 * @return the number of visitors
+	 */
 	public int getNumberOfVisitors() {
 		return numberOfVisitors;
 	}
-
+	/**
+	 * getter for the queue position
+	 * @return the queue position
+	 */
 	public int getQueuePosition() {
 		return queuePosition;
 	}
-
+	/**
+	 * getter for the waiting status
+	 * @return the waiting status
+	 */
 	public String getWaitingStatus() {
 		return waitingStatus;
 	}
@@ -199,7 +225,9 @@ public class WaitingListMessage implements Serializable {
 	public void setWaitingStatus(String waitingStatus) {
 		this.waitingStatus = waitingStatus;
 	}
-
+	/**
+	 * standard toString method
+	 */
 	@Override
 	public String toString() {
 		return "WaitingListMessage [subscriberId=" + subscriberId +
@@ -210,7 +238,7 @@ public class WaitingListMessage implements Serializable {
 				", queuePosition=" + queuePosition +
 				", waitingStatus=" + waitingStatus + "]";
 	}
-	/*
+	/**
 	 * Returns the subscriber email used for notification simulation.
 	 *
 	 * @return the subscriber email
@@ -219,7 +247,7 @@ public class WaitingListMessage implements Serializable {
 		return subscriberEmail;
 	}
 
-	/*
+	/**
 	 * Sets the subscriber email used for notification simulation.
 	 *
 	 * @param subscriberEmail the subscriber email
@@ -228,7 +256,7 @@ public class WaitingListMessage implements Serializable {
 		this.subscriberEmail = subscriberEmail;
 	}
 
-	/*
+	/**
 	 * Returns the subscriber phone used for notification simulation.
 	 *
 	 * @return the subscriber phone
@@ -237,7 +265,7 @@ public class WaitingListMessage implements Serializable {
 		return subscriberPhone;
 	}
 
-	/*
+	/**
 	 * Sets the subscriber phone used for notification simulation.
 	 *
 	 * @param subscriberPhone the subscriber phone
