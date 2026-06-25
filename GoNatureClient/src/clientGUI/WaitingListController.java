@@ -41,7 +41,9 @@ public class WaitingListController implements WaitingListObserver {
 	 * Keeps track of offered waiting list requests that already triggered
 	 * notification simulation popups in this screen session.
 	 */
-	private Set<Integer> simulatedOfferIds = new HashSet<>();
+	private final Set<Integer> simulatedPhoneOfferIds = new HashSet<>();
+	private final Set<Integer> simulatedEmailOfferIds = new HashSet<>();
+	private boolean closed = false;
 	
 	@FXML // fx:id="offersTable"
 	private TableView<WaitingListMessage> offersTable; // Value injected by FXMLLoader
@@ -243,6 +245,11 @@ public class WaitingListController implements WaitingListObserver {
 	 */
 	@FXML
 	void backButtonClick() {
+		closed = true;
+		if (clientController != null) {
+			clientController.removeWaitingListObserver(this);
+		}
+
 		if (prevScene == null) {
 			messageLabel.setTextFill(Color.RED);
 			messageLabel.setText("Previous page is not available.");
@@ -263,16 +270,22 @@ public class WaitingListController implements WaitingListObserver {
 	 * @param offers the waiting list requests returned from the server
 	 */
 	private void showOfferSimulationMessages(List<WaitingListMessage> offers) {
+		if (closed) {
+			return;
+		}
+
 		for (WaitingListMessage offer : offers) {
 			if (offer == null) {
 				continue;
 			}
 
-			boolean shouldSimulate =
-					"offered".equalsIgnoreCase(offer.getWaitingStatus()) &&
-					simulatedOfferIds.add(offer.getWaitingId());
+			if (!"offered".equalsIgnoreCase(offer.getWaitingStatus())) {
+				continue;
+			}
 
-			if (shouldSimulate) {
+			int waitingId = offer.getWaitingId();
+
+			if (simulatedPhoneOfferIds.add(waitingId)) {
 				showSimulationAlert(
 						"PHONE SIMULATION",
 						"SMS would be sent to: " + getDisplayValue(offer.getSubscriberPhone())
@@ -282,7 +295,9 @@ public class WaitingListController implements WaitingListObserver {
 								+ "\nVisitors: " + offer.getNumberOfVisitors()
 								+ "\n\nPlease accept the offer within one hour."
 				);
+			}
 
+			if (simulatedEmailOfferIds.add(waitingId)) {
 				showSimulationAlert(
 						"EMAIL SIMULATION",
 						"Email would be sent to: " + getDisplayValue(offer.getSubscriberEmail())
@@ -295,6 +310,7 @@ public class WaitingListController implements WaitingListObserver {
 			}
 		}
 	}
+	
 
 	/*
 	 * Shows a notification simulation popup.
@@ -333,6 +349,10 @@ public class WaitingListController implements WaitingListObserver {
 	@Override
 	public void onWaitingOffersReceived(boolean success, List<WaitingListMessage> offers) {
 		Platform.runLater(() -> {
+			if (closed) {
+				return;
+			}
+			
 			if (!success || offers == null) {
 				messageLabel.setTextFill(Color.RED);
 				messageLabel.setText("Failed to load waiting list requests.");
@@ -380,6 +400,10 @@ public class WaitingListController implements WaitingListObserver {
 	@Override
 	public void onRejectWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
 		Platform.runLater(() -> {
+			if (closed) {
+				return;
+			}
+			
 			if (success) {
 				messageLabel.setTextFill(Color.GREEN);
 				messageLabel.setText("Waiting list offer rejected successfully.");
@@ -400,6 +424,10 @@ public class WaitingListController implements WaitingListObserver {
 	@Override
 	public void onAcceptWaitingOfferResult(boolean success, WaitingListMessage waitingListMessage) {
 		Platform.runLater(() -> {
+			if (closed) {
+				return;
+			}
+			
 			if (success) {
 				messageLabel.setTextFill(Color.GREEN);
 				messageLabel.setText("Waiting list offer accepted successfully. The order was added to your orders.");
