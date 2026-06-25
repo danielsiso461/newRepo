@@ -42,8 +42,7 @@ public class BillConnection extends AbstractDBConnection {
     private static final String DISCOUNT_PERCENT = "discount_percent";
     private static final String BASE_DISCOUNT_PERCENT = "base_discount_percent";
     private static final String PREPAID_DISCOUNT_PERCENT = "prepaid_discount_percent";
-    private static final String SUBSCRIBER_EXTRA_DISCOUNT_PERCENT =
-            "subscriber_extra_discount_percent";
+    private static final String SUBSCRIBER_EXTRA_DISCOUNT_PERCENT = "subscriber_extra_discount_percent";
     private static final String PROMOTION_DISCOUNT_PERCENT = "promotion_discount_percent";
     private static final String FINAL_PRICE = "final_price";
     private static final String BILL_DATE = "bill_date";
