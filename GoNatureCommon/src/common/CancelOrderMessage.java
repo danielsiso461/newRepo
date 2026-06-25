@@ -11,7 +11,9 @@ import java.io.Serializable;
  * so the cancellation can still be used in reports and order history.
  */
 public class CancelOrderMessage implements Serializable {
-
+	/**
+	 * serial version UID for serialization
+	 */
 	private static final long serialVersionUID = 1L;
 
 	/**

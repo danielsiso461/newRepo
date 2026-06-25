@@ -6,7 +6,9 @@ import java.io.Serializable;
  * This class represents a subscriber.
  */
 public class Subscriber implements Serializable {
-
+	/**
+	 * serial version UID for serialization
+	 */
     private static final long serialVersionUID = 1L;
 
     /**

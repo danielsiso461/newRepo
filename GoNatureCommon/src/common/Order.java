@@ -4,7 +4,7 @@ package common;
 import java.io.Serializable;
 import java.time.LocalDate;
 
-/*
+/**
  * this class represents a row from the orders database
  * 
  * the class stores all information related to an order
@@ -12,78 +12,121 @@ import java.time.LocalDate;
  * in the user's query result
  */
 public class Order implements Serializable {
-	public static final String 
-		ORDER_TYPE_ORGANIZED = "organized_group",
-		ORDER_TYPE_PRIVATE = "private",
-		ORDER_STATUS_PENDING = "pending",
-		ORDER_STATUS_APPROVED = "approved",
-		ORDER_STATUS_CANCELLED = "cancelled",
-		ORDER_STATUS_EXPIRED = "expired",
-		ORDER_STATUS_COMPLETED = "completed",
-		ORDER_STATUS_NO_SHOW = "no_show";
-	/*
+	/**
+	 * order type organized group
+	 */
+	public static final String ORDER_TYPE_ORGANIZED = "organized_group";
+	/**
+	 * order type private
+	 */
+	public static final String ORDER_TYPE_PRIVATE = "private";
+	/**
+	 * order status pending
+	 */
+	public static final String ORDER_STATUS_PENDING = "pending";
+	/**
+	 * order status approved
+	 */
+	public static final String ORDER_STATUS_APPROVED = "approved";
+	/**
+	 * order status cancelled
+	 */
+	public static final String ORDER_STATUS_CANCELLED = "cancelled";
+	/**
+	 * order status expired
+	 */
+	public static final String ORDER_STATUS_EXPIRED = "expired";
+	/**
+	 * order status completed
+	 */
+	public static final String ORDER_STATUS_COMPLETED = "completed";
+	/**
+	 * order status no show
+	 */
+	public static final String ORDER_STATUS_NO_SHOW = "no_show";
+	/**
 	 * serial version UID for serialization
 	 */
 	private static final long serialVersionUID = 1L;
 
-	/*
-	 * stores the order information
+	/**
+	 * the order number
 	 */
-	private Integer orderNumber, orderId, visitorNumber, confCode, userId;
+	private Integer orderNumber;
+	/**
+	 * the order id
+	 */
+	private Integer orderId;
+	/**
+	 * the order's number of visitors
+	 */
+	private Integer visitorNumber;
+	/**
+	 * the order's confirmation code
+	 */
+	private Integer confCode;
+	/**
+	 * the id of the user who made the order
+	 */
+	private Integer userId;
 	
-	/*
+	/**
 	 * stores the phone number of the user 
 	 */
 	private String phoneNumber = "";
 
-	/*
+	/**
 	 * stores the park id of the order
 	 */
 	private Integer parkId;
-	// used to get parkId on the server (park name is unique)
+	/** used to get parkId on the server (park name is unique)*/
 	private String parkName;
 
-	/*
+	/**
 	 * stores the guide id of the order
 	 * 
 	 * this value can be null for private orders
 	 */
 	private Integer guideId;
 
-	/*
-	 * stores the order date and placement date
+	/**
+	 * stores the order date 
 	 */
-	private LocalDate orderDate, placementDate;
+	private LocalDate orderDate;
+	/**
+	 * stores the order's placement date
+	 */
+	private LocalDate placementDate;
 
-	/*
+	/**
 	 * stores the status of the order
 	 * 
 	 * possible values are: pending, approved, cancelled, expired, completed, no_show
 	 */
 	private String orderStatus;
 
-	/*
+	/**
 	 * stores the type of the order
 	 * 
 	 * possible values are: private, organized_group
 	 */
 	private String orderType;
 	
-	/*
+	/**
 	 * stores the booked hour of the given order
 	 * */
 	private int orderHour;
 	
-	/*
+	/**
 	 * this field holds the email of the booking user
 	*/
 	private String email;
-	/*
+	/**
 	 * true if the user is subscribed and false otherwise
 	 */
 	private boolean isSubscribed = false;
 	
-	/*
+	/**
 	 * constructor that creates a new order row
 	 * 
 	 * @param orderNumber		the number of the order in the query
@@ -106,7 +149,7 @@ public class Order implements Serializable {
 		this.placementDate = placementDate;
 	}
 
-	/*
+	/**
 	 * constructor that creates a new order row with the extended order information
 	 * 
 	 * @param orderNumber		the number of the order in the query
@@ -138,7 +181,7 @@ public class Order implements Serializable {
 		this.orderType = orderType;
 	}
 	
-	/*
+	/**
 	 * constructor used for making new orders
 	 * 
 	 * @param orderDate			the requested order date
@@ -162,7 +205,7 @@ public class Order implements Serializable {
 	
 	/**
 	 * Constructs an order using the same structure that was previously used by Order.
-	 * <p>
+	 * 
 	 * This constructor is useful when loading existing orders from the database,
 	 * where the order number also represents the order ID, and the subscriber ID
 	 * represents the user ID related to the order.
@@ -197,7 +240,7 @@ public class Order implements Serializable {
 	
 	/**
 	 * Returns the subscriber ID related to the order.
-	 * <p>
+	 * 
 	 * In the current Order class, the subscriber ID is represented by the userId field.
 	 * This method is kept for compatibility with code that previously worked with Order.
 	 *
@@ -209,7 +252,7 @@ public class Order implements Serializable {
 
 	/**
 	 * Returns the number of visitors in the order.
-	 * <p>
+	 * 
 	 * This method is an alias for getVisitorNumber and is kept for clearer naming
 	 * and compatibility with existing UI code.
 	 *
@@ -221,7 +264,7 @@ public class Order implements Serializable {
 
 	/**
 	 * Returns the confirmation code of the order.
-	 * <p>
+	 * 
 	 * This method is an alias for getConfCode and is kept for compatibility
 	 * with existing code that uses the full field name.
 	 *
@@ -233,7 +276,7 @@ public class Order implements Serializable {
 
 	/**
 	 * Returns the date on which the order was placed.
-	 * <p>
+	 * 
 	 * This method is an alias for getPlacementDate and is kept for compatibility
 	 * with existing code that uses the database field name.
 	 *
@@ -243,7 +286,7 @@ public class Order implements Serializable {
 		return placementDate;
 	}
 	
-	/*
+	/**
 	 * getter that returns the order number
 	 * 
 	 * @return the order number
@@ -252,7 +295,7 @@ public class Order implements Serializable {
 		return orderNumber;
 	}
 
-	/*
+	/**
 	 * getter that returns the order ID
 	 * 
 	 * @return the order ID
@@ -261,7 +304,7 @@ public class Order implements Serializable {
 		return orderId;
 	}
 
-	/*
+	/**
 	 * getter that returns the number of visitors
 	 * 
 	 * @return the number of visitors
@@ -270,7 +313,7 @@ public class Order implements Serializable {
 		return visitorNumber;
 	}
 
-	/*
+	/**
 	 * getter that returns the confirmation code
 	 * 
 	 * @return the confirmation code
@@ -279,7 +322,7 @@ public class Order implements Serializable {
 		return confCode;
 	}
 
-	/*
+	/**
 	 * getter that returns the user ID
 	 * 
 	 * @return the user ID
@@ -288,7 +331,7 @@ public class Order implements Serializable {
 		return userId;
 	}
 
-	/*
+	/**
 	 * getter that returns the park ID
 	 * 
 	 * @return the park ID
@@ -297,7 +340,7 @@ public class Order implements Serializable {
 		return parkId;
 	}
 	
-	/*
+	/**
 	 * getter that returns the park name
 	 * 
 	 * @return the park name
@@ -306,7 +349,7 @@ public class Order implements Serializable {
 		return parkName;
 	}
 
-	/*
+	/**
 	 * getter that returns the guide ID
 	 * 
 	 * @return the guide ID, or null if the order is private
@@ -315,7 +358,7 @@ public class Order implements Serializable {
 		return guideId;
 	}
 
-	/*
+	/**
 	 * getter that returns the order status
 	 * 
 	 * @return the order status
@@ -324,7 +367,7 @@ public class Order implements Serializable {
 		return orderStatus;
 	}
 
-	/*
+	/**
 	 * getter that returns the order type
 	 * 
 	 * @return the order type
@@ -333,7 +376,7 @@ public class Order implements Serializable {
 		return orderType;
 	}
 
-	/*
+	/**
 	 * getter that returns the order date
 	 * 
 	 * @return the order date
@@ -342,7 +385,7 @@ public class Order implements Serializable {
 		return orderDate;
 	}
 
-	/*
+	/**
 	 * getter that returns the placement date
 	 * 
 	 * @return the placement date
@@ -351,7 +394,7 @@ public class Order implements Serializable {
 		return placementDate;
 	}
 	
-	/*
+	/**
 	 * getter that returns the order hour
 	 * 
 	 * @return the hour of the order
@@ -360,7 +403,7 @@ public class Order implements Serializable {
 		return orderHour;
 	}
 	
-	/*
+	/**
 	 * getter that returns the order email
 	 * 
 	 * @return the email of the order
@@ -369,7 +412,7 @@ public class Order implements Serializable {
 		return email;
 	}
 	
-	/*
+	/**
 	 * sets the order number field
 	 * @param orderNumber the number to set order number to
 	 */
@@ -377,7 +420,7 @@ public class Order implements Serializable {
 		this.orderNumber = orderNumber;
 	}
 	
-	/*
+	/**
 	 * setter that updates the placement date
 	 * 
 	 * this function is used by the SERVER to set the date of the order placement
@@ -389,7 +432,7 @@ public class Order implements Serializable {
 		this.placementDate = placementDate;
 	}
 
-	/*
+	/**
 	 * setter that updates the order date
 	 * 
 	 * this function is used in case of updates
@@ -400,7 +443,7 @@ public class Order implements Serializable {
 		this.orderDate = orderDate;
 	}
 
-	/*
+	/**
 	 * setter that updates the number of visitors
 	 * 
 	 * this function is used in case of updates
@@ -411,7 +454,7 @@ public class Order implements Serializable {
 		this.visitorNumber = visitorNumber;
 	}
 
-	/*
+	/**
 	 * setter that updates the park ID
 	 * 
 	 * this function is used in case of updates
@@ -422,7 +465,7 @@ public class Order implements Serializable {
 		this.parkId = parkId;
 	}
 
-	/*
+	/**
 	 * setter that updates the guide ID
 	 * 
 	 * this function is used in case of updates
@@ -433,7 +476,7 @@ public class Order implements Serializable {
 		this.guideId = guideId;
 	}
 
-	/*
+	/**
 	 * setter that updates the order status
 	 * 
 	 * this function is used in case of updates
@@ -444,7 +487,7 @@ public class Order implements Serializable {
 		this.orderStatus = orderStatus;
 	}
 
-	/*
+	/**
 	 * setter that updates the order type
 	 * 
 	 * this function is used in case of updates
@@ -455,7 +498,7 @@ public class Order implements Serializable {
 		this.orderType = orderType;
 	}
 	
-	/*
+	/**
 	 * setter that updates the order ID
 	 * 
 	 * this function is used only when adding a new update to the DB
@@ -466,7 +509,7 @@ public class Order implements Serializable {
 		this.orderId = orderId;
 	}
 	
-	/*
+	/**
 	 * setter that updates the order confirmation code
 	 * 
 	 * this function is used only when adding a new update to the DB
@@ -477,14 +520,14 @@ public class Order implements Serializable {
 		this.confCode = confCode;
 	}
 	
-	/* 
+	/**
 	 * function that sets the isSubscribed flag to true
 	 */
 	public void setIsSubscribedToTrue() {
 		this.isSubscribed = true;
 	}
 	
-	/*
+	/**
 	 * getter that returns if the user is subscribed
 	 * 
 	 * @return true if the user is subscribed
@@ -493,7 +536,7 @@ public class Order implements Serializable {
 		return isSubscribed;
 	}
 	
-	/* 
+	/**
 	 * setter that sets the phone number corresponding to the order
 	 * 
 	 * this function is used only after adding a new update to the DB
@@ -505,7 +548,7 @@ public class Order implements Serializable {
 		this.phoneNumber = phoneNumber;
 	}
 	
-	/* 
+	/** 
 	 * getter that return the phone number corresponding to the order
 	 * 
 	 * @return the phone number
@@ -514,7 +557,7 @@ public class Order implements Serializable {
 		return phoneNumber;
 	}
 	
-	/*
+	/**
 	 * returns the order information as a string
 	 * 
 	 * @return a string representation of the order
@@ -540,6 +583,7 @@ public class Order implements Serializable {
 	 * @param orderHour the hour of the order
 	 * @param orderStatus the status of the order
 	 * @param userId the user's id
+	 * @param visitorNumber the number of visitors
 	 * @param email the order's email
 	 * @param parkId the id of the order's park
 	 * @param phoneNumber the phone number of the order
