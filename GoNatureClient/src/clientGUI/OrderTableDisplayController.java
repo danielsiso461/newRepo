@@ -31,6 +31,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
@@ -134,6 +135,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		assert notifLabel != null : "fx:id=\"notifLabel\" was not injected.";
 		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected.";
 		assert backButton != null : "fx:id=\"backButton\" was not injected.";
+		assert myDetailsButton != null : "fx:id=\"myDetailsButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 
 		orderTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
@@ -225,29 +227,37 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 
 	@FXML
 	void waitingListButtonClick(ActionEvent event) {
+		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+		URL waitingListUrl = getClass().getResource("/clientGUI/WaitingListPage.fxml");
+
+		if (waitingListUrl == null) {
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Waiting List page was not found.");
+			System.out.println("ERROR: /clientGUI/WaitingListPage.fxml was not found.");
+			return;
+		}
+
+		FXMLLoader loader = new FXMLLoader(waitingListUrl);
+		Parent root = null;
+
 		try {
-			System.out.println("My Waiting List button clicked");
-
-			FXMLLoader loader = new FXMLLoader(
-					getClass().getResource("/clientGUI/WaitingList.fxml")
-			);
-
-			Parent root = loader.load();
-
-			WaitingListController controller = loader.getController();
-			controller.setClientController(clientController);
-
-			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-			controller.setPrevScene(stage.getScene());
-
-			stage.setScene(new Scene(root));
-			stage.setTitle("Waiting List Page");
-			stage.show();
-
+			root = loader.load();
 		} catch (IOException e) {
 			e.printStackTrace();
-			showError("Failed to open Waiting List page.");
+			notifLabel.setTextFill(Color.RED);
+			notifLabel.setText("Failed to open Waiting List page.");
+			return;
 		}
+
+		WaitingListController controller = loader.getController();
+		controller.setClientController(clientController);
+		controller.setPrevScene(stage.getScene());
+
+		Scene scene = new Scene(root);
+		stage.setScene(scene);
+		stage.setTitle("Waiting List Page");
+		stage.show();
 	}
 
 	@FXML
@@ -333,47 +343,6 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			showButton(cancelButton);
 		}
 	}
-
-	@FXML // This method is called by the FXMLLoader when initialization is complete
-	void initialize() {
-		assert confCode != null : "fx:id=\"confCode\" was not injected: check your FXML file 'Untitled'.";
-		assert orderDate != null : "fx:id=\"orderDate\" was not injected: check your FXML file 'Untitled'.";
-		assert orderId != null : "fx:id=\"orderId\" was not injected: check your FXML file 'Untitled'.";
-		assert orderTable != null : "fx:id=\"orderTable\" was not injected: check your FXML file 'Untitled'.";
-		assert placementDate != null : "fx:id=\"placementDate\" was not injected: check your FXML file 'Untitled'.";
-		assert updateButton != null : "fx:id=\"updateButton\" was not injected: check your FXML file 'Untitled'.";
-		assert makeOrderButton != null : "fx:id=\"makeOrderButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert cancelButton != null : "fx:id=\"cancelButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert waitingListButton != null : "fx:id=\"waitingListButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert userId != null : "fx:id=\"userId\" was not injected: check your FXML file 'Untitled'.";
-		assert visitorNumber != null : "fx:id=\"visitorNumber\" was not injected: check your FXML file 'Untitled'.";
-		assert notifLabel != null : "fx:id=\"notifLabel\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert backButton != null : "fx:id=\"backButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-		assert myDetailsButton != null : "fx:id=\"myDetailsButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
-
-		// Disable action buttons until the user selects an order from the table.
-		updateButton.setDisable(true);
-		cancelButton.setDisable(true);
-
-		// sets where the table columns get their data from (of the given object) 
-		orderNumber.setCellValueFactory(new PropertyValueFactory<>("orderNumber"));
-		orderId.setCellValueFactory(new PropertyValueFactory<>("orderId"));
-		orderDate.setCellValueFactory(new PropertyValueFactory<>("orderDate"));
-		visitorNumber.setCellValueFactory(new PropertyValueFactory<>("visitorNumber"));
-		confCode.setCellValueFactory(new PropertyValueFactory<>("confCode"));
-		userId.setCellValueFactory(new PropertyValueFactory<>("userId"));
-		placementDate.setCellValueFactory(new PropertyValueFactory<>("placementDate"));
-		orderStatus.setCellValueFactory(new PropertyValueFactory<>("orderStatus"));
-
-		// sets the table to get it's data from the ObservableList set up to hold order
-		// data
-		orderTable.setItems(data);
-
-		// adds listener to row selection
-		orderTable.getSelectionModel().selectedItemProperty().addListener(this::handleRowSelection);
-	}
-
 	/* 
 	 * this method handles closing the client program if the server 
 	 * closed the user connection

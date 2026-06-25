@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import client.Client;
 import clientCommon.ChatIF;
 import clientCommon.EmployeeLoginObserver;
@@ -21,6 +20,7 @@ import clientCommon.RegisterGuideObserver;
 import clientCommon.RegisterSubscriberObserver;
 import clientCommon.ReportObserver;
 import clientCommon.SearchSubscriberObserver;
+import clientCommon.UserInformationObserver;
 import clientCommon.WaitingListObserver;
 import clientGUI.MakePopUp;
 import common.CancelOrderMessage;

@@ -11,6 +11,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.event.ActionEvent;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 /**
  * Controls the entry payment page.
@@ -21,6 +25,8 @@ import javafx.scene.control.TextField;
 public class EntryPaymentPageController implements EntryPriceObserver {
 
     private ClientController clientController;
+    
+    private Scene prevScene;
 
     @FXML
     private TextField orderNumberField;
@@ -40,6 +46,10 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         if (this.clientController != null) {
             this.clientController.addEntryPriceObserver(this);
         }
+    }
+    
+    public void setPrevScene(Scene prevScene) {
+    	this.prevScene = prevScene;
     }
 
     @FXML
@@ -178,5 +188,22 @@ public class EntryPaymentPageController implements EntryPriceObserver {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    @FXML
+    private void handleBack(ActionEvent event) {
+    	if (clientController != null) {
+    		clientController.removeEntryPriceObserver(this);
+    	}
+
+    	if (prevScene == null) {
+    		setErrorStatus("Previous page is not available.");
+    		return;
+    	}
+
+    	Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    	stage.setTitle("Park Worker Home Page");
+    	stage.setScene(prevScene);
+    	stage.show();
     }
 }

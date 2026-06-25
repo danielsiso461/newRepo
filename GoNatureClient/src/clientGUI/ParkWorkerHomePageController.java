@@ -95,6 +95,29 @@ public class ParkWorkerHomePageController {
 	}
 	
 	@FXML
+	private void handleEntryPaymentReceipt(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/EntryPaymentPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			EntryPaymentPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setPrevScene(((Node) event.getSource()).getScene());
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("Entry Payment Receipt");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@FXML
 	private void handleMyDetails(ActionEvent event) {
 		try {
 			FXMLLoader loader = new FXMLLoader(

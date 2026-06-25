@@ -188,6 +188,7 @@ public class ParkManagerHomePageController {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
 	
 	private void showError(String message) {
 		Alert alert = new Alert(Alert.AlertType.ERROR);

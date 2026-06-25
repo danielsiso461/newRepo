@@ -79,6 +79,12 @@
                                         styleClass="primary-button"
                                         mnemonicParsing="false"
                                         onAction="#handleRecordVisitorExit" />
+                                        
+                                <Button text="Entry Payment Receipt"
+        								prefWidth="190.0"
+        								styleClass="primary-button"
+        								mnemonicParsing="false"
+        								onAction="#handleEntryPaymentReceipt" />
 
                                 <Button text="View Park Occupancy"
                                         prefWidth="190.0"

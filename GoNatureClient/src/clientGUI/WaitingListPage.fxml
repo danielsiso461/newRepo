@@ -2,68 +2,112 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/25"
+<AnchorPane xmlns="http://javafx.com/javafx/21.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="clientGUI.WelcomePageController"
+            fx:controller="clientGUI.WaitingListController"
             stylesheets="@gonature-theme.css"
-            styleClass="root-pane">
+            styleClass="page-background">
 
     <children>
-        <BorderPane prefWidth="700.0"
-                    prefHeight="500.0"
-                    minWidth="520.0"
-                    minHeight="380.0"
+        <BorderPane prefWidth="900.0"
+                    prefHeight="600.0"
+                    minWidth="750.0"
+                    minHeight="520.0"
                     AnchorPane.topAnchor="0.0"
                     AnchorPane.bottomAnchor="0.0"
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
             <center>
-                <VBox alignment="CENTER" spacing="24.0" styleClass="page-container">
-                    <children>
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      styleClass="card-container"
+                      maxWidth="1.7976931348623157E308"
+                      maxHeight="1.7976931348623157E308">
 
-                        <VBox alignment="CENTER" spacing="8.0">
+                    <children>
+                        <VBox alignment="CENTER" spacing="10.0" styleClass="page-header">
                             <children>
-                                <Label text="GoNature Client"
+                                <Label text="My Waiting List"
                                        styleClass="page-title"/>
 
-                                <Label fx:id="commandLabel"
-                                       text="Enter the server address"
+                                <Label text="View and respond to your active waiting list offers"
                                        styleClass="page-subtitle"/>
                             </children>
                         </VBox>
 
-                        <VBox alignment="CENTER" spacing="8.0" maxWidth="470.0" styleClass="card">
+                        <VBox alignment="CENTER"
+                              spacing="18.0"
+                              maxWidth="820.0"
+                              styleClass="content-card">
+
                             <children>
+                                <TableView fx:id="offersTable"
+                                           prefHeight="330.0"
+                                           prefWidth="780.0">
+                                    <columns>
+                                        <TableColumn fx:id="waitingIdColumn"
+                                                     text="Waiting ID"
+                                                     prefWidth="90.0"/>
 
-                                <Label fx:id="inputTitleLabel"
-                                       text="Server Address"
-                                       styleClass="field-label"/>
+                                        <TableColumn fx:id="parkIdColumn"
+                                                     text="Park ID"
+                                                     prefWidth="90.0"/>
 
-                                <TextField fx:id="inputField"
-                                           prefWidth="360.0"
-                                           promptText="Example: 10.0.0.22"/>
+                                        <TableColumn fx:id="requestedDateColumn"
+                                                     text="Requested Date"
+                                                     prefWidth="190.0"/>
 
-                                <Button fx:id="confirmButton"
-                                        text="Continue"
-                                        prefWidth="180.0"
-                                        styleClass="primary-button"
-                                        onAction="#btnClick"/>
+                                        <TableColumn fx:id="visitorsColumn"
+                                                     text="Visitors"
+                                                     prefWidth="90.0"/>
+
+                                        <TableColumn fx:id="queuePositionColumn"
+                                                     text="Queue Position"
+                                                     prefWidth="130.0"/>
+
+                                        <TableColumn fx:id="statusColumn"
+                                                     text="Status"
+                                                     prefWidth="120.0"/>
+                                    </columns>
+                                </TableView>
+
+                                <HBox alignment="CENTER" spacing="18.0">
+                                    <children>
+                                        <Button fx:id="acceptButton"
+                                                text="Accept Offer"
+                                                prefWidth="140.0"
+                                                styleClass="primary-button"
+                                                onAction="#acceptSelectedOfferClick"/>
+
+                                        <Button fx:id="rejectButton"
+                                                text="Reject Offer"
+                                                prefWidth="140.0"
+                                                styleClass="secondary-button"
+                                                onAction="#rejectSelectedOfferClick"/>
+
+                                        <Button fx:id="backButton"
+                                                text="Back"
+                                                prefWidth="120.0"
+                                                styleClass="secondary-button"
+                                                onAction="#backButtonClick"/>
+                                    </children>
+                                </HBox>
 
                                 <Label fx:id="messageLabel"
                                        text=""
-                                       visible="false"
-                                       managed="false"
-                                       styleClass="error-label"/>
-
+                                       wrapText="true"
+                                       maxWidth="760.0"
+                                       styleClass="status-label"/>
                             </children>
                         </VBox>
-
                     </children>
                 </VBox>
             </center>
