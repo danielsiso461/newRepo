@@ -6,11 +6,18 @@ import clientController.ClientController;
 import common.Message;
 import javafx.application.Platform;
 import ocsf.client.AbstractClient;
+
 /*
  * this class represents the networking side of the client
  */
+/**
+ * Represents the networking side of the client.
+ */
 @SuppressWarnings("deprecation")
 public class Client extends AbstractClient {
+	/**
+	 * the controller that handles client logic
+	 */
 	ClientController clientController;
 
 	//Constructors ****************************************************
@@ -21,6 +28,7 @@ public class Client extends AbstractClient {
 	 * @param host    			 The server to connect to.
 	 * @param port    			 The port number to connect on.
 	 * @param clientController 	 The controller for the client
+	 * @throws IOException if opening the connection fails
 	 */
 
 	public Client(String host, int port, ClientController clientController) throws IOException {
@@ -60,6 +68,9 @@ public class Client extends AbstractClient {
 	
 	/*
 	 * this method handles closing the client when a user quits
+	 */
+	/**
+	 * This method handles the connection closed event.
 	 */
 	@Override
 	protected void connectionClosed() {
