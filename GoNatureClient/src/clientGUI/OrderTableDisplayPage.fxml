@@ -115,6 +115,12 @@
                                                 prefWidth="160.0"
                                                 styleClass="secondary-button"
                                                 onAction="#waitingListButtonClick"/>
+                                                
+                                        <Button fx:id="myDetailsButton"
+                								text="My Details"
+                								prefWidth="140.0"
+                								styleClass="secondary-button"
+                								onAction="#handleMyDetails"/>        
 
                                         <Button fx:id="backButton"
         										text="Logout"

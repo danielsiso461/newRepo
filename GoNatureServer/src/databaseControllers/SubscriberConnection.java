@@ -391,4 +391,61 @@ public class SubscriberConnection extends AbstractDBConnection {
 
 		return null;
 	}
+	
+	/**
+	 * Returns detailed subscriber information as display text.
+	 * 
+	 * This method is used by the service representative user information screen.
+	 * 
+	 * @param subscriberId the subscriber ID to search for
+	 * @return display text if the subscriber exists, otherwise null
+	 * @throws SQLException if the query fails
+	 */
+	public String getSubscriberInformationTextById(int subscriberId) throws SQLException {
+		ensureConnection();
+
+		String sql = selectByFields(
+				new String[] {
+						SUBSCRIBER_ID,
+						SUBSCRIBER_NAME,
+						SUBSCRIBER_ID_NUMBER,
+						SUBSCRIBER_PHONE,
+						SUBSCRIBER_EMAIL,
+						FAMILY_MEMBERS_COUNT,
+						PAYMENT_METHOD,
+						CREDIT_CARD_LAST4,
+						USERNAME
+				},
+				new String[] {
+						SUBSCRIBER_ID
+				}
+		);
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, subscriberId);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					String creditCardLast4 = rs.getString(CREDIT_CARD_LAST4);
+
+					if (creditCardLast4 == null || creditCardLast4.isBlank()) {
+						creditCardLast4 = "Not available";
+					}
+
+					return "User Type: Subscriber / Existing Customer\n"
+							+ "Subscriber ID: " + rs.getInt(SUBSCRIBER_ID) + "\n"
+							+ "ID Number: " + rs.getString(SUBSCRIBER_ID_NUMBER) + "\n"
+							+ "Name: " + rs.getString(SUBSCRIBER_NAME) + "\n"
+							+ "Phone: " + rs.getString(SUBSCRIBER_PHONE) + "\n"
+							+ "Email: " + rs.getString(SUBSCRIBER_EMAIL) + "\n"
+							+ "Family Members Count: " + rs.getInt(FAMILY_MEMBERS_COUNT) + "\n"
+							+ "Payment Method: " + rs.getString(PAYMENT_METHOD) + "\n"
+							+ "Credit Card Last 4 Digits: " + creditCardLast4 + "\n"
+							+ "Username: " + rs.getString(USERNAME);
+				}
+			}
+		}
+
+		return null;
+	}
 }

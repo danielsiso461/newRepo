@@ -322,6 +322,10 @@ public class ServerController implements ServerAndControllerConnection {
 		case SEARCH_SUBSCRIBER_REQUEST:
 			addLog("Client requested subscriber search.");
 			return handleSearchSubscriber(m);
+			
+		case SEARCH_USER_INFORMATION_REQUEST:
+			addLog("Client requested user information search.");
+			return handleSearchUserInformation(m);	
 
 		case REGISTER_GUIDE_REQUEST:
 			addLog("Client requested guide registration.");
@@ -2433,6 +2437,169 @@ public class ServerController implements ServerAndControllerConnection {
 
 			entranceMessage.setResponseMessage("Server error while loading current visitors.");
 			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_FAILURE);
+		}
+	}
+	
+	/**
+	 * Handles a service representative request to search user information.
+	 * 
+	 * The search supports:
+	 * - Customer search: subscriber first, then occasional customer by existing orders.
+	 * - Employee search: employee_id, employee_number, or username.
+	 * 
+	 * @param m the client message containing the search value
+	 * @return a message with the user information search result
+	 */
+	private Message handleSearchUserInformation(Message m) {
+		try {
+			if (!(m.getData() instanceof String)) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Invalid search data.",
+						null
+				);
+
+				return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+			}
+
+			String searchValue = ((String) m.getData()).trim();
+
+			if (searchValue.isEmpty()) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Please enter a search value.",
+						null
+				);
+
+				return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+			}
+
+			/*
+			 * Employee search.
+			 * The client sends EMPLOYEE|value so we can keep the same protocol
+			 * without breaking the existing customer search.
+			 */
+			if (searchValue.startsWith("EMPLOYEE|")) {
+				String employeeSearchValue = searchValue.substring("EMPLOYEE|".length()).trim();
+
+				if (employeeSearchValue.isEmpty()) {
+					OperationResponse response = new OperationResponse(
+							false,
+							"Please enter employee ID, employee number, or username.",
+							null
+					);
+
+					return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+				}
+
+				addLog("Searching employee information for value: " + employeeSearchValue);
+
+				String employeeInfo = ec.getEmployeeInformationText(employeeSearchValue);
+
+				if (employeeInfo != null) {
+					OperationResponse response = new OperationResponse(
+							true,
+							"Employee information found.",
+							employeeInfo
+					);
+
+					addLog("Employee information found for value: " + employeeSearchValue);
+
+					return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+				}
+
+				OperationResponse response = new OperationResponse(
+						false,
+						"No employee was found for this search value.",
+						null
+				);
+
+				addLog("No employee information found for value: " + employeeSearchValue);
+
+				return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+			}
+
+			/*
+			 * Customer search.
+			 */
+			String userIdNumber = searchValue;
+
+			if (!userIdNumber.matches("\\d+")) {
+				OperationResponse response = new OperationResponse(
+						false,
+						"Customer ID must contain digits only.",
+						null
+				);
+
+				return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+			}
+
+			addLog("Searching customer information for ID: " + userIdNumber);
+
+			int numericId = Integer.parseInt(userIdNumber);
+
+			/*
+			 * First: check whether the user is a subscriber.
+			 */
+			String subscriberInfo = sc.getSubscriberInformationTextById(numericId);
+
+			if (subscriberInfo != null) {
+				OperationResponse response = new OperationResponse(
+						true,
+						"Subscriber information found.",
+						subscriberInfo
+				);
+
+				addLog("Subscriber information found for ID: " + userIdNumber);
+
+				return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+			}
+
+			/*
+			 * Second: if not a subscriber, check whether this ID has occasional orders.
+			 */
+			ArrayList<Order> occasionalOrders = oc.getOrdersByCustomerIdNumber(userIdNumber);
+
+			if (occasionalOrders != null && !occasionalOrders.isEmpty()) {
+				String occasionalInfo =
+						"User Type: Occasional Customer\n"
+						+ "ID Number: " + userIdNumber + "\n"
+						+ "Existing Orders Count: " + occasionalOrders.size() + "\n"
+						+ "Status: Exists in the system through previous orders.";
+
+				OperationResponse response = new OperationResponse(
+						true,
+						"Occasional customer information found.",
+						occasionalInfo
+				);
+
+				addLog("Occasional customer information found for ID: " + userIdNumber);
+
+				return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+			}
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"No subscriber or occasional customer was found for this ID.",
+					null
+			);
+
+			addLog("No customer information found for ID: " + userIdNumber);
+
+			return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+
+			addLog("ERROR - Database error while searching user information: " + e.getMessage());
+
+			OperationResponse response = new OperationResponse(
+					false,
+					"Database error while searching user information.",
+					null
+			);
+
+			return new Message(response, Protocol.SEARCH_USER_INFORMATION_RESPONSE);
 		}
 	}
 }

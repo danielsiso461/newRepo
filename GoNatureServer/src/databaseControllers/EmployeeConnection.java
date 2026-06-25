@@ -258,4 +258,78 @@ public class EmployeeConnection extends AbstractDBConnection {
 
 		return -1;
 	}
+	
+	/**
+	 * Returns detailed employee information as display text.
+	 * 
+	 * The search supports:
+	 * - employee_id
+	 * - employee_number
+	 * - username
+	 * 
+	 * @param searchValue the employee ID, employee number, or username
+	 * @return display text if the employee exists, otherwise null
+	 * @throws SQLException if the query fails
+	 */
+	public String getEmployeeInformationText(String searchValue) throws SQLException {
+		ensureConnection();
+
+		if (searchValue == null || searchValue.trim().isEmpty()) {
+			return null;
+		}
+
+		searchValue = searchValue.trim();
+
+		boolean numericSearch = searchValue.matches("\\d+");
+
+		String sql;
+
+		if (numericSearch) {
+			sql = "SELECT * FROM `" + getTableName() + "` "
+					+ "WHERE `" + EMPLOYEE_ID + "` = ? "
+					+ "OR `" + EMPLOYEE_NUMBER + "` = ?;";
+		} else {
+			sql = "SELECT * FROM `" + getTableName() + "` "
+					+ "WHERE `" + USERNAME + "` = ?;";
+		}
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			if (numericSearch) {
+				int value = Integer.parseInt(searchValue);
+				pstmt.setInt(1, value);
+				pstmt.setInt(2, value);
+			} else {
+				pstmt.setString(1, searchValue);
+			}
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					Integer parkId = rs.getObject(PARK_ID) == null
+							? null
+							: rs.getInt(PARK_ID);
+
+					String parkText = parkId == null
+							? "Not assigned"
+							: String.valueOf(parkId);
+
+					String activeText = rs.getInt(IS_ACTIVE) == 1
+							? "Active"
+							: "Inactive";
+
+					return "User Type: Employee\n"
+							+ "Employee ID: " + rs.getInt(EMPLOYEE_ID) + "\n"
+							+ "Employee Number: " + rs.getInt(EMPLOYEE_NUMBER) + "\n"
+							+ "Name: " + rs.getString(FIRST_NAME) + " "
+									+ rs.getString(LAST_NAME) + "\n"
+							+ "Email: " + rs.getString(EMAIL) + "\n"
+							+ "Username: " + rs.getString(USERNAME) + "\n"
+							+ "Role: " + rs.getString(EMPLOYEE_ROLE) + "\n"
+							+ "Park ID: " + parkText + "\n"
+							+ "Status: " + activeText;
+				}
+			}
+		}
+
+		return null;
+	}
 }

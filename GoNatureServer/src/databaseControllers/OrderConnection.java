@@ -469,10 +469,10 @@ public final class OrderConnection extends AbstractDBConnection {
 			updated = updateStmt.executeUpdate() > 0;
 		}
 
-		if (updated) {
+		/*if (updated) {
 			OrderStatusHistoryConnection.getInstance().addHistory(orderNumber, oldStatus, newStatus,
 					changedByEmployeeId, reason);
-		}
+		}*/
 
 		return updated;
 	}

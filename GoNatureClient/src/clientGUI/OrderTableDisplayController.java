@@ -112,6 +112,9 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 	
 	@FXML
 	private Button backButton;
+	
+	@FXML
+	private Button myDetailsButton;
 
 	/*
 	 * this method handles click the update button
@@ -343,6 +346,7 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 		assert notifLabel != null : "fx:id=\"notifLabel\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		assert orderStatus != null : "fx:id=\"orderStatus\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 		assert backButton != null : "fx:id=\"backButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
+		assert myDetailsButton != null : "fx:id=\"myDetailsButton\" was not injected: check your FXML file 'OrderTableDisplayPage.fxml'.";
 
 		// Disable action buttons until the user selects an order from the table.
 		updateButton.setDisable(true);
@@ -666,6 +670,58 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			o.setOrderNumber(data.size() + 1);
 			data.add(o);
 		});
+	}
+	
+	@FXML
+	private void handleMyDetails(ActionEvent event) {
+		try {
+			if (!customerView) {
+				notifLabel.setTextFill(Color.RED);
+				notifLabel.setText("My Details is available only for customers.");
+				return;
+			}
+
+			if (clientController == null) {
+				notifLabel.setTextFill(Color.RED);
+				notifLabel.setText("Client is not connected to server.");
+				return;
+			}
+
+			String customerId = null;
+
+			if (clientController.getLoggedInSubscriberId() != null) {
+				customerId = String.valueOf(clientController.getLoggedInSubscriberId());
+			} else if (clientController.getId() != null && !clientController.getId().isBlank()) {
+				customerId = clientController.getId();
+			}
+
+			if (customerId == null || customerId.isBlank()) {
+				notifLabel.setTextFill(Color.RED);
+				notifLabel.setText("Could not identify the current customer.");
+				return;
+			}
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			Scene previousScene = stage.getScene();
+
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/UserInformationPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			UserInformationPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setPreviousScene(previousScene, "Customer Orders");
+			controller.configureForCustomerMyDetails(customerId);
+
+			stage.setTitle("My Details");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	@FXML

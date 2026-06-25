@@ -127,6 +127,42 @@ public class ServiceRepresentativeHomePageController {
 			e.printStackTrace();
 		}
 	}
+	
+	/*
+	 * Opens the user information screen.
+	 * 
+	 * This screen allows the service representative to view information
+	 * about subscribers and employees.
+	 * 
+	 * @param event the button click event
+	 */
+	@FXML
+	private void handleViewUserInformation(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/UserInformationPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			UserInformationPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+			
+			controller.setPreviousScreen(
+					"/clientGUI/ServiceRepresentativeHomePage.fxml",
+					"Service Representative Dashboard"
+			);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("View User Information");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/*
 	 * Handles logout from the park worker screen.

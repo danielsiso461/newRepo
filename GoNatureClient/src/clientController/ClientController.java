@@ -36,6 +36,7 @@ public class ClientController implements ChatIF {
 	private List<ExistingCustomerLoginObserver> existingCustomerLoginObservers = new ArrayList<>();
 	private List<RegisterSubscriberObserver> registerSubscriberObservers = new ArrayList<>();
 	private List<SearchSubscriberObserver> searchSubscriberObservers = new ArrayList<>();
+	private List<UserInformationObserver> userInformationObservers = new ArrayList<>();
 	private List<RegisterGuideObserver> registerGuideObservers = new ArrayList<>();
 
 	private List<ReportObserver> reportObservers = new ArrayList<>();
@@ -316,6 +317,24 @@ public class ClientController implements ChatIF {
 			observer.onSearchSubscriberResult(response);
 		}
 	}
+	
+	// User information observers
+
+	public void addUserInformationObserver(UserInformationObserver observer) {
+		if (observer != null && !userInformationObservers.contains(observer)) {
+			userInformationObservers.add(observer);
+		}
+	}
+
+	public void removeUserInformationObserver(UserInformationObserver observer) {
+		userInformationObservers.remove(observer);
+	}
+
+	private void notifyUserInformationResult(OperationResponse response) {
+		for (UserInformationObserver observer : userInformationObservers) {
+			observer.onUserInformationResult(response);
+		}
+	}
 
 	// Register guide observers
 
@@ -500,6 +519,10 @@ public class ClientController implements ChatIF {
 
 	public void requestSearchSubscriber(int subscriberId) {
 		sendMessageToServer(new Message(subscriberId, Protocol.SEARCH_SUBSCRIBER_REQUEST));
+	}
+	
+	public void requestSearchUserInformation(String userIdNumber) {
+		sendMessageToServer(new Message(userIdNumber, Protocol.SEARCH_USER_INFORMATION_REQUEST));
 	}
 
 	public void requestRegisterGuide(GuideRegistrationRequest request) {
@@ -714,6 +737,10 @@ public class ClientController implements ChatIF {
 		case SEARCH_SUBSCRIBER_RESPONSE:
 			handleOperationResponse(message.getData(), this::notifySearchSubscriberResult);
 			break;
+			
+		case SEARCH_USER_INFORMATION_RESPONSE:
+			handleOperationResponse(message.getData(), this::notifyUserInformationResult);
+			break;	
 
 		case REGISTER_GUIDE_RESPONSE:
 			handleOperationResponse(message.getData(), this::notifyRegisterGuideResult);

@@ -5,21 +5,51 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25" fx:controller="clientGUI.ServiceRepresentativeHomePageController">
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/25"
+            fx:controller="clientGUI.ServiceRepresentativeHomePageController">
    <children>
-      <AnchorPane layoutX="-9.0" layoutY="-8.0" prefHeight="400.0" prefWidth="700.0">
+      <AnchorPane layoutX="-9.0" layoutY="-8.0" prefHeight="440.0" prefWidth="700.0">
          <children>
             <Label layoutX="168.0" layoutY="29.0" text="Service Representative Dashboard">
                <font>
                   <Font name="System Bold Italic" size="24.0" />
                </font>
             </Label>
-            <Label layoutX="283.0" layoutY="90.0" text="Welcome" />
-            <Button layoutX="291.0" layoutY="188.0" mnemonicParsing="false" onAction="#handleRegisterSubscriber" text="Register Subscriber" />
-            <Button layoutX="303.0" layoutY="240.0" mnemonicParsing="false" onAction="#handleRegisterGuide" text="Register Guide" />
-            <Button alignment="CENTER" layoutX="283.0" layoutY="136.0" mnemonicParsing="false" onAction="#handleViewCustomerOrders" text="View Customer Orders" textAlignment="JUSTIFY" />
-            <Button layoutX="324.0" layoutY="292.0" mnemonicParsing="false" onAction="#handleLogout" text="Logout" />
+
+            <Label fx:id="welcomeLabel" layoutX="283.0" layoutY="90.0" text="Welcome" />
+
+            <Button alignment="CENTER"
+                    layoutX="283.0"
+                    layoutY="136.0"
+                    mnemonicParsing="false"
+                    onAction="#handleViewCustomerOrders"
+                    text="View Customer Orders"
+                    textAlignment="JUSTIFY" />
+
+            <Button layoutX="291.0"
+                    layoutY="188.0"
+                    mnemonicParsing="false"
+                    onAction="#handleRegisterSubscriber"
+                    text="Register Subscriber" />
+
+            <Button layoutX="303.0"
+                    layoutY="240.0"
+                    mnemonicParsing="false"
+                    onAction="#handleRegisterGuide"
+                    text="Register Guide" />
+
+            <Button layoutX="282.0"
+                    layoutY="292.0"
+                    mnemonicParsing="false"
+                    onAction="#handleViewUserInformation"
+                    text="View User Information" />
+			
+            <Button layoutX="324.0"
+                    layoutY="344.0"
+                    mnemonicParsing="false"
+                    onAction="#handleLogout"
+                    text="Logout" />
          </children>
       </AnchorPane>
    </children>

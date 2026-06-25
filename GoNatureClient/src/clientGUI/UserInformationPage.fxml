@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/21.0.1"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="clientGUI.UserInformationPageController"
+            stylesheets="@gonature-theme.css"
+            styleClass="page-background">
+
+    <children>
+        <BorderPane prefWidth="900.0"
+                    prefHeight="650.0"
+                    minWidth="650.0"
+                    minHeight="500.0"
+                    AnchorPane.topAnchor="0.0"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0">
+
+            <center>
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      styleClass="card-container"
+                      maxWidth="1.7976931348623157E308"
+                      maxHeight="1.7976931348623157E308">
+
+                    <children>
+
+                        <VBox alignment="CENTER" spacing="10.0" styleClass="page-header">
+                            <children>
+                                <Label fx:id="titleLabel"
+                                       text="View User Information"
+                                       styleClass="page-title"/>
+
+                                <Label text="Search for a customer or employee and view personal information"
+                                       styleClass="page-subtitle"/>
+                            </children>
+                        </VBox>
+
+                        <VBox alignment="CENTER"
+                              spacing="18.0"
+                              maxWidth="760.0"
+                              maxHeight="1.7976931348623157E308"
+                              styleClass="content-card">
+
+                            <children>
+
+                                <HBox fx:id="searchBox" alignment="CENTER" spacing="14.0">
+                                    <children>
+                                        <Label text="User Type:"/>
+
+                                        <ChoiceBox fx:id="userTypeChoiceBox"
+                                                   prefWidth="150.0"/>
+
+                                        <Label text="Search:"/>
+
+                                        <TextField fx:id="userIdField"
+                                                   prefWidth="260.0"
+                                                   promptText="ID / username"/>
+
+                                        <Button text="Search"
+                                                prefWidth="120.0"
+                                                styleClass="primary-button"
+                                                onAction="#handleSearch"/>
+                                    </children>
+                                </HBox>
+
+                                <TextArea fx:id="detailsTextArea"
+                                          prefHeight="260.0"
+                                          prefWidth="620.0"
+                                          editable="false"
+                                          wrapText="true"/>
+
+                                <Button text="Back"
+                                        prefWidth="120.0"
+                                        styleClass="secondary-button"
+                                        onAction="#handleBack"/>
+
+                            </children>
+                        </VBox>
+
+                        <Label fx:id="messageLabel"
+                               text="Choose a user type, enter a value, and click Search."
+                               styleClass="status-label"/>
+
+                    </children>
+                </VBox>
+            </center>
+
+        </BorderPane>
+    </children>
+</AnchorPane>

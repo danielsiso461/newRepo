@@ -129,6 +129,33 @@ public class DepartmentManagerHomePageController {
 			e.printStackTrace();
 		}
 	}
+	
+	@FXML
+	private void handleViewUserInformation(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/UserInformationPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			UserInformationPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+			controller.setPreviousScreen(
+					"/clientGUI/DepartmentManagerHomePage.fxml",
+					"Department Manager Dashboard"
+			);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("View User Information");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/*
 	 * Handles logout from the department manager screen.

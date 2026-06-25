@@ -131,6 +131,33 @@ public class ParkManagerHomePageController {
 			e.printStackTrace();
 		}
 	}
+	
+	@FXML
+	private void handleViewUserInformation(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/UserInformationPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			UserInformationPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+			controller.setPreviousScreen(
+					"/clientGUI/ParkManagerHomePage.fxml",
+					"Park Manager Dashboard"
+			);
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("View User Information");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	/*
 	 * Handles logout from the park manager screen.

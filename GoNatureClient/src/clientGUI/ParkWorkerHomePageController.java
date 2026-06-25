@@ -93,6 +93,34 @@ public class ParkWorkerHomePageController {
 			e.printStackTrace();
 		}
 	}
+	
+	@FXML
+	private void handleMyDetails(ActionEvent event) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/clientGUI/UserInformationPage.fxml")
+			);
+
+			Parent root = loader.load();
+
+			UserInformationPageController controller = loader.getController();
+			controller.setClientController(clientController);
+			controller.setLoggedInEmployee(loggedInEmployee);
+			controller.setPreviousScreen(
+					"/clientGUI/ParkWorkerHomePage.fxml",
+					"Park Worker Dashboard"
+			);
+			controller.configureForMyDetails();
+
+			Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+			stage.setTitle("My Details");
+			stage.setScene(new Scene(root));
+			stage.show();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	@FXML
 	private void handleLogout(ActionEvent event) {
