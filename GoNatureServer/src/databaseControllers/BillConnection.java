@@ -62,9 +62,8 @@ public class BillConnection extends AbstractDBConnection {
 
     /**
      * Creates a new BillConnection instance.
-     * 
+     * Creates a new bill database connection.
      * The constructor is private because this class is implemented as a singleton.
-     * 
      * @throws SQLException if connecting to the database fails
      */
     private BillConnection() throws SQLException {
@@ -76,6 +75,8 @@ public class BillConnection extends AbstractDBConnection {
      * 
      * If no instance exists, or if the current database connection is closed, a new
      * instance is created.
+     * If no instance exists, or if the current connection is closed, a new instance
+     * is created.
      * 
      * @return the active BillConnection instance
      * @throws SQLException if creating the database connection fails
@@ -91,7 +92,6 @@ public class BillConnection extends AbstractDBConnection {
     /**
      * Returns the database table name used by this connector.
      * 
-     * @return the bill table name
      */
     @Override
     public String getTableName() {
@@ -425,10 +425,16 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
+<<<<<<< HEAD
      * Formats a percent value as text with two decimal digits and a percent sign.
      * 
      * @param value the percent value to format
      * @return the formatted percent text
+     * Formats a percentage value as a plain string with two decimal places and a
+     * percent sign.
+     * 
+     * @param value the percentage value to format
+     * @return the formatted percentage string
      */
     private String formatPercent(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP).toPlainString() + "%";
