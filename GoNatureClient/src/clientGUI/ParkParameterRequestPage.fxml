@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
@@ -12,50 +11,53 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
-            xmlns="http://javafx.com/javafx/25"
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.ParkParameterRequestPageController"
-            stylesheets="@park-parameters.css">
-
-    <styleClass>
-        <String fx:value="root-pane"/>
-    </styleClass>
+            stylesheets="@gonature-theme.css"
+            styleClass="root-pane">
 
     <children>
         <BorderPane prefWidth="1000.0"
                     prefHeight="700.0"
-                    minWidth="900.0"
-                    minHeight="620.0"
+                    minWidth="850.0"
+                    minHeight="600.0"
                     AnchorPane.topAnchor="0.0"
                     AnchorPane.bottomAnchor="0.0"
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#handleBack"/>
+                    </children>
+                </HBox>
+            </top>
+
             <center>
-                <VBox alignment="CENTER" spacing="24.0" BorderPane.alignment="CENTER">
-                    <styleClass>
-                        <String fx:value="page-container"/>
-                    </styleClass>
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      styleClass="page-container">
 
                     <children>
 
-                        <VBox alignment="CENTER" spacing="10.0">
+                        <VBox alignment="CENTER" spacing="8.0">
                             <children>
                                 <Label fx:id="headerLabel"
-                                       text="Park Parameter Update Request">
-                                    <styleClass>
-                                        <String fx:value="page-title"/>
-                                    </styleClass>
-                                </Label>
+                                       text="Park Parameter Update Request"
+                                       styleClass="page-title"/>
 
                                 <Label fx:id="subHeaderLabel"
                                        text="Submit a request to update one of your park's operating parameters"
                                        wrapText="true"
-                                       textAlignment="CENTER">
-                                    <styleClass>
-                                        <String fx:value="page-subtitle"/>
-                                    </styleClass>
-                                </Label>
+                                       textAlignment="CENTER"
+                                       styleClass="page-subtitle"/>
 
                                 <Separator prefWidth="540.0"/>
                             </children>
@@ -63,77 +65,53 @@
 
                         <VBox alignment="CENTER"
                               spacing="18.0"
-                              maxWidth="560.0">
-                            <styleClass>
-                                <String fx:value="card"/>
-                                <String fx:value="form-card"/>
-                            </styleClass>
+                              maxWidth="560.0"
+                              styleClass="card">
 
                             <children>
 
-                                <HBox alignment="CENTER_LEFT" spacing="16.0">
-                                    <styleClass>
-                                        <String fx:value="form-row"/>
-                                    </styleClass>
-
+                                <HBox styleClass="form-row">
                                     <children>
-                                        <Label text="Park" minWidth="185.0">
-                                            <styleClass>
-                                                <String fx:value="field-label"/>
-                                            </styleClass>
-                                        </Label>
+                                        <Label text="Park"
+                                               minWidth="185.0"
+                                               styleClass="field-label"/>
 
-                                        <ComboBox fx:id="parkComboBox" prefWidth="300.0"/>
+                                        <ComboBox fx:id="parkComboBox"
+                                                  prefWidth="300.0"
+                                                  promptText="Choose park"/>
                                     </children>
                                 </HBox>
 
-                                <HBox alignment="CENTER_LEFT" spacing="16.0">
-                                    <styleClass>
-                                        <String fx:value="form-row"/>
-                                    </styleClass>
-
+                                <HBox styleClass="form-row">
                                     <children>
-                                        <Label text="Parameter" minWidth="185.0">
-                                            <styleClass>
-                                                <String fx:value="field-label"/>
-                                            </styleClass>
-                                        </Label>
+                                        <Label text="Parameter"
+                                               minWidth="185.0"
+                                               styleClass="field-label"/>
 
-                                        <ComboBox fx:id="parameterComboBox" prefWidth="300.0"/>
+                                        <ComboBox fx:id="parameterComboBox"
+                                                  prefWidth="300.0"
+                                                  promptText="Choose parameter"/>
                                     </children>
                                 </HBox>
 
-                                <HBox alignment="CENTER_LEFT" spacing="16.0">
-                                    <styleClass>
-                                        <String fx:value="form-row"/>
-                                    </styleClass>
-
+                                <HBox styleClass="form-row">
                                     <children>
-                                        <Label text="Current value" minWidth="185.0">
-                                            <styleClass>
-                                                <String fx:value="field-label"/>
-                                            </styleClass>
-                                        </Label>
+                                        <Label text="Current value"
+                                               minWidth="185.0"
+                                               styleClass="field-label"/>
 
-                                        <Label fx:id="currentValueLabel" text="Current value: -">
-                                            <styleClass>
-                                                <String fx:value="value-label"/>
-                                            </styleClass>
-                                        </Label>
+                                        <Label fx:id="currentValueLabel"
+                                               text="Current value: -"
+                                               wrapText="true"
+                                               styleClass="value-label"/>
                                     </children>
                                 </HBox>
 
-                                <HBox alignment="CENTER_LEFT" spacing="16.0">
-                                    <styleClass>
-                                        <String fx:value="form-row"/>
-                                    </styleClass>
-
+                                <HBox styleClass="form-row">
                                     <children>
-                                        <Label text="Requested new value" minWidth="185.0">
-                                            <styleClass>
-                                                <String fx:value="field-label"/>
-                                            </styleClass>
-                                        </Label>
+                                        <Label text="Requested new value"
+                                               minWidth="185.0"
+                                               styleClass="field-label"/>
 
                                         <TextField fx:id="newValueField"
                                                    prefWidth="300.0"
@@ -146,37 +124,26 @@
                                 <Button fx:id="submitButton"
                                         text="Submit Update Request"
                                         prefWidth="240.0"
-                                        onAction="#handleSubmitRequest">
-                                    <styleClass>
-                                        <String fx:value="primary-button"/>
-                                    </styleClass>
-                                </Button>
-                                
-                                <Button text="Back"
-        								prefWidth="160.0"
-        								onAction="#handleBack">
-    								<styleClass>
-      									<String fx:value="secondary-button"/>
-    								</styleClass>
-								</Button>
+                                        styleClass="primary-button"
+                                        onAction="#handleSubmitRequest"/>
+
                             </children>
                         </VBox>
-
-                        <HBox alignment="CENTER">
-                            <children>
-                                <Label fx:id="statusLabel"
-                                       text="Status: Ready">
-                                    <styleClass>
-                                        <String fx:value="status-label"/>
-                                        <String fx:value="status-info"/>
-                                    </styleClass>
-                                </Label>
-                            </children>
-                        </HBox>
 
                     </children>
                 </VBox>
             </center>
+
+            <bottom>
+                <HBox alignment="CENTER" prefHeight="70.0">
+                    <children>
+                        <Label fx:id="statusLabel"
+                               text="Status: Ready"
+                               wrapText="true"
+                               styleClass="status-label"/>
+                    </children>
+                </HBox>
+            </bottom>
 
         </BorderPane>
     </children>

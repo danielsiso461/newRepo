@@ -19,6 +19,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.PasswordField;
 import javafx.stage.Stage;
+import javafx.scene.paint.Color;
 
 /*
  * This class is the controller for the existing customer login screen.
@@ -79,20 +80,24 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 		String password = passwordField.getText();
 
 		if (username == null || username.trim().isEmpty()) {
+			messageLabel.setTextFill(Color.RED);
 			messageLabel.setText("Please enter username.");
 			return;
 		}
 
 		if (password == null || password.trim().isEmpty()) {
+			messageLabel.setTextFill(Color.RED);
 			messageLabel.setText("Please enter password.");
 			return;
 		}
 
 		if (clientController == null) {
+			messageLabel.setTextFill(Color.RED);
 			messageLabel.setText("Client is not connected to server.");
 			return;
 		}
 
+		messageLabel.setTextFill(Color.BLUE);
 		messageLabel.setText("Checking login details...");
 
 		clientController.requestExistingCustomerLogin(username.trim(), password.trim());
@@ -116,18 +121,14 @@ public class ExistingCustomerLoginController implements ExistingCustomerLoginObs
 
 			if (response.isSuccess()) {
 				Subscriber subscriber = (Subscriber) response.getData();
-				
+
 				clientController.setLoggedInSubscriberId(subscriber.getSubscriberId());
 				System.out.println("Logged in subscriber ID = " + clientController.getLoggedInSubscriberId());
-
-				messageLabel.setText("Login successful. Welcome " + subscriber.getSubscriberName());
-
-				System.out.println("Existing customer login successful:");
-				System.out.println("Subscriber = " + subscriber);
 
 				openOrderTableScreen(subscriber);
 
 			} else {
+				messageLabel.setTextFill(Color.RED);
 				messageLabel.setText(response.getMessage());
 			}
 		});

@@ -2,23 +2,82 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
 
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="clientGUI.CustomerAccessController"
+            stylesheets="@gonature-theme.css"
+            styleClass="root-pane">
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/25" fx:controller="clientGUI.CustomerAccessController">
-   <children>
-      <AnchorPane layoutX="-8.0" layoutY="-4.0" prefHeight="400.0" prefWidth="700.0">
-         <children>
-            <Label layoutX="241.0" layoutY="74.0" text="Customer Access">
-               <font>
-                  <Font name="System Bold Italic" size="28.0" />
-               </font>
-            </Label>
-            <Button layoutX="169.0" layoutY="225.0" mnemonicParsing="false" onAction="#handleExistingCustomerLogin" text="Existing Customer Login" />
-            <Button layoutX="376.0" layoutY="225.0" mnemonicParsing="false" onAction="#handleOccasionalCustomerAccess" text="Occasional Customer Access" />
-            <Button layoutX="324.0" layoutY="302.0" mnemonicParsing="false" onAction="#handleBack" text="Back" />
-         </children>
-      </AnchorPane>
-   </children>
+    <children>
+        <BorderPane prefWidth="800.0"
+                    prefHeight="550.0"
+                    minWidth="650.0"
+                    minHeight="500.0"
+                    AnchorPane.topAnchor="0.0"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0">
+
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#handleBack"/>
+                    </children>
+                </HBox>
+            </top>
+
+            <center>
+                <VBox alignment="CENTER"
+                      spacing="24.0"
+                      styleClass="page-container">
+
+                    <children>
+
+                        <VBox alignment="CENTER" spacing="8.0">
+                            <children>
+                                <Label text="Customer Access"
+                                       styleClass="page-title"/>
+
+                                <Label text="Choose how you want to continue"
+                                       styleClass="page-subtitle"/>
+
+                                <Separator prefWidth="420.0"/>
+                            </children>
+                        </VBox>
+
+                        <VBox alignment="CENTER"
+                              spacing="18.0"
+                              maxWidth="460.0"
+                              styleClass="card">
+
+                            <children>
+                                <Button text="Existing Customer Login"
+                                        prefWidth="260.0"
+                                        styleClass="primary-button"
+                                        onAction="#handleExistingCustomerLogin"/>
+
+                                <Button text="Occasional Customer Access"
+                                        prefWidth="260.0"
+                                        styleClass="secondary-button"
+                                        onAction="#handleOccasionalCustomerAccess"/>
+                            </children>
+                        </VBox>
+
+                    </children>
+                </VBox>
+            </center>
+
+        </BorderPane>
+    </children>
 </AnchorPane>

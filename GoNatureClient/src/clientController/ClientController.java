@@ -4,9 +4,43 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+
 import client.Client;
-import clientCommon.*;
-import common.*;
+import clientCommon.ChatIF;
+import clientCommon.EmployeeLoginObserver;
+import clientCommon.EntryPriceObserver;
+import clientCommon.ExistingCustomerLoginObserver;
+import clientCommon.MakeOrderObserver;
+import clientCommon.OccasionalCustomerAccessObserver;
+import clientCommon.OrderObserver;
+import clientCommon.ParkEntranceObserver;
+import clientCommon.ParkObserver;
+import clientCommon.ParkParameterObserver;
+import clientCommon.ParkVisitorCounterObserver;
+import clientCommon.RegisterGuideObserver;
+import clientCommon.RegisterSubscriberObserver;
+import clientCommon.ReportObserver;
+import clientCommon.SearchSubscriberObserver;
+import clientCommon.WaitingListObserver;
+import clientGUI.MakePopUp;
+import common.CancelOrderMessage;
+import common.EmployeeLoginRequest;
+import common.EntryPriceRequest;
+import common.ExistingCustomerLoginRequest;
+import common.GuideRegistrationRequest;
+import common.Message;
+import common.OperationResponse;
+import common.Order;
+import common.Park;
+import common.ParkEntranceMessage;
+import common.ParkParameterChangeRequest;
+import common.ParkVisitorCounterSnapshot;
+import common.ParkVisitorCounterUpdateRequest;
+import common.Protocol;
+import common.RegisterSubscriberRequest;
+import common.ReportRequest;
+import common.UpdateMessage;
+import common.WaitingListMessage;
 import javafx.application.Platform;
 
 /**
@@ -44,14 +78,6 @@ public class ClientController implements ChatIF {
 	private List<EntryPriceObserver> entryPriceObservers = new ArrayList<>();
 	private List<ParkVisitorCounterObserver> parkVisitorCounterObservers = new ArrayList<>();
 
-	/**
-	 * Constructs a new ClientController and opens a connection to the server.
-	 *
-	 * @param host the server host address
-	 * @param port the server port
-	 * @param id   the ID of the current user
-	 * @throws IOException if the client connection cannot be created
-	 */
 	public ClientController(String host, int port, String id) throws IOException {
 		try {
 			client = new Client(host, port, this);
@@ -77,8 +103,6 @@ public class ClientController implements ChatIF {
 	public Integer getLoggedInSubscriberId() {
 		return loggedInSubscriberId;
 	}
-
-	// Order observers
 
 	public void addObserver(OrderObserver observer) {
 		if (observer != null && !orderObservers.contains(observer)) {
@@ -114,7 +138,43 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Waiting list observers
+	private void notifyReminderDeclined(Order order) {
+		for (OrderObserver observer : orderObservers) {
+			observer.reminderDeclined(order);
+		}
+	}
+
+	public void addParkObserver(ParkObserver observer) {
+		if (observer != null && !parkObservers.contains(observer)) {
+			parkObservers.add(observer);
+		}
+	}
+
+	public void removeParkObserver(ParkObserver observer) {
+		parkObservers.remove(observer);
+	}
+
+	private void notifyParksReceived(List<Park> parks) {
+		for (ParkObserver observer : parkObservers) {
+			observer.onParksReceived(parks);
+		}
+	}
+
+	public void addOccasionalCustomerAccessObserver(OccasionalCustomerAccessObserver observer) {
+		if (observer != null && !occasionalCustomerAccessObservers.contains(observer)) {
+			occasionalCustomerAccessObservers.add(observer);
+		}
+	}
+
+	public void removeOccasionalCustomerAccessObserver(OccasionalCustomerAccessObserver observer) {
+		occasionalCustomerAccessObservers.remove(observer);
+	}
+
+	private void notifyOccasionalCustomerAccessResult(OperationResponse response) {
+		for (OccasionalCustomerAccessObserver observer : occasionalCustomerAccessObservers) {
+			observer.onOccasionalCustomerAccessResult(response);
+		}
+	}
 
 	public void addWaitingListObserver(WaitingListObserver observer) {
 		if (observer != null && !waitingListObservers.contains(observer)) {
@@ -150,50 +210,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Make order observers
-
-	public void addMakeOrderObserver(MakeOrderObserver observer) {
-		if (observer != null && !makeOrderObservers.contains(observer)) {
-			makeOrderObservers.add(observer);
-		}
-	}
-
-	public void removeMakeOrderObserver(MakeOrderObserver observer) {
-		makeOrderObservers.remove(observer);
-	}
-
-	private void notifyParkNamesReceivedForMakeOrder(List<String> parkNames) {
-		for (MakeOrderObserver observer : makeOrderObservers) {
-			observer.onParkNamesReceived(parkNames);
-		}
-	}
-
-	private void notifyMakeOrderServerResponse(Message message) {
-		for (MakeOrderObserver observer : new ArrayList<>(makeOrderObservers)) {
-			observer.onMakeOrderServerResponse(message);
-		}
-	}
-
-	// Park observers
-
-	public void addParkObserver(ParkObserver observer) {
-		if (observer != null && !parkObservers.contains(observer)) {
-			parkObservers.add(observer);
-		}
-	}
-
-	public void removeParkObserver(ParkObserver observer) {
-		parkObservers.remove(observer);
-	}
-
-	private void notifyParksReceived(List parks) {
-		for (ParkObserver observer : parkObservers) {
-			observer.onParksReceived(parks);
-		}
-	}
-
-	// Park entrance observers
-
 	public void addParkEntranceObserver(ParkEntranceObserver observer) {
 		if (observer != null && !parkEntranceObservers.contains(observer)) {
 			parkEntranceObservers.add(observer);
@@ -228,25 +244,27 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Occasional customer access observers
-
-	public void addOccasionalCustomerAccessObserver(OccasionalCustomerAccessObserver observer) {
-		if (observer != null && !occasionalCustomerAccessObservers.contains(observer)) {
-			occasionalCustomerAccessObservers.add(observer);
+	public void addMakeOrderObserver(MakeOrderObserver observer) {
+		if (observer != null && !makeOrderObservers.contains(observer)) {
+			makeOrderObservers.add(observer);
 		}
 	}
 
-	public void removeOccasionalCustomerAccessObserver(OccasionalCustomerAccessObserver observer) {
-		occasionalCustomerAccessObservers.remove(observer);
+	public void removeMakeOrderObserver(MakeOrderObserver observer) {
+		makeOrderObservers.remove(observer);
 	}
 
-	private void notifyOccasionalCustomerAccessResult(OperationResponse response) {
-		for (OccasionalCustomerAccessObserver observer : occasionalCustomerAccessObservers) {
-			observer.onOccasionalCustomerAccessResult(response);
+	private void notifyParkNamesReceivedForMakeOrder(List<String> parkNames) {
+		for (MakeOrderObserver observer : makeOrderObservers) {
+			observer.onParkNamesReceived(parkNames);
 		}
 	}
 
-	// Employee login observers
+	private void notifyMakeOrderServerResponse(Message message) {
+		for (MakeOrderObserver observer : new ArrayList<>(makeOrderObservers)) {
+			observer.onMakeOrderServerResponse(message);
+		}
+	}
 
 	public void addEmployeeLoginObserver(EmployeeLoginObserver observer) {
 		if (observer != null && !employeeLoginObservers.contains(observer)) {
@@ -264,8 +282,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Existing customer login observers
-
 	public void addExistingCustomerLoginObserver(ExistingCustomerLoginObserver observer) {
 		if (observer != null && !existingCustomerLoginObservers.contains(observer)) {
 			existingCustomerLoginObservers.add(observer);
@@ -282,8 +298,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Register subscriber observers
-
 	public void addRegisterSubscriberObserver(RegisterSubscriberObserver observer) {
 		if (observer != null && !registerSubscriberObservers.contains(observer)) {
 			registerSubscriberObservers.add(observer);
@@ -299,8 +313,6 @@ public class ClientController implements ChatIF {
 			observer.onRegisterSubscriberResult(response);
 		}
 	}
-
-	// Search subscriber observers
 
 	public void addSearchSubscriberObserver(SearchSubscriberObserver observer) {
 		if (observer != null && !searchSubscriberObservers.contains(observer)) {
@@ -336,8 +348,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Register guide observers
-
 	public void addRegisterGuideObserver(RegisterGuideObserver observer) {
 		if (observer != null && !registerGuideObservers.contains(observer)) {
 			registerGuideObservers.add(observer);
@@ -354,8 +364,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Report observers
-
 	public void addReportObserver(ReportObserver observer) {
 		if (observer != null && !reportObservers.contains(observer)) {
 			reportObservers.add(observer);
@@ -371,8 +379,6 @@ public class ClientController implements ChatIF {
 			observer.onReportResponse(response);
 		}
 	}
-
-	// Park parameter observers
 
 	public void addParkParameterObserver(ParkParameterObserver observer) {
 		if (observer != null && !parkParameterObservers.contains(observer)) {
@@ -396,8 +402,6 @@ public class ClientController implements ChatIF {
 		}
 	}
 
-	// Entry price observers
-
 	public void addEntryPriceObserver(EntryPriceObserver observer) {
 		if (observer != null && !entryPriceObservers.contains(observer)) {
 			entryPriceObservers.add(observer);
@@ -413,8 +417,6 @@ public class ClientController implements ChatIF {
 			observer.onEntryPriceCalculated(response);
 		}
 	}
-
-	// Park visitor counter observers
 
 	public void addParkVisitorCounterObserver(ParkVisitorCounterObserver observer) {
 		if (observer != null && !parkVisitorCounterObservers.contains(observer)) {
@@ -443,8 +445,6 @@ public class ClientController implements ChatIF {
 			observer.onParkVisitorCountersUpdated();
 		}
 	}
-
-	// Requests to server
 
 	public void requestOrders() {
 		sendMessageToServer(new Message(id, Protocol.RETURN_ORDER));
@@ -554,9 +554,7 @@ public class ClientController implements ChatIF {
 		sendMessageToServer(new Message(request, Protocol.CALCULATE_ENTRY_PRICE_REQUEST));
 	}
 
-	public void createParkParameterChangeRequest(int parkId, int employeeId,
-			String parameterName, String newValue) {
-
+	public void createParkParameterChangeRequest(int parkId, int employeeId, String parameterName, String newValue) {
 		Object[] data = new Object[] {
 				parkId,
 				employeeId,
@@ -604,12 +602,10 @@ public class ClientController implements ChatIF {
 			client.handleMessageFromClientUI(message);
 		}
 	}
-	
+
 	public void logoutCurrentUserFromServer() {
 		sendMessageToServer(new Message(null, Protocol.CLIENT_LOGOUT_USER));
 	}
-
-	// Messages from server
 
 	@Override
 	public void display(Message message) {
@@ -679,13 +675,7 @@ public class ClientController implements ChatIF {
 			break;
 
 		case RETURN_ORDER:
-			handleReturnOrderResponse(message.getData());
-			break;
-
 		case GET_PARK_ORDERS_RESPONSE:
-			handleReturnOrderResponse(message.getData());
-			break;
-
 		case GET_ALL_ORDERS_RESPONSE:
 			handleReturnOrderResponse(message.getData());
 			break;
@@ -703,6 +693,7 @@ public class ClientController implements ChatIF {
 			if (message.getData() instanceof Order) {
 				notifyOrderMade((Order) message.getData());
 			}
+
 			notifyMakeOrderServerResponse(message);
 			break;
 
@@ -808,10 +799,26 @@ public class ClientController implements ChatIF {
 		case PARK_VISITOR_COUNTERS_UPDATED:
 			notifyParkVisitorCountersUpdated();
 			break;
-			
+
 		case CLIENT_LOGOUT_USER_SUCCESS:
 			System.out.println("User logged out successfully from server.");
-			break;	
+			break;
+
+		case ORDER_REMINDER:
+			handleOrderReminder(message);
+			break;
+
+		case ACCEPT_ORDER_REMINDER_CONFIRMATION:
+			handleOrderReminderAcceptanceConfirmation(message);
+			break;
+
+		case DECLINE_ORDER_REMINDER_CONFIRMATION:
+			handleOrderReminderDeclineConfirmation(message);
+			break;
+
+		case ERROR_ORDER_REMINDER_CONFIRMATION:
+			handleOrderReminderAnswerConfirmationError(message);
+			break;
 
 		default:
 			System.out.println("Error: unknown server response in ClientController: " + type);
@@ -852,7 +859,7 @@ public class ClientController implements ChatIF {
 	}
 
 	private void handleParksResponse(Object data) {
-		List parks = parseParkMessage(data);
+		List<Park> parks = parseParkMessage(data);
 
 		if (parks != null) {
 			notifyParksReceived(parks);
@@ -879,12 +886,8 @@ public class ClientController implements ChatIF {
 
 	private void handlePendingParkParameterRequestsResponse(Object data, Protocol responseType) {
 		if (!(data instanceof OperationResponse)) {
-			OperationResponse invalidResponse = new OperationResponse(
-					false,
-					"Invalid pending requests response from server",
-					null
-			);
-
+			OperationResponse invalidResponse = new OperationResponse(false,
+					"Invalid pending requests response from server", null);
 			notifyParkParameterOperationResponse(invalidResponse, responseType);
 			return;
 		}
@@ -899,12 +902,8 @@ public class ClientController implements ChatIF {
 		List<ParkParameterChangeRequest> requests = parseParkParameterRequestMessage(response.getData());
 
 		if (requests == null) {
-			OperationResponse invalidDataResponse = new OperationResponse(
-					false,
-					"Invalid pending requests data from server",
-					null
-			);
-
+			OperationResponse invalidDataResponse = new OperationResponse(false,
+					"Invalid pending requests data from server", null);
 			notifyParkParameterOperationResponse(invalidDataResponse, responseType);
 			return;
 		}
@@ -918,23 +917,15 @@ public class ClientController implements ChatIF {
 			return;
 		}
 
-		OperationResponse response = new OperationResponse(
-				false,
-				"Invalid park parameter response from server",
-				null
-		);
-
+		OperationResponse response = new OperationResponse(false,
+				"Invalid park parameter response from server", null);
 		notifyParkParameterOperationResponse(response, responseType);
 	}
 
 	private void handleParkVisitorCountersResponse(Object data, Protocol responseType) {
 		if (!(data instanceof OperationResponse)) {
-			OperationResponse invalidResponse = new OperationResponse(
-					false,
-					"Invalid park visitor counters response from server",
-					null
-			);
-
+			OperationResponse invalidResponse = new OperationResponse(false,
+					"Invalid park visitor counters response from server", null);
 			notifyParkVisitorCounterOperationResponse(invalidResponse, responseType);
 			return;
 		}
@@ -949,12 +940,8 @@ public class ClientController implements ChatIF {
 		List<ParkVisitorCounterSnapshot> counters = parseParkVisitorCounterMessage(response.getData());
 
 		if (counters == null) {
-			OperationResponse invalidDataResponse = new OperationResponse(
-					false,
-					"Invalid park visitor counters data from server",
-					null
-			);
-
+			OperationResponse invalidDataResponse = new OperationResponse(false,
+					"Invalid park visitor counters data from server", null);
 			notifyParkVisitorCounterOperationResponse(invalidDataResponse, responseType);
 			return;
 		}
@@ -968,16 +955,31 @@ public class ClientController implements ChatIF {
 			return;
 		}
 
-		OperationResponse response = new OperationResponse(
-				false,
-				"Invalid park visitor counter response from server",
-				null
-		);
-
+		OperationResponse response = new OperationResponse(false,
+				"Invalid park visitor counter response from server", null);
 		notifyParkVisitorCounterOperationResponse(response, responseType);
 	}
 
-	// Disconnect
+	private void handleOrderReminder(Message message) {
+		MakePopUp.makeReminderPopup(this, (Order) message.getData(), "Order Reminder");
+	}
+
+	private void handleOrderReminderAcceptanceConfirmation(Message message) {
+		MakePopUp.makePopup("Confirmed: Order accepted",
+				"Order reminder accepted successfully\nOrder ID: " + ((Order) message.getData()).getOrderId());
+	}
+
+	private void handleOrderReminderDeclineConfirmation(Message message) {
+		System.out.println("handleOrderReminderDeclineConfirmation");
+		MakePopUp.makePopup("Confirmed: Order cancelled",
+				"Order cancelled successfully\nOrder ID: " + ((Order) message.getData()).getOrderId());
+		notifyReminderDeclined((Order) message.getData());
+	}
+
+	private void handleOrderReminderAnswerConfirmationError(Message message) {
+		MakePopUp.makePopup("Error: Order Reminder",
+				"Order Confirmation Error\nOrder ID: " + ((Order) message.getData()).getOrderId());
+	}
 
 	public void disconnectFromServer() {
 		userIssuedDisconnect = true;
@@ -1006,8 +1008,6 @@ public class ClientController implements ChatIF {
 	public void setUserIssuedDisconnect(boolean userIssuedDisconnect) {
 		this.userIssuedDisconnect = userIssuedDisconnect;
 	}
-
-	// Parsers
 
 	private List<Order> parseOrderMessage(Object data) {
 		if (!(data instanceof List<?>)) {
@@ -1105,7 +1105,7 @@ public class ClientController implements ChatIF {
 	}
 
 	private List<ParkVisitorCounterSnapshot> parseParkVisitorCounterMessage(Object data) {
-		if (!(data instanceof List<?>)) {
+		if (!(data instanceof List)) {
 			return null;
 		}
 
@@ -1127,4 +1127,3 @@ public class ClientController implements ChatIF {
 		void accept(OperationResponse response);
 	}
 }
-     

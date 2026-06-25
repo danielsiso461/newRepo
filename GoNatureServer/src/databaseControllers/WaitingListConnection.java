@@ -3,8 +3,12 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 import common.WaitingListMessage;
 
 /*
@@ -19,60 +23,43 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 	private static final String TABLE_NAME = "waiting_list";
 
-	/*
-	 * Private constructor for Singleton usage.
-	 *
-	 * @throws SQLException if the database connection cannot be created
-	 */
+	private static final String WAITING_ID = "waiting_id";
+	private static final String SUBSCRIBER_ID = "subscriber_id";
+	private static final String PARK_ID = "park_id";
+	private static final String REQUESTED_ORDER_DATE = "requested_order_date";
+	private static final String NUMBER_OF_VISITORS = "number_of_visitors";
+	private static final String QUEUE_POSITION = "queue_position";
+	private static final String WAITING_STATUS = "waiting_status";
+	private static final String CREATED_AT = "created_at";
+	private static final String OFFERED_AT = "offered_at";
+	private static final String OFFER_EXPIRES_AT = "offer_expires_at";
+
+	private static final String STATUS_WAITING = "waiting";
+	private static final String STATUS_OFFERED = "offered";
+	private static final String STATUS_CANCELLED = "cancelled";
+	private static final String STATUS_EXPIRED = "expired";
+	private static final String STATUS_CONFIRMED = "confirmed";
+
 	private WaitingListConnection() throws SQLException {
 		connect();
 	}
 
-	/*
-	 * Returns the single instance of WaitingListConnection.
-	 *
-	 * @return the WaitingListConnection instance
-	 * @throws SQLException if the database connection cannot be created
-	 */
 	public static WaitingListConnection getInstance() throws SQLException {
-		if (instance == null) {
+		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
 			instance = new WaitingListConnection();
 		}
 
 		return instance;
 	}
 
-	/*
-	 * Returns the table name used by this database connector.
-	 *
-	 * @return the waiting_list table name
-	 */
 	@Override
 	public String getTableName() {
 		return TABLE_NAME;
 	}
-	/*
-	 * Makes sure the database connection is open before running a query.
-	 *
-	 * @throws SQLException if the connection cannot be opened
-	 */
-	public void ensureConnection() throws SQLException {
-		if (conn == null || conn.isClosed()) {
-			connect();
-		}
-	}
 
-	 /* Calculates the next queue position for a specific park and requested date.
-	 *
-	 * The next position is calculated by taking the current maximum queue_position
-	 * for the same park and requested date and adding 1.
-	 *
-	 * @param parkId             the requested park ID
-	 * @param requestedOrderDate the requested visit date and time
-	 * @return the next available queue position
-	 * @throws SQLException if the select query fails
-	 */
-	public int getNextQueuePosition(int parkId, java.time.LocalDateTime requestedOrderDate) throws SQLException {
+	public int getNextQueuePosition(int parkId, LocalDateTime requestedOrderDate)
+			throws SQLException {
+
 		ensureConnection();
 
 		String sql = """
@@ -85,7 +72,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
-			pstmt.setTimestamp(2, java.sql.Timestamp.valueOf(requestedOrderDate));
+			pstmt.setTimestamp(2, Timestamp.valueOf(requestedOrderDate));
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
@@ -96,119 +83,100 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return 1;
 	}
-	/*
-	 * Checks whether the subscriber already has an active waiting list request for
-	 * the same park, date, time and number of visitors.
-	 *
-	 * Active requests are requests that are still waiting or already offered.
-	 *
-	 * @param subscriberId       the subscriber ID of the visitor
-	 * @param parkId             the requested park ID
-	 * @param requestedOrderDate the requested visit date and time
-	 * @param numberOfVisitors   the requested number of visitors
-	 * @return true if an active matching request already exists, false otherwise
-	 * @throws SQLException if the select query fails
-	 */
-	private boolean activeWaitingRequestExists(int subscriberId, int parkId,
-			java.time.LocalDateTime requestedOrderDate, int numberOfVisitors) throws SQLException {
+
+	private boolean waitingRequestExistsByStatus(int subscriberId, int parkId,
+			LocalDateTime requestedOrderDate, int numberOfVisitors,
+			String waitingStatus) throws SQLException {
+
 		ensureConnection();
 
-		String sql = """
-				SELECT waiting_id
-				FROM waiting_list
-				WHERE subscriber_id = ?
-				  AND park_id = ?
-				  AND requested_order_date = ?
-				  AND number_of_visitors = ?
-				  AND waiting_status IN ('waiting', 'offered')
-				LIMIT 1;
-				""";
+		String sql = selectByFields(
+				new String[] {
+						WAITING_ID
+				},
+				new String[] {
+						SUBSCRIBER_ID,
+						PARK_ID,
+						REQUESTED_ORDER_DATE,
+						NUMBER_OF_VISITORS,
+						WAITING_STATUS
+				}
+		);
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, subscriberId);
 			pstmt.setInt(2, parkId);
-			pstmt.setTimestamp(3, java.sql.Timestamp.valueOf(requestedOrderDate));
+			pstmt.setTimestamp(3, Timestamp.valueOf(requestedOrderDate));
 			pstmt.setInt(4, numberOfVisitors);
+			pstmt.setString(5, waitingStatus);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				return rs.next();
 			}
 		}
 	}
-	/*
-	 * Adds a visitor request to the waiting list.
-	 *
-	 * The request is inserted with waiting_status = "waiting".
-	 * The queue position is calculated automatically according to the same park
-	 * and requested order date.
-	 *
-	 * If the subscriber already has an active waiting list request for the same
-	 * park, date, time and number of visitors, the method does not insert another
-	 * row and returns -1.
-	 *
-	 * @param subscriberId       the subscriber ID of the visitor
-	 * @param parkId             the requested park ID
-	 * @param requestedOrderDate the requested visit date and time
-	 * @param numberOfVisitors   the requested number of visitors
-	 * @return the queue position assigned to the visitor, or -1 if a duplicate active request exists
-	 * @throws SQLException if the insert query fails
-	 */
-	public int addToWaitingList(int subscriberId, int parkId, java.time.LocalDateTime requestedOrderDate,
-			int numberOfVisitors) throws SQLException {
+
+	private boolean activeWaitingRequestExists(int subscriberId, int parkId,
+			LocalDateTime requestedOrderDate, int numberOfVisitors)
+			throws SQLException {
+
+		return waitingRequestExistsByStatus(
+				subscriberId,
+				parkId,
+				requestedOrderDate,
+				numberOfVisitors,
+				STATUS_WAITING
+		) || waitingRequestExistsByStatus(
+				subscriberId,
+				parkId,
+				requestedOrderDate,
+				numberOfVisitors,
+				STATUS_OFFERED
+		);
+	}
+
+	public int addToWaitingList(int subscriberId, int parkId,
+			LocalDateTime requestedOrderDate, int numberOfVisitors)
+			throws SQLException {
+
 		ensureConnection();
 
-		// Do not allow the same subscriber to join the waiting list more than once
-		// for the exact same park, date, time and number of visitors.
-		if (activeWaitingRequestExists(subscriberId, parkId, requestedOrderDate, numberOfVisitors)) {
+		if (activeWaitingRequestExists(subscriberId, parkId, requestedOrderDate,
+				numberOfVisitors)) {
 			return -1;
 		}
 
 		int queuePosition = getNextQueuePosition(parkId, requestedOrderDate);
 
-		String sql = """
-				INSERT INTO waiting_list
-				(
-					subscriber_id,
-					park_id,
-					requested_order_date,
-					number_of_visitors,
-					queue_position,
-					waiting_status,
-					created_at
-				)
-				VALUES (?, ?, ?, ?, ?, 'waiting', NOW());
-				""";
+		List<Object> values = new ArrayList<>();
 
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, subscriberId);
-			pstmt.setInt(2, parkId);
-			pstmt.setTimestamp(3, java.sql.Timestamp.valueOf(requestedOrderDate));
-			pstmt.setInt(4, numberOfVisitors);
-			pstmt.setInt(5, queuePosition);
+		values.add(subscriberId);
+		values.add(parkId);
+		values.add(Timestamp.valueOf(requestedOrderDate));
+		values.add(numberOfVisitors);
+		values.add(queuePosition);
+		values.add(STATUS_WAITING);
+		values.add(Timestamp.valueOf(LocalDateTime.now()));
 
-			pstmt.executeUpdate();
-		}
+		insertFields(
+				new String[] {
+						SUBSCRIBER_ID,
+						PARK_ID,
+						REQUESTED_ORDER_DATE,
+						NUMBER_OF_VISITORS,
+						QUEUE_POSITION,
+						WAITING_STATUS,
+						CREATED_AT
+				},
+				values
+		);
 
 		return queuePosition;
 	}
-	/*
-	 * Offers the newly available place to the first matching visitor in the waiting list.
-	 *
-	 * The method searches for the first visitor waiting for the same park and date.
-	 * The visitor must request a number of visitors that can fit in the available
-	 * places that were freed by a cancelled order.
-	 *
-	 * If a matching visitor is found, the waiting_status is changed from "waiting"
-	 * to "offered", and the offer time fields are updated.
-	 *
-	 * @param parkId          the park ID of the cancelled order
-	 * @param orderDate       the visit date of the cancelled order
-	 * @param availablePlaces the number of places freed by the cancellation
-	 * @return true if a waiting list request was updated to offered, false otherwise
-	 * @throws SQLException if the select or update query fails
-	 */
-	public boolean offerFirstMatchingWaitingRequest(int parkId, java.time.LocalDate orderDate,
-			int availablePlaces) throws SQLException {
+
+	public boolean offerFirstMatchingWaitingRequest(int parkId,
+			LocalDate orderDate, int availablePlaces) throws SQLException {
+
 		ensureConnection();
 
 		String selectSql = """
@@ -231,7 +199,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					waitingId = rs.getInt("waiting_id");
+					waitingId = rs.getInt(WAITING_ID);
 				}
 			}
 		}
@@ -240,60 +208,58 @@ public class WaitingListConnection extends AbstractDBConnection {
 			return false;
 		}
 
-		String updateSql = """
-				UPDATE waiting_list
-				SET waiting_status = 'offered',
-				    offered_at = NOW(),
-				   offer_expires_at = DATE_ADD(NOW(), INTERVAL 1 HOUR)
-				WHERE waiting_id = ?;
-				""";
+		LocalDateTime now = LocalDateTime.now();
 
-		try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-			pstmt.setInt(1, waitingId);
-
-			return pstmt.executeUpdate() > 0;
-		}
+		return updateFields(
+				new String[] {
+						WAITING_STATUS,
+						OFFERED_AT,
+						OFFER_EXPIRES_AT
+				},
+				List.of(
+						STATUS_OFFERED,
+						Timestamp.valueOf(now),
+						Timestamp.valueOf(now.plusHours(1))
+				),
+				new String[] {
+						WAITING_ID
+				},
+				List.of(
+						waitingId
+				)
+		);
 	}
-	/*
-	 * Rejects an offered waiting list request and offers the available place to the
-	 * next matching visitor in the waiting list.
-	 *
-	 * The method first loads the offered waiting list request, because its park,
-	 * requested date and number of visitors are needed in order to continue to the
-	 * next visitor in the same waiting list.
-	 *
-	 * After the current request is changed to "rejected", the method searches for
-	 * the next matching request and changes it to "offered".
-	 *
-	 * @param waitingId the waiting list request ID that should be rejected
-	 * @return true if the offered request was rejected, false otherwise
-	 * @throws SQLException if the select or update query fails
-	 */
+
 	public boolean rejectWaitingOfferAndOfferNext(int waitingId) throws SQLException {
 		ensureConnection();
 
 		Integer parkId = null;
-		java.time.LocalDate orderDate = null;
+		LocalDate orderDate = null;
 		Integer availablePlaces = null;
 
-		String selectSql = """
-				SELECT
-				    park_id,
-				    DATE(requested_order_date) AS order_date,
-				    number_of_visitors
-				FROM waiting_list
-				WHERE waiting_id = ?
-				  AND waiting_status = 'offered';
-				""";
+		String sql = selectByFields(
+				new String[] {
+						PARK_ID,
+						REQUESTED_ORDER_DATE,
+						NUMBER_OF_VISITORS
+				},
+				new String[] {
+						WAITING_ID,
+						WAITING_STATUS
+				}
+		);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, waitingId);
+			pstmt.setString(2, STATUS_OFFERED);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
 				if (rs.next()) {
-					parkId = rs.getInt("park_id");
-					orderDate = rs.getDate("order_date").toLocalDate();
-					availablePlaces = rs.getInt("number_of_visitors");
+					parkId = rs.getInt(PARK_ID);
+					orderDate = rs.getTimestamp(REQUESTED_ORDER_DATE)
+							.toLocalDateTime()
+							.toLocalDate();
+					availablePlaces = rs.getInt(NUMBER_OF_VISITORS);
 				}
 			}
 		}
@@ -302,42 +268,32 @@ public class WaitingListConnection extends AbstractDBConnection {
 			return false;
 		}
 
-		String updateSql = """
-				UPDATE waiting_list
-				SET waiting_status = 'cancelled'
-				WHERE waiting_id = ?
-				  AND waiting_status = 'offered';
-				""";
+		boolean rejected = updateFields(
+				new String[] {
+						WAITING_STATUS
+				},
+				List.of(
+						STATUS_CANCELLED
+				),
+				new String[] {
+						WAITING_ID,
+						WAITING_STATUS
+				},
+				List.of(
+						waitingId,
+						STATUS_OFFERED
+				)
+		);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-			pstmt.setInt(1, waitingId);
-
-			if (pstmt.executeUpdate() == 0) {
-				return false;
-			}
+		if (!rejected) {
+			return false;
 		}
 
-		/*
-		 * After the current offer is rejected, the same available place can be offered
-		 * to the next matching visitor in the waiting list.
-		 */
 		offerFirstMatchingWaitingRequest(parkId, orderDate, availablePlaces);
 
 		return true;
 	}
-	/*
-	 * Expires all waiting list offers whose expiration time has passed and offers
-	 * the available places to the next matching visitors in the waiting list.
-	 *
-	 * The method finds every request with waiting_status = "offered" and
-	 * offer_expires_at that is earlier than the current time.
-	 *
-	 * Each expired request is changed to "expired", and then the same available
-	 * place is offered to the next matching visitor in the waiting list.
-	 *
-	 * @return the number of offers that were changed to expired
-	 * @throws SQLException if the select or update query fails
-	 */
+
 	public int expireOldOffersAndOfferNext() throws SQLException {
 		ensureConnection();
 
@@ -347,7 +303,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 				SELECT
 				    waiting_id,
 				    park_id,
-				    DATE(requested_order_date) AS order_date,
+				    requested_order_date,
 				    number_of_visitors
 				FROM waiting_list
 				WHERE waiting_status = 'offered'
@@ -359,75 +315,64 @@ public class WaitingListConnection extends AbstractDBConnection {
 				ResultSet rs = pstmt.executeQuery()) {
 
 			while (rs.next()) {
-				int waitingId = rs.getInt("waiting_id");
-				int parkId = rs.getInt("park_id");
-				java.time.LocalDate orderDate = rs.getDate("order_date").toLocalDate();
-				int availablePlaces = rs.getInt("number_of_visitors");
+				int waitingId = rs.getInt(WAITING_ID);
+				int parkId = rs.getInt(PARK_ID);
+				LocalDate orderDate = rs.getTimestamp(REQUESTED_ORDER_DATE)
+						.toLocalDateTime()
+						.toLocalDate();
+				int availablePlaces = rs.getInt(NUMBER_OF_VISITORS);
 
-				String updateSql = """
-						UPDATE waiting_list
-						SET waiting_status = 'expired'
-						WHERE waiting_id = ?
-						  AND waiting_status = 'offered';
-						""";
+				boolean expired = updateFields(
+						new String[] {
+								WAITING_STATUS
+						},
+						List.of(
+								STATUS_EXPIRED
+						),
+						new String[] {
+								WAITING_ID,
+								WAITING_STATUS
+						},
+						List.of(
+								waitingId,
+								STATUS_OFFERED
+						)
+				);
 
-				try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-					updateStmt.setInt(1, waitingId);
-
-					if (updateStmt.executeUpdate() > 0) {
-						expiredCount++;
-
-						/*
-						 * After the current offer expires, the same available place can be offered to
-						 * the next matching visitor in the waiting list.
-						 */
-						offerFirstMatchingWaitingRequest(parkId, orderDate, availablePlaces);
-					}
+				if (expired) {
+					expiredCount++;
+					offerFirstMatchingWaitingRequest(parkId, orderDate, availablePlaces);
 				}
 			}
 		}
 
 		return expiredCount;
 	}
-	/*
-	 * Accepts an offered waiting list request.
-	 *
-	 * The method changes the waiting_status from "offered" to "accepted".
-	 * It only updates requests that are currently offered, so an already rejected,
-	 * expired or accepted request cannot be accepted again.
-	 *
-	 * @param waitingId the waiting list request ID that should be accepted
-	 * @return true if the offered request was accepted, false otherwise
-	 * @throws SQLException if the update query fails
-	 */
+
 	public boolean acceptWaitingOffer(int waitingId) throws SQLException {
 		ensureConnection();
 
-		String sql = """
-				UPDATE waiting_list
-				SET waiting_status = 'confirmed'
-				WHERE waiting_id = ?
-				  AND waiting_status = 'offered';
-				""";
-
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setInt(1, waitingId);
-
-			return pstmt.executeUpdate() > 0;
-		}
+		return updateFields(
+				new String[] {
+						WAITING_STATUS
+				},
+				List.of(
+						STATUS_CONFIRMED
+				),
+				new String[] {
+						WAITING_ID,
+						WAITING_STATUS
+				},
+				List.of(
+						waitingId,
+						STATUS_OFFERED
+				)
+		);
 	}
-	
-	/*
-	 * Returns all active waiting list requests for a specific subscriber.
-	 *
-	 * The method returns requests with status "waiting" and "offered".
-	 * Requests with status "offered" are returned only if the offer did not expire.
-	 *
-	 * @param subscriberId the subscriber ID
-	 * @return a list of active waiting list requests
-	 * @throws SQLException if the select query fails
-	 */
-	public List<WaitingListMessage> getOfferedRequestsForSubscriber(int subscriberId) throws SQLException {
+
+	public List<WaitingListMessage> getOfferedRequestsForSubscriber(int subscriberId)
+			throws SQLException {
+
 		ensureConnection();
 
 		List<WaitingListMessage> offers = new ArrayList<>();
@@ -463,15 +408,15 @@ public class WaitingListConnection extends AbstractDBConnection {
 			try (ResultSet rs = pstmt.executeQuery()) {
 				while (rs.next()) {
 					WaitingListMessage waitingListMessage = new WaitingListMessage(
-							rs.getInt("subscriber_id"),
-							rs.getInt("park_id"),
-							rs.getTimestamp("requested_order_date").toLocalDateTime(),
-							rs.getInt("number_of_visitors")
+							rs.getInt(SUBSCRIBER_ID),
+							rs.getInt(PARK_ID),
+							rs.getTimestamp(REQUESTED_ORDER_DATE).toLocalDateTime(),
+							rs.getInt(NUMBER_OF_VISITORS)
 					);
 
-					waitingListMessage.setWaitingId(rs.getInt("waiting_id"));
-					waitingListMessage.setQueuePosition(rs.getInt("queue_position"));
-					waitingListMessage.setWaitingStatus(rs.getString("waiting_status"));
+					waitingListMessage.setWaitingId(rs.getInt(WAITING_ID));
+					waitingListMessage.setQueuePosition(rs.getInt(QUEUE_POSITION));
+					waitingListMessage.setWaitingStatus(rs.getString(WAITING_STATUS));
 					waitingListMessage.setSubscriberEmail(rs.getString("subscriber_email"));
 					waitingListMessage.setSubscriberPhone(rs.getString("subscriber_phone"));
 
@@ -482,9 +427,166 @@ public class WaitingListConnection extends AbstractDBConnection {
 
 		return offers;
 	}
-	/*
-	 * Prevents cloning of the Singleton instance.
-	 */
+	
+	
+	public int acceptWaitingOfferAndCreateOrder(int waitingId) throws SQLException {
+		ensureConnection();
+
+		boolean previousAutoCommit = conn.getAutoCommit();
+
+		try {
+			conn.setAutoCommit(false);
+
+			String selectSql = selectByFieldsForUpdate(
+					new String[] {
+							WAITING_ID,
+							SUBSCRIBER_ID,
+							PARK_ID,
+							REQUESTED_ORDER_DATE,
+							NUMBER_OF_VISITORS,
+							OFFER_EXPIRES_AT
+					},
+					new String[] {
+							WAITING_ID,
+							WAITING_STATUS
+					}
+			);
+
+			Integer subscriberId = null;
+			Integer parkId = null;
+			LocalDateTime requestedOrderDate = null;
+			Integer numberOfVisitors = null;
+			LocalDateTime offerExpiresAt = null;
+
+			try (PreparedStatement pstmt = conn.prepareStatement(selectSql)) {
+				pstmt.setInt(1, waitingId);
+				pstmt.setString(2, STATUS_OFFERED);
+
+				try (ResultSet rs = pstmt.executeQuery()) {
+					if (rs.next()) {
+						subscriberId = rs.getInt(SUBSCRIBER_ID);
+						parkId = rs.getInt(PARK_ID);
+						requestedOrderDate =
+								rs.getTimestamp(REQUESTED_ORDER_DATE).toLocalDateTime();
+						numberOfVisitors = rs.getInt(NUMBER_OF_VISITORS);
+
+						if (rs.getTimestamp(OFFER_EXPIRES_AT) != null) {
+							offerExpiresAt =
+									rs.getTimestamp(OFFER_EXPIRES_AT).toLocalDateTime();
+						}
+					}
+				}
+			}
+
+			if (subscriberId == null
+					|| parkId == null
+					|| requestedOrderDate == null
+					|| numberOfVisitors == null) {
+				conn.rollback();
+				return -1;
+			}
+
+			if (offerExpiresAt != null && offerExpiresAt.isBefore(LocalDateTime.now())) {
+				conn.rollback();
+				return -1;
+			}
+
+			if (numberOfVisitors < 1 || numberOfVisitors > 15) {
+				conn.rollback();
+				return -1;
+			}
+
+			int newOrderNumber = getNextOrderNumberForWaitingAcceptedOrder();
+			int confirmationCode = newOrderNumber % 100000 + 100000;
+
+			insertFieldsInTable(
+					"order",
+					new String[] {
+							"order_number",
+							"order_date",
+							"number_of_visitors",
+							"confirmation_code",
+							"subscriber_id",
+							"date_of_placing_order",
+							"park_id",
+							"guide_id",
+							"order_status",
+							"order_type",
+							"order_hour",
+							"customer_id",
+							"email"
+					},
+					List.of(
+							newOrderNumber,
+							java.sql.Date.valueOf(requestedOrderDate.toLocalDate()),
+							numberOfVisitors,
+							confirmationCode,
+							subscriberId,
+							java.sql.Date.valueOf(LocalDate.now()),
+							parkId,
+							null,
+							"approved",
+							"private",
+							requestedOrderDate.getHour(),
+							subscriberId,
+							""
+					)
+			);
+
+			boolean updatedWaitingRequest = updateFields(
+					new String[] {
+							WAITING_STATUS
+					},
+					List.of(
+							STATUS_CONFIRMED
+					),
+					new String[] {
+							WAITING_ID,
+							WAITING_STATUS
+					},
+					List.of(
+							waitingId,
+							STATUS_OFFERED
+					)
+			);
+
+			if (!updatedWaitingRequest) {
+				conn.rollback();
+				return -1;
+			}
+
+			conn.commit();
+			return newOrderNumber;
+
+		} catch (SQLException e) {
+			conn.rollback();
+			throw e;
+
+		} finally {
+			conn.setAutoCommit(previousAutoCommit);
+		}
+	}
+
+	private int getNextOrderNumberForWaitingAcceptedOrder() throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				SELECT COALESCE(MAX(order_number), 0) + 1 AS next_order_number
+				FROM `order`;
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql);
+				ResultSet rs = pstmt.executeQuery()) {
+
+			if (rs.next()) {
+				return rs.getInt("next_order_number");
+			}
+		}
+
+		return 1;
+	}
+	
+
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();

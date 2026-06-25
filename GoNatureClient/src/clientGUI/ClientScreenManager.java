@@ -47,6 +47,7 @@ public final class ClientScreenManager {
 
     public static void showMakeOrderPage() {
         loadPage("/clientGUI/MakeOrderPage.fxml", "Make Order");
+        
     }
 
     public static void showParkSelectionPage() {
@@ -60,7 +61,7 @@ public final class ClientScreenManager {
     public static void showEntryPaymentPage() {
         if (!ClientSession.isEmployeeLoggedIn()) {
             System.out.println("Access denied: only employees can open entry payment page.");
-            return;
+            return; 
         }
 
         loadPage("/clientGUI/EntryPaymentPage.fxml", "Entry Payment");

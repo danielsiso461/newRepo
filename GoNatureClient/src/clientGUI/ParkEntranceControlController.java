@@ -16,21 +16,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-/*
- * This controller handles the park entrance control page.
- *
- * The page allows a park employee to check visitors into the park using a
- * confirmation code as a QR code simulation, check visitors out of the park,
- * create occasional visits, and view the current number of visitors in the park.
- */
 public class ParkEntranceControlController implements ParkEntranceObserver {
 
-	/*
-	 * Represents the action mode used by the park entrance page.
-	 */
+	private static final int MIN_VISITORS = 1;
+	private static final int MAX_VISITORS = 15;
+
 	public enum EntranceMode {
 		CHECK_IN,
 		OCCASIONAL_VISIT,
@@ -38,56 +30,55 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		CURRENT_VISITORS
 	}
 
-	/*
-	 * The client controller used to communicate with the server.
-	 */
 	private ClientController clientController;
-
-	/*
-	 * The employee currently using the park entrance page.
-	 */
 	private Employee loggedInEmployee;
-
-	/*
-	 * The current mode of the park entrance page.
-	 */
 	private EntranceMode entranceMode;
 
-	@FXML // fx:id="confirmationCodeField"
-	private TextField confirmationCodeField; // Value injected by FXMLLoader
+	@FXML
+	private Label instructionLabel;
 
-	@FXML // fx:id="parkIdField"
-	private TextField parkIdField; // Value injected by FXMLLoader
+	@FXML
+	private Label confirmationCodeLabel;
 
-	@FXML // fx:id="employeeIdField"
-	private TextField employeeIdField; // Value injected by FXMLLoader
+	@FXML
+	private TextField confirmationCodeField;
 
-	@FXML // fx:id="visitorsField"
-	private TextField visitorsField; // Value injected by FXMLLoader
+	@FXML
+	private Label parkIdLabel;
 
-	@FXML // fx:id="checkInButton"
-	private Button checkInButton; // Value injected by FXMLLoader
+	@FXML
+	private TextField parkIdField;
 
-	@FXML // fx:id="checkOutButton"
-	private Button checkOutButton; // Value injected by FXMLLoader
+	@FXML
+	private Label employeeIdLabel;
 
-	@FXML // fx:id="occasionalVisitButton"
-	private Button occasionalVisitButton; // Value injected by FXMLLoader
+	@FXML
+	private TextField employeeIdField;
 
-	@FXML // fx:id="currentVisitorsButton"
-	private Button currentVisitorsButton; // Value injected by FXMLLoader
+	@FXML
+	private Label visitorsLabel;
 
-	@FXML // fx:id="currentVisitorsLabel"
-	private Label currentVisitorsLabel; // Value injected by FXMLLoader
+	@FXML
+	private TextField visitorsField;
 
-	@FXML // fx:id="messageLabel"
-	private Label messageLabel; // Value injected by FXMLLoader
+	@FXML
+	private Button checkInButton;
 
-	/*
-	 * Sets the ClientController and registers this page as a park entrance observer.
-	 *
-	 * @param clientController the controller used to communicate with the server
-	 */
+	@FXML
+	private Button checkOutButton;
+
+	@FXML
+	private Button occasionalVisitButton;
+
+	@FXML
+	private Button currentVisitorsButton;
+
+	@FXML
+	private Label currentVisitorsLabel;
+
+	@FXML
+	private Label messageLabel;
+
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 
@@ -96,11 +87,6 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
-	/*
-	 * Sets the logged-in employee and fills the employee and park fields.
-	 * 
-	 * @param loggedInEmployee the employee currently using the page
-	 */
 	public void setLoggedInEmployee(Employee loggedInEmployee) {
 		this.loggedInEmployee = loggedInEmployee;
 
@@ -115,24 +101,21 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		applyEntranceMode();
 	}
 
-	/*
-	 * Sets the current entrance mode and updates the page accordingly.
-	 * 
-	 * @param entranceMode the selected entrance action mode
-	 */
 	public void setEntranceMode(EntranceMode entranceMode) {
 		this.entranceMode = entranceMode;
 		applyEntranceMode();
 	}
 
-	/*
-	 * Initializes the park entrance control page.
-	 */
 	@FXML
 	void initialize() {
+		assert instructionLabel != null : "fx:id=\"instructionLabel\" was not injected.";
+		assert confirmationCodeLabel != null : "fx:id=\"confirmationCodeLabel\" was not injected.";
 		assert confirmationCodeField != null : "fx:id=\"confirmationCodeField\" was not injected.";
+		assert parkIdLabel != null : "fx:id=\"parkIdLabel\" was not injected.";
 		assert parkIdField != null : "fx:id=\"parkIdField\" was not injected.";
+		assert employeeIdLabel != null : "fx:id=\"employeeIdLabel\" was not injected.";
 		assert employeeIdField != null : "fx:id=\"employeeIdField\" was not injected.";
+		assert visitorsLabel != null : "fx:id=\"visitorsLabel\" was not injected.";
 		assert visitorsField != null : "fx:id=\"visitorsField\" was not injected.";
 		assert checkInButton != null : "fx:id=\"checkInButton\" was not injected.";
 		assert checkOutButton != null : "fx:id=\"checkOutButton\" was not injected.";
@@ -140,94 +123,87 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		assert currentVisitorsButton != null : "fx:id=\"currentVisitorsButton\" was not injected.";
 		assert currentVisitorsLabel != null : "fx:id=\"currentVisitorsLabel\" was not injected.";
 		assert messageLabel != null : "fx:id=\"messageLabel\" was not injected.";
+
 		parkIdField.setEditable(false);
 		employeeIdField.setEditable(false);
+
 		currentVisitorsLabel.setText("Current visitors: -");
-		messageLabel.setTextFill(Color.BLUE);
-		messageLabel.setText("Use the confirmation code as QR code simulation.");
+		showInfo("Choose an entrance action.");
 	}
 
-	/*
-	 * Applies the selected entrance mode to the page.
-	 * 
-	 * Each dashboard action opens the same page, but enables only the relevant
-	 * action button and fields.
-	 */
 	private void applyEntranceMode() {
-		if (entranceMode == null ||
-				checkInButton == null ||
-				checkOutButton == null ||
-				occasionalVisitButton == null ||
-				currentVisitorsButton == null ||
-				confirmationCodeField == null ||
-				parkIdField == null ||
-				employeeIdField == null ||
-				visitorsField == null ||
-				currentVisitorsLabel == null ||
-				messageLabel == null) {
+		if (entranceMode == null
+				|| checkInButton == null
+				|| checkOutButton == null
+				|| occasionalVisitButton == null
+				|| currentVisitorsButton == null
+				|| confirmationCodeField == null
+				|| parkIdField == null
+				|| employeeIdField == null
+				|| visitorsField == null
+				|| messageLabel == null) {
 			return;
 		}
 
-		checkInButton.setDisable(true);
-		checkOutButton.setDisable(true);
-		occasionalVisitButton.setDisable(true);
-		currentVisitorsButton.setDisable(true);
+		hideButton(checkInButton);
+		hideButton(checkOutButton);
+		hideButton(occasionalVisitButton);
+		hideButton(currentVisitorsButton);
 
-		currentVisitorsButton.setText("Current Visitors");
-		currentVisitorsButton.setVisible(true);
-		currentVisitorsButton.setManaged(true);
+		showField(confirmationCodeLabel, confirmationCodeField);
+		showField(parkIdLabel, parkIdField);
+		showField(employeeIdLabel, employeeIdField);
+		showField(visitorsLabel, visitorsField);
 
-		confirmationCodeField.setDisable(false);
-		confirmationCodeField.setPromptText("Confirmation Code / QR Code");
-		parkIdField.setDisable(false);
-		employeeIdField.setDisable(false);
-		visitorsField.setDisable(false);
+		confirmationCodeField.clear();
+		visitorsField.clear();
+
+		confirmationCodeLabel.setText("Confirmation Code:");
+		confirmationCodeField.setPromptText("Enter confirmation code");
+
+		parkIdLabel.setText("Employee Park ID:");
+		parkIdField.setPromptText("Park assigned to employee");
+
+		employeeIdLabel.setText("Employee ID:");
+		employeeIdField.setPromptText("Logged employee ID");
+
+		visitorsLabel.setText("Number of Visitors:");
+		visitorsField.setPromptText("Enter number of visitors");
 
 		currentVisitorsLabel.setText("Current visitors: -");
 		currentVisitorsLabel.setVisible(false);
 		currentVisitorsLabel.setManaged(false);
 
-		messageLabel.setTextFill(Color.BLUE);
-
 		switch (entranceMode) {
-		case CHECK_IN:
-			checkInButton.setDisable(false);
-			messageLabel.setText("Check visitor entry using the confirmation code.");
-			break;
 
-		case OCCASIONAL_VISIT:
-			occasionalVisitButton.setDisable(false);
-			confirmationCodeField.clear();
-			confirmationCodeField.setDisable(true);
-			messageLabel.setText("Create an occasional visit for visitors without an order.");
+		case CHECK_IN:
+			instructionLabel.setText("Check visitors into the park");
+			showButton(checkInButton);
+			showInfo("Enter confirmation code and number of visitors.");
 			break;
 
 		case CHECK_OUT:
-			checkOutButton.setDisable(false);
-			confirmationCodeField.setPromptText("Confirmation Code / Visit ID");
-			visitorsField.clear();
-			visitorsField.setDisable(true);
-			messageLabel.setText("Record visitor exit using a confirmation code or occasional visit ID.");
+			instructionLabel.setText("Check visitors out of the park");
+			showButton(checkOutButton);
+			hideField(visitorsLabel, visitorsField);
+			showInfo("Enter confirmation code to check out visitors.");
+			break;
+
+		case OCCASIONAL_VISIT:
+			instructionLabel.setText("Create an occasional visit");
+			showButton(occasionalVisitButton);
+			hideField(confirmationCodeLabel, confirmationCodeField);
+			showInfo("Enter number of visitors. After success, the Visit ID will be shown.");
 			break;
 
 		case CURRENT_VISITORS:
-			currentVisitorsButton.setDisable(true);
-			currentVisitorsButton.setVisible(false);
-			currentVisitorsButton.setManaged(false);
-
-			confirmationCodeField.clear();
-			visitorsField.clear();
-
-			confirmationCodeField.setDisable(true);
-			visitorsField.setDisable(true);
-
+			instructionLabel.setText("View current visitors in the park");
+			showButton(currentVisitorsButton);
+			hideField(confirmationCodeLabel, confirmationCodeField);
+			hideField(visitorsLabel, visitorsField);
 			currentVisitorsLabel.setVisible(true);
 			currentVisitorsLabel.setManaged(true);
-			currentVisitorsLabel.setText("Current visitors: -");
-
-			messageLabel.setText("Loading the current number of visitors in the park.");
-
-			currentVisitorsButtonClick();
+			showInfo("Click Current Visitors to load the current number of visitors.");
 			break;
 
 		default:
@@ -235,12 +211,33 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
-	/*
-	 * Handles clicking the Check In button.
-	 *
-	 * The method sends a request to create a visit from an existing order using the
-	 * confirmation code as a QR code simulation.
-	 */
+	private void showButton(Button button) {
+		button.setDisable(false);
+		button.setVisible(true);
+		button.setManaged(true);
+	}
+
+	private void hideButton(Button button) {
+		button.setDisable(false);
+		button.setVisible(false);
+		button.setManaged(false);
+	}
+
+	private void showField(Label label, TextField field) {
+		label.setVisible(true);
+		label.setManaged(true);
+		field.setVisible(true);
+		field.setManaged(true);
+	}
+
+	private void hideField(Label label, TextField field) {
+		label.setVisible(false);
+		label.setManaged(false);
+		field.setVisible(false);
+		field.setManaged(false);
+		field.clear();
+	}
+
 	@FXML
 	void checkInButtonClick() {
 		if (clientController == null) {
@@ -254,16 +251,20 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			int employeeId = Integer.parseInt(employeeIdField.getText().trim());
 			int visitors = Integer.parseInt(visitorsField.getText().trim());
 
-			if (confirmationCode <= 0 || parkId <= 0 || employeeId <= 0 || visitors <= 0) {
-				showError("All values must be positive numbers.");
+			if (confirmationCode <= 0 || parkId <= 0 || employeeId <= 0) {
+				showError("Confirmation code, park ID and employee ID must be positive numbers.");
+				return;
+			}
+
+			if (!isVisitorsAmountValid(visitors)) {
+				showError("Number of visitors must be between 1 and 15.");
 				return;
 			}
 
 			ParkEntranceMessage message =
 					new ParkEntranceMessage(confirmationCode, parkId, employeeId, visitors);
 
-			messageLabel.setTextFill(Color.BLUE);
-			messageLabel.setText("Sending check-in request...");
+			showInfo("Sending check-in request...");
 
 			clientController.requestCheckInOrder(message);
 
@@ -272,12 +273,6 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
-	/*
-	 * Handles clicking the Check Out button.
-	 *
-	 * The method closes an open visit using the confirmation code as a QR code
-	 * simulation.
-	 */
 	@FXML
 	void checkOutButtonClick() {
 		if (clientController == null) {
@@ -286,37 +281,30 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 
 		try {
-			int exitCode = Integer.parseInt(confirmationCodeField.getText().trim());
+			int confirmationCode = Integer.parseInt(confirmationCodeField.getText().trim());
 			int parkId = Integer.parseInt(parkIdField.getText().trim());
 			int employeeId = Integer.parseInt(employeeIdField.getText().trim());
 
-			if (exitCode <= 0 || parkId <= 0 || employeeId <= 0) {
-				showError("Confirmation code / visit ID, park ID and employee ID must be positive numbers.");
+			if (confirmationCode <= 0 || parkId <= 0 || employeeId <= 0) {
+				showError("Confirmation code, park ID and employee ID must be positive numbers.");
 				return;
 			}
 
 			ParkEntranceMessage message = new ParkEntranceMessage();
-			message.setConfirmationCode(exitCode);
-			message.setVisitId(exitCode);
+			message.setConfirmationCode(confirmationCode);
 			message.setParkId(parkId);
 			message.setEmployeeId(employeeId);
 			message.setIdentificationMethod("confirmation_code");
 
-			messageLabel.setTextFill(Color.BLUE);
-			messageLabel.setText("Sending check-out request...");
+			showInfo("Sending check-out request...");
 
 			clientController.requestCheckOutVisit(message);
 
 		} catch (NumberFormatException e) {
-			showError("Confirmation code / visit ID, park ID and employee ID must be numbers.");
+			showError("Confirmation code, park ID and employee ID must be numbers.");
 		}
 	}
 
-	/*
-	 * Handles clicking the Occasional Visit button.
-	 *
-	 * The method creates a visit for visitors who arrived without an order.
-	 */
 	@FXML
 	void occasionalVisitButtonClick() {
 		if (clientController == null) {
@@ -329,8 +317,13 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			int employeeId = Integer.parseInt(employeeIdField.getText().trim());
 			int visitors = Integer.parseInt(visitorsField.getText().trim());
 
-			if (parkId <= 0 || employeeId <= 0 || visitors <= 0) {
-				showError("Park ID, employee ID and visitors must be positive numbers.");
+			if (parkId <= 0 || employeeId <= 0) {
+				showError("Park ID and employee ID must be positive numbers.");
+				return;
+			}
+
+			if (!isVisitorsAmountValid(visitors)) {
+				showError("Number of visitors must be between 1 and 15.");
 				return;
 			}
 
@@ -340,8 +333,7 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			message.setActualNumberOfVisitors(visitors);
 			message.setIdentificationMethod("id_number");
 
-			messageLabel.setTextFill(Color.BLUE);
-			messageLabel.setText("Sending occasional visit request...");
+			showInfo("Sending occasional visit request...");
 
 			clientController.requestOccasionalVisit(message);
 
@@ -350,11 +342,6 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
-	/*
-	 * Handles clicking the Current Visitors button.
-	 *
-	 * The method requests the current number of visitors inside the selected park.
-	 */
 	@FXML
 	void currentVisitorsButtonClick() {
 		if (clientController == null) {
@@ -373,8 +360,7 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			ParkEntranceMessage message = new ParkEntranceMessage();
 			message.setParkId(parkId);
 
-			messageLabel.setTextFill(Color.BLUE);
-			messageLabel.setText("Loading current visitors...");
+			showInfo("Loading current visitors...");
 
 			clientController.requestCurrentVisitors(message);
 
@@ -383,29 +369,91 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		}
 	}
 
-	/*
-	 * Displays an error message in the page.
-	 *
-	 * @param message the message to display
-	 */
-	private void showError(String message) {
-		messageLabel.setTextFill(Color.RED);
-		messageLabel.setText(message);
+	private boolean isVisitorsAmountValid(int visitors) {
+		return visitors >= MIN_VISITORS && visitors <= MAX_VISITORS;
 	}
 
-	/*
-	 * Updates the current visitors label.
-	 *
-	 * @param parkEntranceMessage the response data returned from the server
-	 */
 	private void updateCurrentVisitors(ParkEntranceMessage parkEntranceMessage) {
 		if (parkEntranceMessage != null) {
-			currentVisitorsLabel.setText("Current visitors: " + parkEntranceMessage.getCurrentVisitors());
+			currentVisitorsLabel.setVisible(true);
+			currentVisitorsLabel.setManaged(true);
+			currentVisitorsLabel.setText("Current visitors: "
+					+ parkEntranceMessage.getCurrentVisitors());
 		}
 	}
 
+	private String safeMessage(String message, String defaultMessage) {
+		if (message == null || message.trim().isEmpty()) {
+			return defaultMessage;
+		}
+
+		return message;
+	}
+
+	private void showInfo(String message) {
+		messageLabel.getStyleClass().removeAll(
+				"status-success",
+				"status-error",
+				"error-label",
+				"success-label",
+				"info-label"
+		);
+
+		if (!messageLabel.getStyleClass().contains("status-label")) {
+			messageLabel.getStyleClass().add("status-label");
+		}
+
+		if (!messageLabel.getStyleClass().contains("status-info")) {
+			messageLabel.getStyleClass().add("status-info");
+		}
+
+		messageLabel.setText(message);
+	}
+
+	private void showSuccess(String message) {
+		messageLabel.getStyleClass().removeAll(
+				"status-info",
+				"status-error",
+				"error-label",
+				"success-label",
+				"info-label"
+		);
+
+		if (!messageLabel.getStyleClass().contains("status-label")) {
+			messageLabel.getStyleClass().add("status-label");
+		}
+
+		if (!messageLabel.getStyleClass().contains("status-success")) {
+			messageLabel.getStyleClass().add("status-success");
+		}
+
+		messageLabel.setText(message);
+	}
+
+	private void showError(String message) {
+		messageLabel.getStyleClass().removeAll(
+				"status-info",
+				"status-success",
+				"error-label",
+				"success-label",
+				"info-label"
+		);
+
+		if (!messageLabel.getStyleClass().contains("status-label")) {
+			messageLabel.getStyleClass().add("status-label");
+		}
+
+		if (!messageLabel.getStyleClass().contains("status-error")) {
+			messageLabel.getStyleClass().add("status-error");
+		}
+
+		messageLabel.setText(message);
+	}
+
 	@Override
-	public void onCheckInOrderResult(boolean success, ParkEntranceMessage parkEntranceMessage) {
+	public void onCheckInOrderResult(boolean success,
+			ParkEntranceMessage parkEntranceMessage) {
+
 		Platform.runLater(() -> {
 			if (parkEntranceMessage == null) {
 				showError("Invalid check-in response from server.");
@@ -415,17 +463,21 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			updateCurrentVisitors(parkEntranceMessage);
 
 			if (success) {
-				messageLabel.setTextFill(Color.GREEN);
+				showSuccess("Check-in completed successfully.");
 			} else {
-				messageLabel.setTextFill(Color.RED);
+				showError(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Check-in failed."
+				));
 			}
-
-			messageLabel.setText(parkEntranceMessage.getResponseMessage());
 		});
 	}
-
+	
+	
 	@Override
-	public void onCheckOutVisitResult(boolean success, ParkEntranceMessage parkEntranceMessage) {
+	public void onCheckOutVisitResult(boolean success,
+			ParkEntranceMessage parkEntranceMessage) {
+
 		Platform.runLater(() -> {
 			if (parkEntranceMessage == null) {
 				showError("Invalid check-out response from server.");
@@ -435,17 +487,23 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			updateCurrentVisitors(parkEntranceMessage);
 
 			if (success) {
-				messageLabel.setTextFill(Color.GREEN);
+				showSuccess(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Check-out completed successfully."
+				));
 			} else {
-				messageLabel.setTextFill(Color.RED);
+				showError(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Check-out failed."
+				));
 			}
-
-			messageLabel.setText(parkEntranceMessage.getResponseMessage());
 		});
 	}
 
 	@Override
-	public void onOccasionalVisitResult(boolean success, ParkEntranceMessage parkEntranceMessage) {
+	public void onOccasionalVisitResult(boolean success,
+			ParkEntranceMessage parkEntranceMessage) {
+
 		Platform.runLater(() -> {
 			if (parkEntranceMessage == null) {
 				showError("Invalid occasional visit response from server.");
@@ -455,17 +513,23 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			updateCurrentVisitors(parkEntranceMessage);
 
 			if (success) {
-				messageLabel.setTextFill(Color.GREEN);
+				showSuccess(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Occasional visit created successfully. The Visit ID was created by the system."
+				));
 			} else {
-				messageLabel.setTextFill(Color.RED);
+				showError(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Occasional visit failed."
+				));
 			}
-
-			messageLabel.setText(parkEntranceMessage.getResponseMessage());
 		});
 	}
 
 	@Override
-	public void onCurrentVisitorsReceived(boolean success, ParkEntranceMessage parkEntranceMessage) {
+	public void onCurrentVisitorsReceived(boolean success,
+			ParkEntranceMessage parkEntranceMessage) {
+
 		Platform.runLater(() -> {
 			if (parkEntranceMessage == null) {
 				showError("Invalid current visitors response from server.");
@@ -475,20 +539,19 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 			updateCurrentVisitors(parkEntranceMessage);
 
 			if (success) {
-				messageLabel.setTextFill(Color.GREEN);
+				showSuccess(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Current visitors loaded successfully."
+				));
 			} else {
-				messageLabel.setTextFill(Color.RED);
+				showError(safeMessage(
+						parkEntranceMessage.getResponseMessage(),
+						"Failed to load current visitors."
+				));
 			}
-
-			messageLabel.setText(parkEntranceMessage.getResponseMessage());
 		});
 	}
 
-	/*
-	 * Returns the park worker to the park worker home page.
-	 * 
-	 * @param event the button click event
-	 */
 	@FXML
 	private void backButtonClick(ActionEvent event) {
 		try {
@@ -513,12 +576,10 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			showError("Could not return to park worker home page.");
 		}
 	}
 
-	/*
-	 * Handles server shutdown/disconnect.
-	 */
 	@Override
 	public void handleExit() {
 		Platform.runLater(() -> {
@@ -527,4 +588,3 @@ public class ParkEntranceControlController implements ParkEntranceObserver {
 		});
 	}
 }
-

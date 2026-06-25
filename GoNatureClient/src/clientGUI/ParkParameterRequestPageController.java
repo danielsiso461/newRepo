@@ -1,5 +1,6 @@
 package clientGUI;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
@@ -8,35 +9,33 @@ import clientCommon.ClientSession;
 import clientCommon.ParkObserver;
 import clientCommon.ParkParameterObserver;
 import clientController.ClientController;
+import common.Employee;
 import common.OperationResponse;
 import common.Park;
 import common.ParkParameterChangeRequest;
 import common.Protocol;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.util.StringConverter;
-import java.io.IOException;
-import common.Employee;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
-
+import javafx.util.StringConverter;
 
 /**
  * Controls the park parameter request page.
  * 
  * This page is used by park managers.
  */
-public class ParkParameterRequestPageController
+public class ParkParameterRequestPageController 
         implements ParkObserver, ParkParameterObserver {
 
     private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
@@ -49,7 +48,7 @@ public class ParkParameterRequestPageController
     private static final String ROLE_PARK_MANAGER = "park_manager";
 
     private ClientController clientController;
-    
+
     private Employee loggedInEmployee;
 
     @FXML
@@ -77,17 +76,17 @@ public class ParkParameterRequestPageController
     private Label statusLabel;
 
     public void setClientController(ClientController clientController) {
-    	this.clientController = clientController;
+        this.clientController = clientController;
 
-    	if (this.clientController != null) {
-    		this.clientController.addParkObserver(this);
-    		this.clientController.addParkParameterObserver(this);
-    		this.clientController.requestActiveParks();
-    	}
+        if (this.clientController != null) {
+            this.clientController.addParkObserver(this);
+            this.clientController.addParkParameterObserver(this);
+            this.clientController.requestActiveParks();
+        }
     }
-    
+
     public void setLoggedInEmployee(Employee employee) {
-    	this.loggedInEmployee = employee;
+        this.loggedInEmployee = employee;
     }
 
     @FXML
@@ -250,12 +249,24 @@ public class ParkParameterRequestPageController
             switch (parameterName) {
 
             case PARAMETER_MAX_CAPACITY:
-            case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
             case PARAMETER_ESTIMATED_VISIT_DURATION_HOURS:
-                int number = Integer.parseInt(newValue);
+                int positiveNumber = Integer.parseInt(newValue);
 
-                if (number <= 0) {
+                if (positiveNumber <= 0) {
                     String message = "The new value must be a positive number.";
+
+                    setErrorStatus(message);
+                    showWarningAlert("Invalid Value", message);
+                    return false;
+                }
+
+                return true;
+
+            case PARAMETER_PLACES_FOR_UNPLANNED_VISITORS:
+                int nonNegativeNumber = Integer.parseInt(newValue);
+
+                if (nonNegativeNumber < 0) {
+                    String message = "Places for unplanned visitors cannot be negative.";
 
                     setErrorStatus(message);
                     showWarningAlert("Invalid Value", message);
@@ -451,9 +462,6 @@ public class ParkParameterRequestPageController
         alert.showAndWait();
     }
 
-    /**
-     * Represents a selectable park parameter.
-     */
     private static class ParameterOption {
 
         private final String key;
@@ -477,27 +485,27 @@ public class ParkParameterRequestPageController
             return displayName;
         }
     }
-    
+
     @FXML
     private void handleBack(ActionEvent event) {
-    	try {
-    		FXMLLoader loader = new FXMLLoader(
-    				getClass().getResource("/clientGUI/ParkManagerHomePage.fxml")
-    		);
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/clientGUI/ParkManagerHomePage.fxml")
+            );
 
-    		Parent root = loader.load();
+            Parent root = loader.load();
 
-    		ParkManagerHomePageController controller = loader.getController();
-    		controller.setClientController(clientController);
-    		controller.setLoggedInEmployee(loggedInEmployee);
+            ParkManagerHomePageController controller = loader.getController();
+            controller.setClientController(clientController);
+            controller.setLoggedInEmployee(loggedInEmployee);
 
-    		Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    		stage.setTitle("Park Manager Dashboard");
-    		stage.setScene(new Scene(root));
-    		stage.show();
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setTitle("Park Manager Dashboard");
+            stage.setScene(new Scene(root));
+            stage.show();
 
-    	} catch (IOException e) {
-    		e.printStackTrace();
-    	}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

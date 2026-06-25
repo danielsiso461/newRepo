@@ -192,6 +192,11 @@ public class ClientConnectionTableController {
 	 */
 	public void addLog(String message) {
 		Platform.runLater(() -> {
+			if (serverLogArea == null) {
+				System.out.println(message);
+				return;
+			}
+
 			String time = LocalDateTime.now()
 					.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
 

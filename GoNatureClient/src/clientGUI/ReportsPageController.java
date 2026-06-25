@@ -97,6 +97,15 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     private void initialize() {
         initReportTypes();
         initDateFilters();
+
+        reportsTableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        reportPieChart.setLegendVisible(true);
+        reportPieChart.setLabelsVisible(true);
+
+        reportBarChart.setLegendVisible(true);
+        reportBarChart.setAnimated(false);
+
         hideCharts();
 
         statusLabel.setText("Status: Ready");

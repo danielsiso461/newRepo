@@ -1,29 +1,57 @@
 package clientGUI;
 
-/*
- * this class holds constants relevant to the client
+/**
+ * This class holds constants relevant to the client.
  */
 public final class ConstantsUI {
-	/*
-	 * holds the UI pages paths
-	 */
-	protected static final String orderTable = "/clientGUI/OrderTableDisplayPage.fxml",
-			updatePage = "/clientGUI/OrderUpdatePage.fxml",
-			welcomePage = "/clientGUI/WelcomePage.fxml",
-			makeOrderPage = "/clientGUI/MakeOrderPage.fxml",
-			openingPage = "/clientGUI/OpeningScreen.fxml",
-			waitingListPage = "/clientGUI/WaitingListPage.fxml",
-			parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
 
-	/*
+	/**
+	 * The order table's FXML path.
+	 */
+	protected static final String orderTable = "/clientGUI/OrderTableDisplayPage.fxml";
+
+	/**
+	 * The update page's FXML path.
+	 */
+	protected static final String updatePage = "/clientGUI/OrderUpdatePage.fxml";
+
+	/**
+	 * The welcome page's FXML path.
+	 */
+	protected static final String welcomePage = "/clientGUI/WelcomePage.fxml";
+
+	/**
+	 * The make order page's FXML path.
+	 */
+	protected static final String makeOrderPage = "/clientGUI/MakeOrderPage.fxml";
+
+	/**
+	 * The opening screen's FXML path.
+	 */
+	protected static final String openingPage = "/clientGUI/OpeningScreen.fxml";
+
+	/**
+	 * The waiting list page's FXML path.
+	 */
+	protected static final String waitingListPage = "/clientGUI/WaitingListPage.fxml";
+
+	/**
+	 * The park entrance control page's FXML path.
+	 */
+	protected static final String parkEntranceControlPage = "/clientGUI/ParkEntranceControlPage.fxml";
+
+	/**
 	 * Constants for visitor number and hour pickers.
 	 */
-	protected static final int
-			MIN_VISITORS = 1,
-			MAX_VISITORS = 15,
-			START_VISITORS = 1,
-			MIN_HOUR = 0,
-			MAX_HOUR = 23;
+	protected static final int MIN_VISITORS = 1;
+	protected static final int MAX_VISITORS = 15;
+	protected static final int START_VISITORS = 1;
+	protected static final int MIN_HOUR = 0;
+	protected static final int MAX_HOUR = 23;
 
-	private ConstantsUI() {}
+	/**
+	 * Empty private constructor so this class cannot be instantiated.
+	 */
+	private ConstantsUI() {
+	}
 }

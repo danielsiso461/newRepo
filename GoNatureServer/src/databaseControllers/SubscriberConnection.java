@@ -33,8 +33,6 @@ public class SubscriberConnection extends AbstractDBConnection {
 	/**
 	 * Private constructor for Singleton.
 	 * 
-	 * It creates the database connection once.
-	 * 
 	 * @throws SQLException if the connection to the database fails
 	 */
 	private SubscriberConnection() throws SQLException {
@@ -43,9 +41,6 @@ public class SubscriberConnection extends AbstractDBConnection {
 
 	/**
 	 * Returns the single instance of SubscriberConnection.
-	 * 
-	 * If no instance exists, or if the existing database connection is closed, a new
-	 * instance is created.
 	 * 
 	 * @return the only SubscriberConnection instance
 	 * @throws SQLException if creating the database connection fails
@@ -118,11 +113,9 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method searches for a subscriber by subscriber ID and returns it as a
-	 * Subscriber object.
+	 * Searches for a subscriber by subscriber ID.
 	 * 
-	 * This method is kept because other parts of the project may already use this
-	 * name.
+	 * This method is kept for compatibility with older code.
 	 * 
 	 * @param subscriberId the subscriber ID to search for
 	 * @return a Subscriber object if found, otherwise null
@@ -161,11 +154,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method checks existing customer login details and returns the matching
-	 * subscriber.
-	 * 
-	 * The method searches for a subscriber whose username and password match the
-	 * values entered in the login screen.
+	 * Checks existing customer login details and returns the matching subscriber.
 	 * 
 	 * @param username the username entered by the customer
 	 * @param password the password entered by the customer
@@ -175,7 +164,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	public Subscriber loginSubscriber(String username, String password) throws SQLException {
 		ensureConnection();
 
-		String query = selectByFields(
+		String sql = selectByFields(
 				new String[] {
 						SUBSCRIBER_ID,
 						SUBSCRIBER_NAME,
@@ -187,7 +176,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 				}
 		);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, username);
 			pstmt.setString(2, password);
 
@@ -211,7 +200,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	public boolean isUsernameExists(String username) throws SQLException {
 		ensureConnection();
 
-		String query = selectByFields(
+		String sql = selectByFields(
 				new String[] {
 						USERNAME
 				},
@@ -220,7 +209,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 				}
 		);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, username);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
@@ -239,7 +228,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	public boolean isIdNumberExists(String idNumber) throws SQLException {
 		ensureConnection();
 
-		String query = selectByFields(
+		String sql = selectByFields(
 				new String[] {
 						SUBSCRIBER_ID_NUMBER
 				},
@@ -248,7 +237,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 				}
 		);
 
-		try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, idNumber);
 
 			try (ResultSet rs = pstmt.executeQuery()) {
@@ -269,44 +258,48 @@ public class SubscriberConnection extends AbstractDBConnection {
 	public void registerSubscriber(RegisterSubscriberRequest request) throws SQLException {
 		ensureConnection();
 
-		String sql = "INSERT INTO `" + getTableName() + "` "
-				+ "("
-				+ SUBSCRIBER_ID + ", "
-				+ SUBSCRIBER_NAME + ", "
-				+ SUBSCRIBER_ID_NUMBER + ", "
-				+ SUBSCRIBER_PHONE + ", "
-				+ SUBSCRIBER_EMAIL + ", "
-				+ FAMILY_MEMBERS_COUNT + ", "
-				+ PAYMENT_METHOD + ", "
-				+ CREDIT_CARD_LAST4 + ", "
-				+ USERNAME + ", "
-				+ PASSWORD
-				+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
-
-		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			String fullName = request.getFirstName() + " " + request.getLastName();
-
-			int subscriberId = Integer.parseInt(request.getIdNumber());
-
-			pstmt.setInt(1, subscriberId);
-			pstmt.setString(2, fullName);
-			pstmt.setString(3, request.getIdNumber());
-			pstmt.setString(4, request.getPhone());
-			pstmt.setString(5, request.getEmail());
-			pstmt.setInt(6, request.getFamilyMembersCount());
-			pstmt.setString(7, request.getPaymentMethod());
-
-			if (request.getCreditCardLast4() == null || request.getCreditCardLast4().trim().isEmpty()) {
-				pstmt.setNull(8, java.sql.Types.VARCHAR);
-			} else {
-				pstmt.setString(8, request.getCreditCardLast4());
-			}
-
-			pstmt.setString(9, request.getUsername());
-			pstmt.setString(10, request.getPassword());
-
-			pstmt.executeUpdate();
+		if (request == null) {
+			throw new SQLException("Subscriber registration request is missing.");
 		}
+
+		String fullName = request.getFirstName() + " " + request.getLastName();
+		int subscriberId = Integer.parseInt(request.getIdNumber());
+
+		List<Object> values = new ArrayList<>();
+
+		values.add(subscriberId);
+		values.add(fullName);
+		values.add(request.getIdNumber());
+		values.add(request.getPhone());
+		values.add(request.getEmail());
+		values.add(request.getFamilyMembersCount());
+		values.add(request.getPaymentMethod());
+
+		if (request.getCreditCardLast4() == null
+				|| request.getCreditCardLast4().trim().isEmpty()) {
+			values.add(null);
+		} else {
+			values.add(request.getCreditCardLast4());
+		}
+
+		values.add(request.getUsername());
+		values.add(request.getPassword());
+
+		insertFields(
+				new String[] {
+						SUBSCRIBER_ID,
+						SUBSCRIBER_NAME,
+						SUBSCRIBER_ID_NUMBER,
+						SUBSCRIBER_PHONE,
+						SUBSCRIBER_EMAIL,
+						FAMILY_MEMBERS_COUNT,
+						PAYMENT_METHOD,
+						CREDIT_CARD_LAST4,
+						USERNAME,
+						PASSWORD
+				},
+				values
+		);
 	}
 
 	/**

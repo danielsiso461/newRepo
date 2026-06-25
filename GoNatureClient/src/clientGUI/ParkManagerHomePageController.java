@@ -13,6 +13,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 import clientCommon.ClientSession;
+import javafx.scene.control.Alert;
 
 /*
  * This class is the controller for the park manager home page.
@@ -84,6 +85,20 @@ public class ParkManagerHomePageController {
 	@FXML
 	private void handleRequestParameterChange(ActionEvent event) {
 		try {
+			System.out.println("Request Park Parameter Change clicked");
+			System.out.println("clientController = " + clientController);
+			System.out.println("loggedInEmployee = " + loggedInEmployee);
+
+			if (clientController == null) {
+				showError("ClientController is null. Cannot open request page.");
+				return;
+			}
+
+			if (loggedInEmployee == null) {
+				showError("Logged employee is missing. Cannot open request page.");
+				return;
+			}
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/ParkParameterRequestPage.fxml")
 			);
@@ -99,8 +114,9 @@ public class ParkManagerHomePageController {
 			stage.setScene(new Scene(root));
 			stage.show();
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
+			showError("Failed to open Park Parameter Request page. Check console.");
 		}
 	}
 
@@ -112,6 +128,20 @@ public class ParkManagerHomePageController {
 	@FXML
 	private void handleViewParkReports(ActionEvent event) {
 		try {
+			System.out.println("View Park Reports clicked");
+			System.out.println("clientController = " + clientController);
+			System.out.println("loggedInEmployee = " + loggedInEmployee);
+
+			if (clientController == null) {
+				showError("ClientController is null. Cannot open reports page.");
+				return;
+			}
+
+			if (loggedInEmployee == null) {
+				showError("Logged employee is missing. Cannot open reports page.");
+				return;
+			}
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/ReportsPage.fxml")
 			);
@@ -127,8 +157,9 @@ public class ParkManagerHomePageController {
 			stage.setScene(new Scene(root));
 			stage.show();
 
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
+			showError("Failed to open Reports page. Check console.");
 		}
 	}
 	
@@ -157,6 +188,13 @@ public class ParkManagerHomePageController {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	
+	private void showError(String message) {
+		Alert alert = new Alert(Alert.AlertType.ERROR);
+		alert.setTitle("Navigation Error");
+		alert.setHeaderText(null);
+		alert.setContentText(message);
+		alert.showAndWait();
 	}
 
 	/*

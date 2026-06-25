@@ -1,134 +1,190 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" spacing="14.0"
-      xmlns="http://javafx.com/javafx/21"
-      xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="clientGUI.ParkEntranceControlController">
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="clientGUI.ParkEntranceControlController"
+            stylesheets="@gonature-theme.css"
+            styleClass="root-pane">
 
-   <padding>
-      <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
-   </padding>
+    <children>
+        <BorderPane prefWidth="850.0"
+                    prefHeight="600.0"
+                    minWidth="720.0"
+                    minHeight="520.0"
+                    AnchorPane.topAnchor="0.0"
+                    AnchorPane.bottomAnchor="0.0"
+                    AnchorPane.leftAnchor="0.0"
+                    AnchorPane.rightAnchor="0.0">
 
-   <children>
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#backButtonClick"/>
+                    </children>
+                </HBox>
+            </top>
 
-      <!-- Page title. -->
-      <Label text="Park Entrance Control">
-         <font>
-            <Font size="30.0" />
-         </font>
-      </Label>
+            <center>
+                <VBox alignment="CENTER"
+                      spacing="22.0"
+                      styleClass="page-container">
 
-      <!-- Explanation for the employee. -->
-      <Label text="Use the confirmation code as QR code simulation." wrapText="true">
-         <font>
-            <Font size="16.0" />
-         </font>
-      </Label>
+                    <children>
 
-      <!-- Input fields. -->
-      <VBox alignment="CENTER" spacing="10.0">
-         <children>
+                        <VBox alignment="CENTER" spacing="8.0">
+                            <children>
+                                <Label text="Park Entrance Control"
+                                       styleClass="page-title"/>
 
-            <!-- Confirmation code used as QR simulation. -->
-            <TextField fx:id="confirmationCodeField"
-                       maxWidth="350.0"
-                       promptText="Confirmation Code / Visit ID" />
+                                <Label fx:id="instructionLabel"
+                                       text="Manage park entrance and exit actions"
+                                       wrapText="true"
+                                       textAlignment="CENTER"
+                                       styleClass="page-subtitle"/>
 
-            <!-- Park ID where the action is performed. -->
-            <TextField fx:id="parkIdField"
-                       maxWidth="350.0"
-                       promptText="Park ID" />
+                                <Separator prefWidth="520.0"/>
+                            </children>
+                        </VBox>
 
-            <!-- Employee ID of the worker at the entrance. -->
-            <TextField fx:id="employeeIdField"
-                       maxWidth="350.0"
-                       promptText="Employee ID" />
+                        <VBox alignment="CENTER"
+                              spacing="18.0"
+                              maxWidth="590.0"
+                              styleClass="card">
 
-            <!-- Actual number of visitors entering the park. -->
-            <TextField fx:id="visitorsField"
-                       maxWidth="350.0"
-                       promptText="Number of Visitors" />
+                            <children>
 
-         </children>
-      </VBox>
+                                <GridPane hgap="18.0" vgap="12.0">
+                                    <columnConstraints>
+                                        <ColumnConstraints minWidth="165.0" prefWidth="180.0"/>
+                                        <ColumnConstraints minWidth="260.0" prefWidth="320.0"/>
+                                    </columnConstraints>
 
-      <!-- Action buttons. -->
-      <HBox alignment="CENTER" spacing="12.0">
-         <children>
+                                    <rowConstraints>
+                                        <RowConstraints minHeight="36.0"/>
+                                        <RowConstraints minHeight="36.0"/>
+                                        <RowConstraints minHeight="36.0"/>
+                                        <RowConstraints minHeight="36.0"/>
+                                    </rowConstraints>
 
-            <!-- Creates a visit from an existing order. -->
-            <Button fx:id="checkInButton"
-                    mnemonicParsing="false"
-                    onAction="#checkInButtonClick"
-                    text="Check In">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
+                                    <children>
+                                        <Label fx:id="confirmationCodeLabel"
+                                               text="Confirmation Code:"
+                                               styleClass="field-label"
+                                               GridPane.columnIndex="0"
+                                               GridPane.rowIndex="0"/>
 
-            <!-- Closes an open visit. -->
-            <Button fx:id="checkOutButton"
-                    mnemonicParsing="false"
-                    onAction="#checkOutButtonClick"
-                    text="Check Out">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
+                                        <TextField fx:id="confirmationCodeField"
+                                                   promptText="Enter confirmation code"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="0"/>
 
-            <!-- Creates an occasional visit without an order. -->
-            <Button fx:id="occasionalVisitButton"
-                    mnemonicParsing="false"
-                    onAction="#occasionalVisitButtonClick"
-                    text="Occasional Visit">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
+                                        <Label fx:id="parkIdLabel"
+                                               text="Employee Park ID:"
+                                               styleClass="field-label"
+                                               GridPane.columnIndex="0"
+                                               GridPane.rowIndex="1"/>
 
-            <!-- Loads the current number of visitors in the park. -->
-            <Button fx:id="currentVisitorsButton"
-                    mnemonicParsing="false"
-                    onAction="#currentVisitorsButtonClick"
-                    text="Current Visitors">
-               <font>
-                  <Font size="16.0" />
-               </font>
-            </Button>
-			 
-			  <!-- Returns to the park worker home page. -->
-			<Button mnemonicParsing="false"
-			        onAction="#backButtonClick"
-			        text="Back">
-			   <font>
-			      <Font size="16.0" />
-			   </font>
-			</Button>
+                                        <TextField fx:id="parkIdField"
+                                                   promptText="Park assigned to employee"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="1"/>
 
-         </children>
-      </HBox>
+                                        <Label fx:id="employeeIdLabel"
+                                               text="Employee ID:"
+                                               styleClass="field-label"
+                                               GridPane.columnIndex="0"
+                                               GridPane.rowIndex="2"/>
 
-      <!-- Displays the current number of visitors in the selected park. -->
-      <Label fx:id="currentVisitorsLabel" text="Current visitors: -">
-         <font>
-            <Font size="20.0" />
-         </font>
-      </Label>
+                                        <TextField fx:id="employeeIdField"
+                                                   promptText="Logged employee ID"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="2"/>
 
-      <!-- Displays success and failure messages. -->
-      <Label fx:id="messageLabel" wrapText="true" maxWidth="650.0">
-         <font>
-            <Font size="16.0" />
-         </font>
-      </Label>
+                                        <Label fx:id="visitorsLabel"
+                                               text="Number of Visitors:"
+                                               styleClass="field-label"
+                                               GridPane.columnIndex="0"
+                                               GridPane.rowIndex="3"/>
 
-   </children>
-</VBox>
+                                        <TextField fx:id="visitorsField"
+                                                   promptText="Enter number of visitors"
+                                                   GridPane.columnIndex="1"
+                                                   GridPane.rowIndex="3"/>
+                                    </children>
+                                </GridPane>
+
+                                <VBox alignment="CENTER" spacing="12.0">
+                                    <children>
+                                        <HBox alignment="CENTER" spacing="12.0">
+                                            <children>
+                                                <Button fx:id="checkInButton"
+                                                        text="Check In"
+                                                        prefWidth="170.0"
+                                                        styleClass="primary-button"
+                                                        onAction="#checkInButtonClick"/>
+
+                                                <Button fx:id="checkOutButton"
+                                                        text="Check Out"
+                                                        prefWidth="170.0"
+                                                        styleClass="primary-button"
+                                                        onAction="#checkOutButtonClick"/>
+                                            </children>
+                                        </HBox>
+
+                                        <HBox alignment="CENTER" spacing="12.0">
+                                            <children>
+                                                <Button fx:id="occasionalVisitButton"
+                                                        text="Occasional Visit"
+                                                        prefWidth="170.0"
+                                                        styleClass="primary-button"
+                                                        onAction="#occasionalVisitButtonClick"/>
+
+                                                <Button fx:id="currentVisitorsButton"
+                                                        text="Current Visitors"
+                                                        prefWidth="170.0"
+                                                        styleClass="secondary-button"
+                                                        onAction="#currentVisitorsButtonClick"/>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <Label fx:id="currentVisitorsLabel"
+                                       text="Current visitors: -"
+                                       visible="false"
+                                       managed="false"
+                                       styleClass="value-label"/>
+
+                                <Label fx:id="messageLabel"
+                                       text=""
+                                       wrapText="true"
+                                       maxWidth="500.0"
+                                       styleClass="status-label"/>
+
+                            </children>
+                        </VBox>
+
+                    </children>
+                </VBox>
+            </center>
+
+        </BorderPane>
+    </children>
+</AnchorPane>

@@ -2,6 +2,7 @@ package clientGUI;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import clientCommon.OccasionalCustomerAccessObserver;
 import clientController.ClientController;
@@ -18,39 +19,33 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-
-/*
+/**
  * This class is the controller for the occasional customer access screen.
  * 
- * The screen allows an occasional customer to identify using an order number.
- * The order number is sent to the server, and the server checks whether the
- * order exists in the database.
+ * The screen allows an occasional customer to identify using an ID number.
+ * The ID number is sent to the server, and the server checks whether there are
+ * orders that belong to this customer.
  */
 public class OccasionalCustomerAccessController implements OccasionalCustomerAccessObserver {
 
-	/*
+	/**
 	 * The client controller used for communication with the server.
 	 */
 	private static ClientController clientController;
-	
-	/*
-	 * The current stage of the occasional customer access screen.
-	 */
-	private Stage currentStage;
 
-	/*
-	 * Text field used for entering the order number.
+	/**
+	 * Text field used for entering the customer ID number.
 	 */
 	@FXML
 	private TextField idNumberField;
 
-	/*
+	/**
 	 * Label used for showing validation messages or access result messages.
 	 */
 	@FXML
 	private Label messageLabel;
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param controller the client controller instance
@@ -59,7 +54,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		OccasionalCustomerAccessController.clientController = controller;
 	}
 
-	/*
+	/**
 	 * Initializes the screen.
 	 * 
 	 * This method registers the screen as an observer so it can receive the server
@@ -72,7 +67,7 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		}
 	}
 
-	/*
+	/**
 	 * Handles the click on the Continue button.
 	 * 
 	 * The method validates the entered customer ID number and sends a request
@@ -95,26 +90,32 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 			messageLabel.setText("ID number must contain 9 digits.");
 			return;
 		}
-		
+
 		if (clientController == null) {
 			messageLabel.setText("Client is not connected to server.");
 			return;
 		}
-		
-		clientController.setLoggedInSubscriberId(Integer.parseInt(customerIdNumber));
-		
+
 		messageLabel.setText("Checking orders...");
 
-		// Save the current customer ID in the shared ClientController.
-		// This ID is later used by Make Order and Waiting List screens.
+		/*
+		 * Save the current customer ID in the shared ClientController.
+		 * This ID is later used by Make Order and Waiting List screens.
+		 */
 		clientController.setId(customerIdNumber);
+
+		/*
+		 * Kept from main so screens that use loggedInSubscriberId still receive
+		 * the numeric customer ID.
+		 */
+		clientController.setLoggedInSubscriberId(Integer.parseInt(customerIdNumber));
 
 		System.out.println("Saved customer ID in ClientController: " + clientController.getId());
 
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);
 	}
 
-	/*
+	/**
 	 * Receives the occasional customer access result from the ClientController.
 	 * 
 	 * If orders were found, the method opens the order table screen and displays
@@ -130,25 +131,30 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 				return;
 			}
 
-			if (response.isSuccess()) {
-				ArrayList<Order> orders = (ArrayList<Order>) response.getData();
-
-				messageLabel.setText("Orders found.");
-				Platform.runLater(()->{openOrderTableScreen(orders);});
-
-			} else {
+			if (!response.isSuccess()) {
 				messageLabel.setText(response.getMessage());
+				return;
 			}
+
+			List<Order> orders = parseOrders(response.getData());
+
+			if (orders == null) {
+				messageLabel.setText("Invalid orders response from server.");
+				return;
+			}
+
+			messageLabel.setText("Orders found.");
+			openOrderTableScreen(orders);
 		});
 	}
-	
-	/*
+
+	/**
 	 * Opens the order table screen and displays all orders that belong to the
 	 * occasional customer.
 	 * 
 	 * @param orders the orders received from the server
 	 */
-	private void openOrderTableScreen(ArrayList<Order> orders) {
+	private void openOrderTableScreen(List<Order> orders) {
 		try {
 			if (clientController != null) {
 				clientController.removeOccasionalCustomerAccessObserver(this);
@@ -179,7 +185,32 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		}
 	}
 
-	/*
+	/**
+	 * Converts the server response data into a list of orders.
+	 * 
+	 * @param data the data received from the server
+	 * @return a list of orders if the data is valid, otherwise null
+	 */
+	private List<Order> parseOrders(Object data) {
+		if (!(data instanceof List<?>)) {
+			return null;
+		}
+
+		List<?> rawList = (List<?>) data;
+		List<Order> orders = new ArrayList<>();
+
+		for (Object item : rawList) {
+			if (!(item instanceof Order)) {
+				return null;
+			}
+
+			orders.add((Order) item);
+		}
+
+		return orders;
+	}
+
+	/**
 	 * Handles the click on the Back button.
 	 * 
 	 * This method navigates the user back to the Customer Access screen.

@@ -28,6 +28,9 @@ import javafx.stage.Stage;
  */
 public class RegisterSubscriberController implements RegisterSubscriberObserver {
 
+	private static final String PAYMENT_CASH = "cash";
+	private static final String PAYMENT_CREDIT_CARD = "credit_card";
+
 	private ClientController clientController;
 	private Employee loggedInEmployee;
 
@@ -57,7 +60,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 
 	@FXML
 	private Label messageLabel;
-	
+
 	@FXML
 	private TextField usernameField;
 
@@ -69,10 +72,38 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 
 	@FXML
 	private void initialize() {
-		paymentMethodComboBox.getItems().addAll("cash", "credit_card");
-		paymentMethodComboBox.setValue("cash");
+		paymentMethodComboBox.getItems().setAll(PAYMENT_CASH, PAYMENT_CREDIT_CARD);
+		paymentMethodComboBox.setValue(PAYMENT_CASH);
+
+		updatePaymentMethodFields();
+
+		paymentMethodComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+			updatePaymentMethodFields();
+		});
 
 		messageLabel.setText("");
+	}
+
+	/*
+	 * Updates the credit card field according to the selected payment method.
+	 * 
+	 * If payment is cash, the credit card field is blocked and cleared.
+	 * If payment is credit_card, the credit card field is enabled and required.
+	 */
+	private void updatePaymentMethodFields() {
+		String paymentMethod = paymentMethodComboBox.getValue();
+
+		if (PAYMENT_CASH.equals(paymentMethod)) {
+			creditCardLast4Field.clear();
+			creditCardLast4Field.setDisable(true);
+			creditCardLast4Field.setPromptText("Not required for cash payment");
+			return;
+		}
+
+		if (PAYMENT_CREDIT_CARD.equals(paymentMethod)) {
+			creditCardLast4Field.setDisable(false);
+			creditCardLast4Field.setPromptText("Enter Credit Card Last 4 Digits");
+		}
 	}
 
 	/*
@@ -100,8 +131,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 	/*
 	 * Handles the register subscriber button.
 	 * 
-	 * For now, this method validates the form locally.
-	 * Later, it will send the subscriber data to the server and database.
+	 * Validates the form locally and sends the subscriber data to the server.
 	 * 
 	 * @param event the button click event
 	 */
@@ -120,37 +150,37 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		String paymentMethod = paymentMethodComboBox.getValue();
 
 		if (firstName == null || firstName.trim().isEmpty()) {
-			messageLabel.setText("Please enter first name.");
+			showError("Please enter first name.");
 			return;
 		}
 
 		if (lastName == null || lastName.trim().isEmpty()) {
-			messageLabel.setText("Please enter last name.");
+			showError("Please enter last name.");
 			return;
 		}
 
 		if (idNumber == null || idNumber.trim().isEmpty()) {
-			messageLabel.setText("Please enter ID number.");
+			showError("Please enter ID number.");
 			return;
 		}
 
 		if (!idNumber.trim().matches("\\d{9}")) {
-			messageLabel.setText("ID number must contain 9 digits.");
+			showError("ID number must contain 9 digits.");
 			return;
 		}
 
 		if (phone == null || phone.trim().isEmpty()) {
-			messageLabel.setText("Please enter phone number.");
+			showError("Please enter phone number.");
 			return;
 		}
 
 		if (email == null || email.trim().isEmpty()) {
-			messageLabel.setText("Please enter email.");
+			showError("Please enter email.");
 			return;
 		}
 
 		if (familyMembersCountText == null || familyMembersCountText.trim().isEmpty()) {
-			messageLabel.setText("Please enter family members count.");
+			showError("Please enter family members count.");
 			return;
 		}
 
@@ -159,77 +189,77 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		try {
 			familyMembersCount = Integer.parseInt(familyMembersCountText.trim());
 		} catch (NumberFormatException e) {
-			messageLabel.setText("Family members count must be a number.");
+			showError("Family members count must be a number.");
 			return;
 		}
 
 		if (familyMembersCount <= 0) {
-			messageLabel.setText("Family members count must be greater than 0.");
+			showError("Family members count must be greater than 0.");
 			return;
 		}
 
-		if ("credit_card".equals(paymentMethod)) {
+		if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
+			showError("Please select payment method.");
+			return;
+		}
+
+		if (PAYMENT_CASH.equals(paymentMethod)) {
+			creditCardLast4 = null;
+		}
+
+		if (PAYMENT_CREDIT_CARD.equals(paymentMethod)) {
 			if (creditCardLast4 == null || creditCardLast4.trim().isEmpty()) {
-				messageLabel.setText("Please enter credit card last 4 digits.");
+				showError("Please enter credit card last 4 digits.");
 				return;
 			}
 
 			if (!creditCardLast4.trim().matches("\\d{4}")) {
-				messageLabel.setText("Credit card last 4 must contain 4 digits.");
+				showError("Credit card last 4 must contain 4 digits.");
 				return;
 			}
+
+			creditCardLast4 = creditCardLast4.trim();
 		}
-		
+
 		if (username == null || username.trim().isEmpty()) {
-			messageLabel.setText("Please enter username.");
+			showError("Please enter username.");
 			return;
 		}
 
 		username = username.trim();
 
 		if (username.length() < 4) {
-			messageLabel.setText("Username must contain at least 4 characters.");
+			showError("Username must contain at least 4 characters.");
 			return;
 		}
 
 		if (!username.matches("[a-zA-Z0-9._]+")) {
-			messageLabel.setText("Username can contain letters, digits, dot and underscore only.");
+			showError("Username can contain letters, digits, dot and underscore only.");
 			return;
 		}
 
 		if (password == null || password.trim().isEmpty()) {
-			messageLabel.setText("Please enter password.");
+			showError("Please enter password.");
 			return;
 		}
 
 		if (password.length() < 4) {
-			messageLabel.setText("Password must contain at least 4 characters.");
+			showError("Password must contain at least 4 characters.");
 			return;
 		}
 
 		if (confirmPassword == null || confirmPassword.trim().isEmpty()) {
-			messageLabel.setText("Please confirm password.");
+			showError("Please confirm password.");
 			return;
 		}
 
 		if (!password.equals(confirmPassword)) {
-			messageLabel.setText("Passwords do not match.");
+			showError("Passwords do not match.");
 			return;
 		}
 
-		System.out.println("Register subscriber clicked");
-		System.out.println("First Name = " + firstName);
-		System.out.println("Last Name = " + lastName);
-		System.out.println("ID Number = " + idNumber);
-		System.out.println("Phone = " + phone);
-		System.out.println("Email = " + email);
-		System.out.println("Family Members Count = " + familyMembersCount);
-		System.out.println("Payment Method = " + paymentMethod);
-		System.out.println("Credit Card Last 4 = " + creditCardLast4);
-		System.out.println("Username = " + username);
-
 		if (clientController == null) {
-			messageLabel.setText("Client is not connected to server.");
+			showError("Client is not connected to server.");
 			return;
 		}
 
@@ -237,20 +267,20 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 				firstName.trim(),
 				lastName.trim(),
 				idNumber.trim(),
-				username.trim(),
+				username,
 				password,
 				phone.trim(),
 				email.trim(),
 				familyMembersCount,
 				paymentMethod,
-				creditCardLast4 == null ? null : creditCardLast4.trim()
+				creditCardLast4
 		);
 
-		messageLabel.setText("Registering subscriber...");
+		showInfo("Registering subscriber...");
 
 		clientController.requestRegisterSubscriber(request);
 	}
-	
+
 	/*
 	 * Receives the register subscriber result from the ClientController.
 	 * 
@@ -260,15 +290,19 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 	public void onRegisterSubscriberResult(OperationResponse response) {
 		Platform.runLater(() -> {
 			if (response == null) {
-				messageLabel.setText("No response from server.");
+				showError("Registration failed. No response from server.");
 				return;
 			}
 
 			if (response.isSuccess()) {
-				messageLabel.setText(response.getMessage());
-				handleClear(null);
+				clearFieldsOnly();
+				showSuccess(response.getMessage() == null
+						? "Subscriber registered successfully."
+						: response.getMessage());
 			} else {
-				messageLabel.setText(response.getMessage());
+				showError(response.getMessage() == null
+						? "Subscriber registration failed."
+						: response.getMessage());
 			}
 		});
 	}
@@ -280,6 +314,11 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 	 */
 	@FXML
 	private void handleClear(ActionEvent event) {
+		clearFieldsOnly();
+		showInfo("");
+	}
+
+	private void clearFieldsOnly() {
 		firstNameField.clear();
 		lastNameField.clear();
 		idNumberField.clear();
@@ -291,9 +330,23 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		passwordField.clear();
 		confirmPasswordField.clear();
 
-		paymentMethodComboBox.setValue("cash");
+		paymentMethodComboBox.setValue(PAYMENT_CASH);
+		updatePaymentMethodFields();
+	}
 
-		messageLabel.setText("");
+	private void showSuccess(String message) {
+		messageLabel.setStyle("-fx-text-fill: green;");
+		messageLabel.setText(message);
+	}
+
+	private void showError(String message) {
+		messageLabel.setStyle("-fx-text-fill: red;");
+		messageLabel.setText(message);
+	}
+
+	private void showInfo(String message) {
+		messageLabel.setStyle("-fx-text-fill: #2f5d8c;");
+		messageLabel.setText(message);
 	}
 
 	/*
@@ -307,6 +360,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 			if (clientController != null) {
 				clientController.removeRegisterSubscriberObserver(this);
 			}
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/ServiceRepresentativeHomePage.fxml")
 			);
@@ -324,7 +378,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 
 		} catch (IOException e) {
 			e.printStackTrace();
-			messageLabel.setText("Could not return to service representative screen.");
+			showError("Could not return to service representative screen.");
 		}
 	}
 }

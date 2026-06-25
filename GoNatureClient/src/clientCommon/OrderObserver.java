@@ -44,4 +44,10 @@ public interface OrderObserver {
 	 * this function handles the server shutting the client down
 	 */
 	void handleExit();
+	
+	/**
+	 * this method notifies order observers that an order was canceled via reminder
+	 * @param o the order
+	 */
+    void reminderDeclined(Order o);
 }

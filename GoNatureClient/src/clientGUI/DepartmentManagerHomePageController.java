@@ -1,22 +1,20 @@
 package clientGUI;
 
-import javafx.event.ActionEvent;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Label;
-
-import javafx.scene.Node;
 import java.io.IOException;
+
+import clientCommon.ClientSession;
 import clientController.ClientController;
 import common.Employee;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
-import clientCommon.ClientSession;
 
-/*
+/**
  * This class is the controller for the department manager home page.
  * 
  * The department manager is responsible for central management actions,
@@ -24,17 +22,36 @@ import clientCommon.ClientSession;
  */
 public class DepartmentManagerHomePageController {
 
+	/**
+	 * The client controller instance.
+	 */
 	private ClientController clientController;
 
+	/**
+	 * The currently logged-in employee.
+	 */
 	private Employee loggedInEmployee;
 
+	/**
+	 * Label used to welcome the logged-in user.
+	 */
 	@FXML
 	private Label welcomeLabel;
 
+	/**
+	 * Sets the client controller for this controller.
+	 * 
+	 * @param clientController the client controller
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
 
+	/**
+	 * Sets the current logged-in employee.
+	 * 
+	 * @param employee the employee to set
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -43,11 +60,13 @@ public class DepartmentManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles click on the reports button.
 	 * 
 	 * This screen allows the department manager to view department-level reports,
 	 * such as visit reports and cancellation reports.
+	 * 
+	 * @param event the button click event
 	 */
 	@FXML
 	private void handleViewReports(ActionEvent event) {
@@ -72,11 +91,13 @@ public class DepartmentManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles click on the approve park requests button.
 	 * 
 	 * This screen allows the department manager to review, approve, and reject
 	 * pending park parameter change requests.
+	 * 
+	 * @param event the button click event
 	 */
 	@FXML
 	private void handleApproveParkRequests(ActionEvent event) {
@@ -101,11 +122,13 @@ public class DepartmentManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles click on the park occupancy button.
 	 * 
-	 * This screen shows the current occupancy of parks,
-	 * including current visitors, capacity, and available space.
+	 * This screen shows the current occupancy of parks, including current visitors,
+	 * capacity, and available space.
+	 * 
+	 * @param event the button click event
 	 */
 	@FXML
 	private void handleViewParksOccupancy(ActionEvent event) {
@@ -157,10 +180,11 @@ public class DepartmentManagerHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles logout from the department manager screen.
 	 * 
-	 * For now, this returns the user to the opening screen.
+	 * This method notifies the server about logout, clears the client session,
+	 * and returns the user to the opening screen.
 	 * 
 	 * @param event the button click event
 	 */

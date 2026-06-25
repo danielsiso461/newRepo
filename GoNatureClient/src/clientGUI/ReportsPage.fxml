@@ -7,71 +7,129 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
-            xmlns="http://javafx.com/javafx/25"
+<AnchorPane xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.ReportsPageController"
             stylesheets="@gonature-theme.css"
             styleClass="root-pane">
 
     <children>
-        <BorderPane prefHeight="760.0"
-                    prefWidth="1150.0"
-                    minHeight="620.0"
+        <BorderPane prefWidth="1150.0"
+                    prefHeight="760.0"
                     minWidth="900.0"
+                    minHeight="620.0"
                     AnchorPane.topAnchor="0.0"
                     AnchorPane.bottomAnchor="0.0"
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
 
+            <top>
+                <HBox alignment="CENTER_RIGHT"
+                      prefHeight="58.0"
+                      style="-fx-padding: 16 24 0 24;">
+                    <children>
+                        <Button text="Back"
+                                prefWidth="110.0"
+                                styleClass="back-button"
+                                onAction="#handleBack"/>
+                    </children>
+                </HBox>
+            </top>
+
             <center>
-                <VBox alignment="CENTER" spacing="22.0" styleClass="page-container">
+                <VBox alignment="CENTER"
+                      spacing="22.0"
+                      styleClass="page-container"
+                      maxWidth="Infinity"
+                      maxHeight="Infinity">
+
                     <children>
 
-                        <VBox alignment="CENTER" spacing="10.0">
+                        <VBox alignment="CENTER" spacing="8.0">
                             <children>
-                                <Label text="Reports and Data Analysis" styleClass="page-title"/>
+                                <Label text="Reports and Data Analysis"
+                                       styleClass="page-title"/>
+
                                 <Label text="Select report type, park and date filters"
                                        styleClass="page-subtitle"/>
+
+                                <Separator prefWidth="620.0"/>
                             </children>
                         </VBox>
 
-                        <HBox alignment="CENTER" spacing="12.0" maxWidth="980.0" styleClass="card">
+                        <VBox alignment="CENTER"
+                              spacing="14.0"
+                              maxWidth="980.0"
+                              styleClass="card">
+
                             <children>
-                                <Label text="Report type:" styleClass="field-label"/>
-                                <ComboBox fx:id="reportTypeComboBox" prefWidth="210.0"/>
+                                <HBox alignment="CENTER" spacing="12.0">
+                                    <children>
+                                        <Label text="Report type:"
+                                               styleClass="field-label"/>
 
-                                <Label text="Park:" styleClass="field-label"/>
-                                <ComboBox fx:id="parkComboBox" prefWidth="220.0"/>
+                                        <ComboBox fx:id="reportTypeComboBox"
+                                                  prefWidth="220.0"
+                                                  promptText="Choose report"/>
 
-                                <Label text="Month:" styleClass="field-label"/>
-                                <ComboBox fx:id="monthComboBox" prefWidth="90.0"/>
+                                        <Label text="Park:"
+                                               styleClass="field-label"/>
 
-                                <Label text="Year:" styleClass="field-label"/>
-                                <ComboBox fx:id="yearComboBox" prefWidth="100.0"/>
+                                        <ComboBox fx:id="parkComboBox"
+                                                  prefWidth="230.0"
+                                                  promptText="Choose park"/>
+                                    </children>
+                                </HBox>
 
-                                <Button fx:id="showReportButton"
-                                        text="Show Report"
-                                        prefWidth="130.0"
-                                        styleClass="primary-button"
-                                        onAction="#handleShowReport"/>
+                                <HBox alignment="CENTER" spacing="12.0">
+                                    <children>
+                                        <Label text="Month:"
+                                               styleClass="field-label"/>
+
+                                        <ComboBox fx:id="monthComboBox"
+                                                  prefWidth="100.0"
+                                                  promptText="Month"/>
+
+                                        <Label text="Year:"
+                                               styleClass="field-label"/>
+
+                                        <ComboBox fx:id="yearComboBox"
+                                                  prefWidth="110.0"
+                                                  promptText="Year"/>
+
+                                        <Button fx:id="showReportButton"
+                                                text="Show Report"
+                                                prefWidth="150.0"
+                                                styleClass="primary-button"
+                                                onAction="#handleShowReport"/>
+                                    </children>
+                                </HBox>
                             </children>
-                        </HBox>
+                        </VBox>
 
-                        <VBox spacing="14.0" maxWidth="1050.0" styleClass="card">
+                        <VBox spacing="14.0"
+                              maxWidth="1050.0"
+                              maxHeight="Infinity"
+                              styleClass="card"
+                              VBox.vgrow="ALWAYS">
+
                             <children>
                                 <PieChart fx:id="reportPieChart"
                                           prefHeight="300.0"
+                                          maxWidth="Infinity"
                                           visible="false"
                                           managed="false"/>
 
                                 <BarChart fx:id="reportBarChart"
                                           prefHeight="300.0"
+                                          maxWidth="Infinity"
                                           visible="false"
                                           managed="false">
                                     <xAxis>
@@ -83,24 +141,27 @@
                                 </BarChart>
 
                                 <TableView fx:id="reportsTableView"
-                                           prefHeight="230.0"/>
+                                           prefHeight="230.0"
+                                           maxWidth="Infinity"
+                                           maxHeight="Infinity"
+                                           VBox.vgrow="ALWAYS"/>
                             </children>
                         </VBox>
-
-                        <Label fx:id="statusLabel"
-                               text="Status: Ready"
-                               styleClass="status-label"/>
-                               
-                        <Button text="Back"
-        						prefWidth="120.0"
-        						styleClass="secondary-button"
-        						onAction="#handleBack"/>       
-                               
-                               
 
                     </children>
                 </VBox>
             </center>
+
+            <bottom>
+                <HBox alignment="CENTER" prefHeight="70.0">
+                    <children>
+                        <Label fx:id="statusLabel"
+                               text="Status: Ready"
+                               wrapText="true"
+                               styleClass="status-label"/>
+                    </children>
+                </HBox>
+            </bottom>
 
         </BorderPane>
     </children>
