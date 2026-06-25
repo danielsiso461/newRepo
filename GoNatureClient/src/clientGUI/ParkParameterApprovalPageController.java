@@ -152,6 +152,7 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 		);
 
 
+
 		statusColumn.setCellValueFactory(
 				new PropertyValueFactory<>("requestStatus")
 		);
@@ -166,7 +167,7 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 				new SimpleStringProperty(
 						formatParameterValue(
 								cellData.getValue().getParameterName(),
-								cellData.getValue().getOldValue()
+								cellData.getValue().getCurrentValue()
 						)
 				)
 		);
@@ -425,7 +426,7 @@ public class ParkParameterApprovalPageController implements ParkParameterObserve
 				: baseMessage.trim();
 
 		if (reviewNote == null || reviewNote.isBlank()) {
-			return safeBaseMessage + " With no review note.";
+			return safeBaseMessage;
 		}
 
 		return safeBaseMessage + " Review note: \"" + reviewNote.trim() + "\"";

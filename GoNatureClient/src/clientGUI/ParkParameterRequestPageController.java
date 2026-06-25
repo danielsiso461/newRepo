@@ -35,7 +35,7 @@ import javafx.util.StringConverter;
  * 
  * This page is used by park managers.
  */
-public class ParkParameterRequestPageController
+public class ParkParameterRequestPageController 
         implements ParkObserver, ParkParameterObserver {
 
     private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
