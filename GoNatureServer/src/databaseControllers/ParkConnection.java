@@ -119,12 +119,7 @@ public class ParkConnection extends AbstractDBConnection {
 	public List<Park> getAllFullParks() throws SQLException {
 		ensureConnection();
 
-		String sql = selectByFields(
-				new String[] {
-						"*"
-				},
-				null
-		);
+		String sql = "SELECT * FROM `" + getTableName() + "`;";
 
 		List<Park> parks = new ArrayList<>();
 
@@ -390,18 +385,14 @@ public class ParkConnection extends AbstractDBConnection {
 
 		ensureConnection();
 
-		String sql = selectByFields(
-				new String[] {
-						PARK_ID,
-						PARK_NAME,
-						MAX_CAPACITY,
-						CURRENT_VISITORS
-				},
-				new String[] {
-						PARK_ID,
-						IS_ACTIVE
-				}
-		);
+		String sql = "SELECT "
+				+ PARK_ID + ", "
+				+ PARK_NAME + ", "
+				+ MAX_CAPACITY + ", "
+				+ CURRENT_VISITORS + " "
+				+ "FROM `" + getTableName() + "` "
+				+ "WHERE " + PARK_ID + " = ? "
+				+ "AND " + IS_ACTIVE + " = ?;";
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -480,16 +471,13 @@ public class ParkConnection extends AbstractDBConnection {
 	}
 
 	private CounterData loadCounterDataForUpdate(int parkId) throws SQLException {
-		String sql = selectByFieldsForUpdate(
-				new String[] {
-						CURRENT_VISITORS,
-						MAX_CAPACITY
-				},
-				new String[] {
-						PARK_ID,
-						IS_ACTIVE
-				}
-		);
+		String sql = "SELECT "
+				+ CURRENT_VISITORS + ", "
+				+ MAX_CAPACITY + " "
+				+ "FROM `" + getTableName() + "` "
+				+ "WHERE " + PARK_ID + " = ? "
+				+ "AND " + IS_ACTIVE + " = ? "
+				+ "FOR UPDATE;";
 
 		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setInt(1, parkId);
@@ -535,23 +523,19 @@ public class ParkConnection extends AbstractDBConnection {
 	private void updateCurrentVisitorsValue(int parkId, int visitorsAfter)
 			throws SQLException {
 
-		boolean updated = updateFields(
-				new String[] {
-						CURRENT_VISITORS
-				},
-				List.of(
-						visitorsAfter
-				),
-				new String[] {
-						PARK_ID
-				},
-				List.of(
-						parkId
-				)
-		);
+		String sql = "UPDATE `" + getTableName() + "` "
+				+ "SET " + CURRENT_VISITORS + " = ? "
+				+ "WHERE " + PARK_ID + " = ?;";
 
-		if (!updated) {
-			throw new SQLException("Failed to update park visitor counter.");
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, visitorsAfter);
+			pstmt.setInt(2, parkId);
+
+			int rows = pstmt.executeUpdate();
+
+			if (rows == 0) {
+				throw new SQLException("Failed to update park visitor counter.");
+			}
 		}
 	}
 
@@ -559,27 +543,25 @@ public class ParkConnection extends AbstractDBConnection {
 			String actionType, int amount, int visitorsBefore,
 			int visitorsAfter) throws SQLException {
 
-		List<Object> values = new ArrayList<>();
+		String sql = "INSERT INTO `" + PARK_VISITOR_COUNTER_LOG + "` ("
+				+ PARK_ID + ", "
+				+ EMPLOYEE_ID + ", "
+				+ ACTION_TYPE + ", "
+				+ AMOUNT + ", "
+				+ VISITORS_BEFORE + ", "
+				+ VISITORS_AFTER
+				+ ") VALUES (?, ?, ?, ?, ?, ?);";
 
-		values.add(parkId);
-		values.add(employeeId);
-		values.add(actionType);
-		values.add(amount);
-		values.add(visitorsBefore);
-		values.add(visitorsAfter);
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, parkId);
+			pstmt.setInt(2, employeeId);
+			pstmt.setString(3, actionType);
+			pstmt.setInt(4, amount);
+			pstmt.setInt(5, visitorsBefore);
+			pstmt.setInt(6, visitorsAfter);
 
-		insertFieldsInTable(
-				PARK_VISITOR_COUNTER_LOG,
-				new String[] {
-						PARK_ID,
-						EMPLOYEE_ID,
-						ACTION_TYPE,
-						AMOUNT,
-						VISITORS_BEFORE,
-						VISITORS_AFTER
-				},
-				values
-		);
+			pstmt.executeUpdate();
+		}
 	}
 
 	public boolean updateParkParameter(int parkId, String parameterName,

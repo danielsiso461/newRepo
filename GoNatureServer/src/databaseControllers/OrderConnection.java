@@ -3,6 +3,7 @@ package databaseControllers;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -143,7 +144,7 @@ public final class OrderConnection extends AbstractDBConnection {
 		return orders;
 	}
 
-	public int createOrder(java.time.LocalDate orderDate, int numberOfVisitors,
+	public int createOrder(LocalDate orderDate, int numberOfVisitors,
 			int confirmationCode, int subscriberId, int parkId, Integer guideId,
 			String orderType) throws SQLException {
 
@@ -163,7 +164,7 @@ public final class OrderConnection extends AbstractDBConnection {
 		values.add("");
 		values.add(parkId);
 		values.add(guideId);
-		values.add(java.sql.Date.valueOf(java.time.LocalDate.now()));
+		values.add(java.sql.Date.valueOf(LocalDate.now()));
 		values.add(Order.ORDER_STATUS_PENDING);
 		values.add(orderType);
 
@@ -316,7 +317,6 @@ public final class OrderConnection extends AbstractDBConnection {
 		}
 	}
 
-	
 	public boolean updateOrderStatus(int orderNumber, String newStatus,
 			int changedByEmployeeId, String reason) throws SQLException {
 
@@ -455,7 +455,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	public List<Order> getApprovedOrdersByParkAndDate(int parkId,
-			java.time.LocalDate orderDate) throws SQLException {
+			LocalDate orderDate) throws SQLException {
 
 		ensureConnection();
 
@@ -487,7 +487,7 @@ public final class OrderConnection extends AbstractDBConnection {
 	}
 
 	public int getTotalApprovedVisitorsByParkAndDate(int parkId,
-			java.time.LocalDate orderDate) throws SQLException {
+			LocalDate orderDate) throws SQLException {
 
 		ensureConnection();
 
@@ -581,7 +581,7 @@ public final class OrderConnection extends AbstractDBConnection {
 		}
 
 		if (order.getPlacementDate() == null) {
-			order.setPlacementDate(java.time.LocalDate.now());
+			order.setPlacementDate(LocalDate.now());
 		}
 
 		if (order.getOrderStatus() == null || order.getOrderStatus().isBlank()) {
@@ -693,6 +693,109 @@ public final class OrderConnection extends AbstractDBConnection {
 		}
 
 		return orders;
+	}
+
+	public List<Order> getOrdersByDateAndHourAndStatus(LocalDate date, int hour, String status)
+			throws SQLException {
+
+		ensureConnection();
+
+		String sql = """
+				SELECT
+				    o.order_number,
+				    o.order_date,
+				    o.order_hour,
+				    o.number_of_visitors,
+				    o.order_status,
+				    o.customer_id,
+				    o.email,
+				    o.park_id,
+				    s.subscriber_phone
+				FROM `order` o
+				LEFT JOIN subscriber s
+				    ON o.subscriber_id = s.subscriber_id
+				WHERE o.order_date = ?
+				  AND o.order_hour = ?
+				  AND o.order_status = ?;
+				""";
+
+		List<Order> orders = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setObject(1, date);
+			pstmt.setInt(2, hour);
+			pstmt.setString(3, status);
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					Order order = new Order(
+							rs.getInt(ORDER_NUMBER),
+							rs.getObject(ORDER_DATE, LocalDate.class),
+							rs.getInt(ORDER_HOUR),
+							rs.getString(ORDER_STATUS),
+							rs.getInt(ORDER_CUSTOMER_ID),
+							rs.getInt(VISITOR_NUMBER),
+							rs.getString(EMAIL),
+							rs.getInt(PARK_ID),
+							rs.getString("subscriber_phone")
+					);
+
+					orders.add(order);
+				}
+			}
+		}
+
+		return orders;
+	}
+
+	public void autoCancelOrderList(LocalDate date, int hour, String status) throws SQLException {
+		ensureConnection();
+
+		updateFields(
+				new String[] {
+						ORDER_STATUS
+				},
+				List.of(
+						"expired"
+				),
+				new String[] {
+						ORDER_DATE,
+						ORDER_HOUR,
+						ORDER_STATUS
+				},
+				List.of(
+						date,
+						hour,
+						status
+				)
+		);
+	}
+
+	public String updateOrdersToNoShowsAccordingToStatus(String status) throws SQLException {
+		ensureConnection();
+
+		String sql = """
+				UPDATE `order` o
+				JOIN park p ON o.park_id = p.park_id
+				SET o.order_status = 'no_show'
+				WHERE o.order_status = ?
+				  AND DATE_ADD(
+				      DATE_ADD(o.order_date, INTERVAL o.order_hour HOUR),
+				      INTERVAL p.estimated_visit_duration_hours HOUR
+				  ) < NOW();
+				""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, status);
+
+			int rows = pstmt.executeUpdate();
+
+			if (rows > 0) {
+				return "No show update completed successfully!";
+			}
+
+			return "No show update failed: record not found.";
+		}
 	}
 
 	@Override

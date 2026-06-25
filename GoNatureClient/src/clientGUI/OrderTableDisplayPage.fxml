@@ -117,10 +117,10 @@
                                                 onAction="#waitingListButtonClick"/>
 
                                         <Button fx:id="backButton"
-                                                text="Back"
-                                                prefWidth="120.0"
-                                                styleClass="secondary-button"
-                                                onAction="#backButtonClick"/>
+        										text="Logout"
+        										prefWidth="120.0"
+        										styleClass="secondary-button"
+        										onAction="#backButtonClick"/>        
                                     </children>
                                 </HBox>
                             </children>

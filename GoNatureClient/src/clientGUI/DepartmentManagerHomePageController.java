@@ -2,6 +2,7 @@ package clientGUI;
 
 import java.io.IOException;
 
+import clientCommon.ClientSession;
 import clientController.ClientController;
 import common.Employee;
 import javafx.event.ActionEvent;
@@ -155,13 +156,20 @@ public class DepartmentManagerHomePageController {
 	/**
 	 * Handles logout from the department manager screen.
 	 * 
-	 * For now, this returns the user to the opening screen.
+	 * This method notifies the server about logout, clears the client session,
+	 * and returns the user to the opening screen.
 	 * 
 	 * @param event the button click event
 	 */
 	@FXML
 	private void handleLogout(ActionEvent event) {
 		try {
+			if (clientController != null) {
+				clientController.logoutCurrentUserFromServer();
+			}
+
+			ClientSession.clear();
+
 			FXMLLoader loader = new FXMLLoader(
 					getClass().getResource("/clientGUI/OpeningScreen.fxml")
 			);

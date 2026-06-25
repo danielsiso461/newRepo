@@ -13,7 +13,7 @@ import javafx.stage.Stage;
 import clientController.ClientController;
 
 
-/**
+/*
  * This class is the controller for the customer access selection screen.
  * 
  * The screen allows the customer to choose between two access options:
@@ -29,7 +29,7 @@ public class CustomerAccessController {
 		this.clientController = clientController;
 	}
 
-	/**
+	/*
 	 * Handles the click on the Existing Customer Login button.
 	 * 
 	 * This method navigates the user to the existing customer login screen.
@@ -57,7 +57,7 @@ public class CustomerAccessController {
 		}
 	}
 
-	/**
+	/*
 	 * Handles the click on the Occasional Customer Access button.
 	 * 
 	 * This method navigates the user to the occasional customer access screen.
@@ -67,6 +67,7 @@ public class CustomerAccessController {
 	@FXML
 	private void handleOccasionalCustomerAccess(ActionEvent event) {
 		try {
+			System.out.println("CustomerAccess clientController = " + clientController);
 			OccasionalCustomerAccessController.setClientController(clientController);
 
 			FXMLLoader loader = new FXMLLoader(
@@ -85,7 +86,7 @@ public class CustomerAccessController {
 		}
 	}
 
-	/**
+	/*
 	 * Handles the click on the Back button.
 	 * 
 	 * This method navigates the user back to the opening screen.

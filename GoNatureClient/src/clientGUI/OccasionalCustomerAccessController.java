@@ -104,6 +104,12 @@ public class OccasionalCustomerAccessController implements OccasionalCustomerAcc
 		 */
 		clientController.setId(customerIdNumber);
 
+		/*
+		 * Kept from main so screens that use loggedInSubscriberId still receive
+		 * the numeric customer ID.
+		 */
+		clientController.setLoggedInSubscriberId(Integer.parseInt(customerIdNumber));
+
 		System.out.println("Saved customer ID in ClientController: " + clientController.getId());
 
 		clientController.requestOccasionalCustomerAccess(customerIdNumber);

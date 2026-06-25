@@ -4,13 +4,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import common.WaitingListMessage;
 
-/**
+/*
  * This class handles all database operations related to the waiting_list table.
  *
  * The waiting list is used when a visitor cannot immediately create an order
@@ -56,7 +57,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return TABLE_NAME;
 	}
 
-	public int getNextQueuePosition(int parkId, java.time.LocalDateTime requestedOrderDate)
+	public int getNextQueuePosition(int parkId, LocalDateTime requestedOrderDate)
 			throws SQLException {
 
 		ensureConnection();
@@ -84,7 +85,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 
 	private boolean waitingRequestExistsByStatus(int subscriberId, int parkId,
-			java.time.LocalDateTime requestedOrderDate, int numberOfVisitors,
+			LocalDateTime requestedOrderDate, int numberOfVisitors,
 			String waitingStatus) throws SQLException {
 
 		ensureConnection();
@@ -116,7 +117,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 
 	private boolean activeWaitingRequestExists(int subscriberId, int parkId,
-			java.time.LocalDateTime requestedOrderDate, int numberOfVisitors)
+			LocalDateTime requestedOrderDate, int numberOfVisitors)
 			throws SQLException {
 
 		return waitingRequestExistsByStatus(
@@ -135,7 +136,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 
 	public int addToWaitingList(int subscriberId, int parkId,
-			java.time.LocalDateTime requestedOrderDate, int numberOfVisitors)
+			LocalDateTime requestedOrderDate, int numberOfVisitors)
 			throws SQLException {
 
 		ensureConnection();
@@ -174,7 +175,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 
 	public boolean offerFirstMatchingWaitingRequest(int parkId,
-			java.time.LocalDate orderDate, int availablePlaces) throws SQLException {
+			LocalDate orderDate, int availablePlaces) throws SQLException {
 
 		ensureConnection();
 
@@ -233,7 +234,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 		ensureConnection();
 
 		Integer parkId = null;
-		java.time.LocalDate orderDate = null;
+		LocalDate orderDate = null;
 		Integer availablePlaces = null;
 
 		String sql = selectByFields(
@@ -316,7 +317,7 @@ public class WaitingListConnection extends AbstractDBConnection {
 			while (rs.next()) {
 				int waitingId = rs.getInt(WAITING_ID);
 				int parkId = rs.getInt(PARK_ID);
-				java.time.LocalDate orderDate = rs.getTimestamp(REQUESTED_ORDER_DATE)
+				LocalDate orderDate = rs.getTimestamp(REQUESTED_ORDER_DATE)
 						.toLocalDateTime()
 						.toLocalDate();
 				int availablePlaces = rs.getInt(NUMBER_OF_VISITORS);

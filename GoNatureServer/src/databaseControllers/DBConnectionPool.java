@@ -17,37 +17,18 @@ import java.util.Queue;
  * connections to the database.
  */
 public class DBConnectionPool {
-	/**
-	 * the connection pool instance
-	 */
+
 	private static DBConnectionPool instance;
-	/**
-	 * the DB's url
-	 */
+
 	private static final String URL = "jdbc:mysql://localhost:3306/gonature?allowLoadLocalInfile=true&serverTimezone=Asia/Jerusalem&useSSL=false";
-	/**
-	 * the DB's username
-	 */
 	private static final String USER = "root";
-	/**
-	 * the connection pool's initial size
-	 */
+
 	private static final int INITIAL_POOL_SIZE = 3;
-	/**
-	 * the connection pool's max size
-	 */
 	private static final int MAX_POOL_SIZE = 10;
-	/**
-	 * the DB's password
-	 */
+
 	private String password;
-	/**
-	 * the queue of available connections
-	 */
+
 	private Queue<Connection> availableConnections;
-	/**
-	 * the number of created connections
-	 */
 	private int createdConnections;
 
 	/**

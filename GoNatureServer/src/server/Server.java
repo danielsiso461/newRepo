@@ -5,7 +5,15 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import common.*;
+import common.CancelOrderMessage;
+import common.Employee;
+import common.Message;
+import common.OperationResponse;
+import common.Order;
+import common.Protocol;
+import common.Subscriber;
+import common.UpdateMessage;
+import common.WaitingListMessage;
 import ocsf.server.AbstractServer;
 import ocsf.server.ConnectionToClient;
 import serverCommon.ServerAndControllerConnection;
@@ -53,6 +61,11 @@ public final class Server extends AbstractServer {
 		}
 
 		Message message = (Message) msg;
+
+		if (message.getType() == Protocol.CLIENT_LOGOUT_USER) {
+			processClientLogout(client);
+			return;
+		}
 
 		if (message.getType() == Protocol.CLIENT_DISCONNECT_USER) {
 			processClientDisconnection(client);
@@ -128,6 +141,8 @@ public final class Server extends AbstractServer {
 		if (!currIdConnection.containsKey(user.getUserId())) {
 			currIdConnection.put(user.getUserId(), client);
 		}
+
+		checkForReminderOnLogin(user.getUserId());
 
 		return true;
 	}
@@ -216,6 +231,8 @@ public final class Server extends AbstractServer {
 			currIdConnection.put(id, client);
 		}
 
+		checkForReminderOnLogin(user.getUserId());
+
 		System.out.println("Bound user ID " + id + " to client connection.");
 
 		return true;
@@ -234,7 +251,7 @@ public final class Server extends AbstractServer {
 
 		OperationResponse response = (OperationResponse) responseMessage.getData();
 
-		if (!response.isSuccess() || response.getData() == null) {
+		if (!response.isSuccess()) {
 			return true;
 		}
 
@@ -260,7 +277,39 @@ public final class Server extends AbstractServer {
 			);
 		}
 
+		if (requestMessage.getType() == Protocol.OCCASIONAL_CUSTOMER_ACCESS_REQUEST
+				&& requestMessage.getData() != null) {
+
+			return bindIdToClientConnection(
+					String.valueOf(requestMessage.getData()),
+					client
+			);
+		}
+
 		return true;
+	}
+
+	private void processClientLogout(ConnectionToClient client) {
+		if (client == null) {
+			return;
+		}
+
+		User user = (User) client.getInfo("User");
+
+		if (user != null) {
+			if (user.getUserId() != null) {
+				currIdConnection.remove(user.getUserId());
+			}
+
+			serverController.removeUserOnUserDisconnected(user);
+			client.setInfo("User", null);
+		}
+
+		try {
+			client.sendToClient(new Message(null, Protocol.CLIENT_LOGOUT_USER_SUCCESS));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -326,6 +375,50 @@ public final class Server extends AbstractServer {
 				client.getInetAddress().getHostAddress(),
 				client.isAlive()
 		);
+	}
+
+	/**
+	 * Sends a reminder to a connected user.
+	 * 
+	 * @param id the user's id
+	 * @param message the reminder message
+	 * @return 1 on success, -1 on failure
+	 */
+	public int sendReminderToUser(String id, Message message) {
+		ConnectionToClient connection = currIdConnection.get(id);
+
+		if (connection == null || message == null) {
+			return -1;
+		}
+
+		try {
+			connection.sendToClient(message);
+			return 1;
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+			return -1;
+		}
+	}
+
+	/**
+	 * Checks whether a user is currently connected.
+	 * 
+	 * @param id the user's id
+	 * @return true if connected, otherwise false
+	 */
+	public boolean isUserConnected(String id) {
+		return currIdConnection.containsKey(id);
+	}
+
+	/**
+	 * Checks whether a user has pending reminders after login.
+	 * 
+	 * @param id the user's id
+	 */
+	private void checkForReminderOnLogin(String id) {
+		if (id != null && !id.isBlank()) {
+			serverController.checkForUserReminder(id);
+		}
 	}
 
 	@Override

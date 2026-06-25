@@ -6,9 +6,34 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import common.*;
+import common.CancelOrderMessage;
+import common.CommonConstants;
+import common.Employee;
+import common.EmployeeLoginRequest;
+import common.EntryPriceReceipt;
+import common.EntryPriceRequest;
+import common.ExistingCustomerLoginRequest;
+import common.GuideRegistrationRequest;
+import common.Message;
+import common.OperationResponse;
+import common.Order;
+import common.Park;
+import common.ParkEntranceMessage;
+import common.ParkParameterChangeRequest;
+import common.ParkVisitorCounterSnapshot;
+import common.ParkVisitorCounterUpdateRequest;
+import common.Protocol;
+import common.RegisterSubscriberRequest;
+import common.ReportRequest;
+import common.Subscriber;
+import common.UpdateMessage;
+import common.WaitingListMessage;
 import databaseControllers.BillConnection;
 import databaseControllers.DBConnectionPool;
 import databaseControllers.EmployeeConnection;
@@ -25,6 +50,7 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
+import timerController.TimerController;
 
 /**
  * This class connects the networking part of the server and the server GUI.
@@ -60,11 +86,21 @@ public class ServerController implements ServerAndControllerConnection {
 	private ReportConnection rc;
 	private BillConnection bc;
 	private OrderExceedsParkCapacityCheck orderChecker;
-
+	
+	private TimerController tc;
+	
 	private int allTimeUserCount = 1;
 
 	private ClientConnectionTableController serverGUIController;
 
+	/**
+	 * Creates a ServerController object.
+	 *
+	 * The constructor initializes the server, creates the database connection
+	 * objects, and starts listening for clients.
+	 *
+	 * @param serverGUIController the server GUI controller
+	 */
 	public ServerController(ClientConnectionTableController serverGUIController) {
 		this.serverGUIController = serverGUIController;
 
@@ -93,7 +129,16 @@ public class ServerController implements ServerAndControllerConnection {
 			e.printStackTrace();
 			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
 		}
-
+		
+		try {
+			tc = new TimerController(this);
+			tc.start();
+			addLog("Timer controller started.");
+		} catch(Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
+		}
+		
 		try {
 			server.listen();
 			addLog("Server started listening for clients.");
@@ -103,12 +148,23 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Adds a message to the server log area in the GUI.
+	 *
+	 * @param message the message to add to the server log
+	 */
 	public void addLog(String message) {
 		if (serverGUIController != null) {
 			serverGUIController.addLog(message);
 		}
 	}
 
+	/**
+	 * Presents the server connection details in the GUI.
+	 *
+	 * @param hostName the server host name
+	 * @param ip the server IP address
+	 */
 	@Override
 	public void presentServerConnection(String hostName, String ip) {
 		if (serverGUIController != null) {
@@ -118,6 +174,12 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("Server connection details updated. Host: " + hostName + ", IP: " + ip);
 	}
 
+	/**
+	 * Adds a connected user to the server connected users set.
+	 *
+	 * @param u the connected user
+	 * @return true if the user was added successfully, false otherwise
+	 */
 	@Override
 	public boolean addUserOnUserConnected(User u) {
 		if (u == null) {
@@ -142,6 +204,11 @@ public class ServerController implements ServerAndControllerConnection {
 		return userIdNotConnected;
 	}
 
+	/**
+	 * Removes a disconnected user from the server connected users set.
+	 *
+	 * @param u the disconnected user
+	 */
 	@Override
 	public void removeUserOnUserDisconnected(User u) {
 		if (u == null) {
@@ -161,6 +228,24 @@ public class ServerController implements ServerAndControllerConnection {
 		addLog("User removed from connected users set.");
 	}
 
+	/**
+	 * Prints all connected users to the console and log.
+	 *
+	 * @param message the message to print before the users list
+	 */
+	private void printUsers(String message) {
+		System.out.println(message);
+		addLog(message);
+
+		for (User user : users) {
+			System.out.println(user.toString());
+			addLog("Connected user: " + user);
+		}
+	}
+
+	/**
+	 * Notifies all connected clients that public park data was updated.
+	 */
 	public void notifyParksUpdated() {
 		try {
 			List<Park> parks = pc.getAllActiveParksInfo();
@@ -175,6 +260,9 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Notifies all connected clients that park visitor counters were updated.
+	 */
 	private void notifyParkVisitorCountersUpdated() {
 		try {
 			server.sendToAllClients(
@@ -190,6 +278,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a request received from a client.
+	 *
+	 * @param m the message received from the client
+	 * @return a response message to send back to the client
+	 */
 	@Override
 	public Message handleRequest(Message m) {
 		if (m == null) {
@@ -294,14 +388,26 @@ public class ServerController implements ServerAndControllerConnection {
 			return handleGetParkOrders(m);
 
 		case GET_ALL_ORDERS_REQUEST:
-			return handleGetAllOrdersForServiceRepresentative();
-
+			return handleGetAllOrdersForServiceRepresentative();	
+		
+		case ACCEPT_ORDER_REMINDER:
+			return handleAcceptOrderReminder(m);
+			
+		case DECLINE_ORDER_REMINDER:
+			return handleDeclineOrderReminder(m);
+			
 		default:
 			addLog("ERROR - Unknown client request: " + type);
 			return null;
 		}
 	}
 
+	/**
+	 * Handles an order update request.
+	 *
+	 * @param m the client message
+	 * @return update success or failure message
+	 */
 	private Message handleUpdateOrder(Message m) {
 		Protocol typeRet = Protocol.UPDATE_ORDER_SUCCESS;
 		UpdateMessage um = (UpdateMessage) m.getData();
@@ -352,6 +458,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a park manager request for viewing orders of a specific park.
+	 *
+	 * @param m the client message containing park ID
+	 * @return a message containing the park orders
+	 */
 	private Message handleGetParkOrders(Message m) {
 		try {
 			if (!(m.getData() instanceof Integer)) {
@@ -372,6 +484,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a request for making an order.
+	 *
+	 * @param m the client message
+	 * @return a message containing the user order on success, or a fail message
+	 */
 	private Message handleMakeOrder(Message m) {
 		if (!(m.getData() instanceof Order)) {
 			return new Message(null, Protocol.MAKE_ORDER_FAIL);
@@ -517,6 +635,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a client request to search for a subscriber by subscriber ID.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the search result
+	 */
 	private Message handleSearchSubscriber(Message m) {
 		try {
 			if (!(m.getData() instanceof Integer)) {
@@ -552,6 +676,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a client request to register an existing subscriber as a guide.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the registration result
+	 */
 	private Message handleRegisterGuide(Message m) {
 		if (!(m.getData() instanceof GuideRegistrationRequest)) {
 			OperationResponse response =
@@ -602,14 +732,23 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 
 		CancelOrderMessage cancelOrderMessage = (CancelOrderMessage) m.getData();
-
+		return cancelOrder(cancelOrderMessage);
+		
+	}
+	
+	/**
+	 * helper function that handles canceling an order
+	 * @param cancelOrderMessage the info of the order to cancel
+	 * @return the response to the user (success / failure)
+	 */
+	private Message cancelOrder(CancelOrderMessage cancelOrderMessage) {
 		int changedByEmployeeId = 1;
-
+		
 		try {
 			expireOldWaitingOffers();
 
 			Order cancelledOrder = oc.getOrderByNumber(cancelOrderMessage.getOrderId());
-
+			
 			boolean cancelled = oc.cancelOrder(
 					cancelOrderMessage.getOrderId(),
 					changedByEmployeeId,
@@ -631,6 +770,9 @@ public class ServerController implements ServerAndControllerConnection {
 
 				return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_SUCCESS);
 			}
+			
+			addLog("Order cancellation failed. Order was not found or was not updated. Order ID: "
+					+ cancelOrderMessage.getOrderId());
 
 			return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_FAILURE);
 
@@ -692,6 +834,17 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/*
+	 * Handles a client request to get all offered waiting list requests for a
+	 * specific subscriber.
+	 *
+	 * The request data is the subscriber ID. The server returns all waiting list
+	 * requests that are currently in "offered" status and can still be accepted or
+	 * rejected by the visitor.
+	 *
+	 * @param m the message received from the client, containing the subscriber ID
+	 * @return a message with GET_WAITING_OFFERS_SUCCESS or GET_WAITING_OFFERS_FAILURE
+	 */
 	private Message handleGetWaitingOffers(Message m) {
 		if (!(m.getData() instanceof Integer)) {
 			return new Message(null, Protocol.GET_WAITING_OFFERS_FAILURE);
@@ -714,6 +867,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a client request to reject an offered waiting list request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with reject success or failure
+	 */
 	private Message handleRejectWaitingOffer(Message m) {
 		if (!(m.getData() instanceof WaitingListMessage)) {
 			return new Message(m.getData(), Protocol.REJECT_WAITING_OFFER_FAILURE);
@@ -783,6 +942,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles an occasional customer access request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the access result
+	 */
 	private Message handleOccasionalCustomerAccess(Message m) {
 		try {
 			if (!(m.getData() instanceof String)) {
@@ -803,8 +968,11 @@ public class ServerController implements ServerAndControllerConnection {
 				return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 			}
 
-			OperationResponse response =
-					new OperationResponse(false, "No orders found for this ID number", null);
+			OperationResponse response = new OperationResponse(
+			        true,
+			        "No existing orders were found. You can create a new order.",
+			        orders
+			);
 
 			return new Message(response, Protocol.OCCASIONAL_CUSTOMER_ACCESS_RESPONSE);
 
@@ -826,6 +994,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles an employee login request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the login result
+	 */
 	private Message handleEmployeeLogin(Message m) {
 		if (!(m.getData() instanceof EmployeeLoginRequest)) {
 			OperationResponse response =
@@ -864,6 +1038,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles an existing customer login request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the login result
+	 */
 	private Message handleExistingCustomerLogin(Message m) {
 		if (!(m.getData() instanceof ExistingCustomerLoginRequest)) {
 			OperationResponse response =
@@ -902,6 +1082,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a register subscriber request.
+	 *
+	 * @param m the message received from the client
+	 * @return a message with the registration result
+	 */
 	private Message handleRegisterSubscriber(Message m) {
 		if (!(m.getData() instanceof RegisterSubscriberRequest)) {
 			OperationResponse response =
@@ -944,6 +1130,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Handles a report request.
+	 *
+	 * @param m the client message
+	 * @return report response message
+	 */
 	private Message handleGetReport(Message m) {
 		try {
 			if (!(m.getData() instanceof ReportRequest)) {
@@ -1597,6 +1789,12 @@ public class ServerController implements ServerAndControllerConnection {
 		return false;
 	}
 
+	/**
+	 * Checks if the details of a given order are valid.
+	 *
+	 * @param o the order to check
+	 * @return true if valid, false otherwise
+	 */
 	private boolean checkOrderDetailsAreValid(Order o) {
 		if (o == null) {
 			return false;
@@ -1689,6 +1887,9 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/**
+	 * Closes all relevant server parts properly.
+	 */
 	@Override
 	public void closeServer() {
 		try {
@@ -1703,9 +1904,20 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("ERROR - Failed to close server: " + e.getMessage());
 		} finally {
 			closeDBConnection();
+			if(tc != null)
+				tc.shutDown();
 		}
 	}
 
+	/*
+	 * Handles a park check-in request using a confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. If the order is valid,
+	 * the server creates a new visit record.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the check-in action
+	 */
 	private Message handleCheckInOrder(Message m) {
 		if (!(m.getData() instanceof ParkEntranceMessage)) {
 			return new Message(null, Protocol.CHECK_IN_ORDER_FAILURE);
@@ -1777,6 +1989,15 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/*
+	 * Handles a park check-out request using a confirmation code.
+	 *
+	 * The confirmation code is used as a QR code simulation. If an open visit exists,
+	 * the server closes it by setting exit_time.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the check-out action
+	 */
 	private Message handleCheckOutVisit(Message m) {
 		if (!(m.getData() instanceof ParkEntranceMessage)) {
 			return new Message(null, Protocol.CHECK_OUT_VISIT_FAILURE);
@@ -1821,6 +2042,15 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/*
+	 * Handles an occasional visit request.
+	 *
+	 * Occasional visitors do not have an order. The server checks whether the park has
+	 * available capacity before creating the visit.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message for the occasional visit action
+	 */
 	private Message handleOccasionalVisit(Message m) {
 		if (!(m.getData() instanceof ParkEntranceMessage)) {
 			return new Message(null, Protocol.OCCASIONAL_VISIT_FAILURE);
@@ -1868,6 +2098,12 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 	}
 
+	/*
+	 * Handles a request for the current number of visitors inside a park.
+	 *
+	 * @param m the client message containing ParkEntranceMessage
+	 * @return a success or failure message with the current visitors count
+	 */
 	private Message handleGetCurrentVisitors(Message m) {
 		if (!(m.getData() instanceof ParkEntranceMessage)) {
 			return new Message(null, Protocol.GET_CURRENT_VISITORS_FAILURE);
@@ -1890,5 +2126,217 @@ public class ServerController implements ServerAndControllerConnection {
 			entranceMessage.setResponseMessage("Server error while loading current visitors.");
 			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_FAILURE);
 		}
+	}
+	
+	/**
+	 * this variable is a map that identifies reminders by user <user_id, Orders_to_remind>
+	 * we use a concurrent hashmap for thread safe operations as this is a shared resource
+	 * we use a concurrent linked queue - to keep the insertion order and get thread safe operations
+	 */
+	ConcurrentHashMap<String, ConcurrentLinkedQueue<Order>> remindersByUser = new ConcurrentHashMap<>();
+	
+	/**
+	 * this function adds reminders to orders ~24 hours before they happen
+	 * according to the target time and status
+	 * @param date the data to target
+	 * @param hour the hour to target
+	 * @param status the status to target
+	 */
+	public void addReminder(LocalDate date, int hour, String status) {
+		List<Order> newReminders = new ArrayList<>();
+		try {
+			addLog("Setting reminder for orders. Date: " + date + " hour: " + hour);
+			newReminders = oc.getOrdersByDateAndHourAndStatus(date, hour, status);
+		} catch(Exception e) {
+			addLog("Error with adding new reminders: " + e.getMessage());
+		}
+		
+		Set<String> newUsersToRemind = new HashSet<>();
+		
+		//simulate messages
+		String id;
+		addLog("Sending reminders start (email / phone)");
+		for(Order o : newReminders) {
+			id = o.getUserId().toString();
+			newUsersToRemind.add(id);
+			remindersByUser.computeIfAbsent(id, key -> new ConcurrentLinkedQueue<>()).add(o);
+			String phoneLog = o.getPhoneNumber() == null ? "" : (", " + o.getPhoneNumber());
+			addLog("SIMULATION! Sending reminder messages to: " + o.getEmail() +
+					phoneLog + " regarding order number: " + o.getOrderId());
+		}
+		addLog("Sending reminders end  (email / phone)");
+		
+		sendRemindersToConnectedUsers(newUsersToRemind);
+	}
+	
+	/**
+	 * this function sends reminder to all relevant connected users
+	 * @param newUsersToRemind the users to remind
+	 */
+	private void sendRemindersToConnectedUsers(Set<String> newUsersToRemind) {
+		if(newUsersToRemind == null || newUsersToRemind.isEmpty())
+			return;
+		for(String id : newUsersToRemind) {
+			if(!server.isUserConnected(id)) {
+				addLog("User " + id + " is not connected, cannot send reminder");
+				continue;
+			}
+			remindConnectedUser(id);	
+		}
+	}
+	
+	/**
+	 * this function sends each reminder given user
+	 * @param id the user id
+	 */
+	private void remindConnectedUser(String id) {
+		Queue<Order> orders = remindersByUser.get(id);
+		if(orders == null || orders.isEmpty())
+			return;
+		
+		for(Order o : orders) {
+			if (isExpired(o)) {
+			    continue;
+			}
+			int ret = server.sendReminderToUser(id, new Message(o, Protocol.ORDER_REMINDER));
+			if(ret == -1) {
+				addLog("Unknown error occurred trying to send reminder to user " + id);
+			}
+			else if(ret == 1) {
+				addLog("Reminder sent to user " + id + " successfully");
+			}
+		}
+	}
+	
+	/**
+	 * this method checks if a given order is expired
+	 * @param o the order
+	 * @return true if expired false otherwise
+	 */
+	private boolean isExpired(Order o) {
+	    LocalDate expiredDate = tc.getExpiredDate();
+	    int expiredHour = tc.getExpiredHourAsInt();
+
+	    return o.getOrderDate().isBefore(expiredDate)
+	        || (o.getOrderDate().equals(expiredDate)
+	            && o.getOrderHour() <= expiredHour);
+	}
+	
+	
+	/**
+	 * this method removes an order from the reminder list
+	 * @param o the order to remove
+	 * @return true if the order was removed and false otherwise
+	 * 
+	 */
+	private boolean removeFromMap(Order o) {
+		Queue<Order> orders = remindersByUser.get(o.getUserId().toString());
+		if (orders != null) {
+	        orders.remove(o);
+
+	        if (orders.isEmpty()) {
+	            remindersByUser.remove(o.getUserId().toString(), orders);
+	        }
+	        return true;
+	    }
+		return false;
+	}
+	
+	/**
+	 * this method checks if a given user has reminders
+	 * @param id the user's id
+	 */
+	public void checkForUserReminder(String id) {
+		if(!remindersByUser.containsKey(id))
+			return;
+		remindConnectedUser(id);
+	}
+	
+	/**
+	 * this function auto cancels due orders that users didn't answer their reminders
+	 * according to the target time and status
+	 * @param date the data to target
+	 * @param hour the hour to target
+	 * @param status the status to target
+	 */
+	public void removeReminder(LocalDate date, int hour, String status) {
+		boolean toRemove = false;
+		
+		String id;
+		ConcurrentLinkedQueue<Order> orders;
+		Order o;
+		for(Map.Entry<String, ConcurrentLinkedQueue<Order>> entry : remindersByUser.entrySet()) {
+			id = entry.getKey();
+			orders = entry.getValue();
+			
+			while(!orders.isEmpty()) {
+				o = orders.peek();
+				if(o.getOrderDate().isAfter(date) ||
+						   (o.getOrderDate().equals(date) && o.getOrderHour() > hour))
+					break;
+				if(o.getOrderDate().equals(date) && o.getOrderHour() == hour &&
+						o.getOrderStatus().equals(status)) {
+					toRemove = true;
+					addLog("SIMULATION! Order auto cancelled: " + 
+							o.getEmail() + ", " + o.getPhoneNumber() +
+							" regarding order number: " + o.getOrderId());
+				}
+				orders.poll();
+			}
+			
+			if (orders.isEmpty()) {
+	            remindersByUser.remove(id, orders);
+	        }
+		}
+		
+		try {
+			addLog("Auto cancelling orders with expired reminders.");
+			if(toRemove)
+				oc.autoCancelOrderList(date, hour, status);
+		} catch(Exception e) {
+			addLog("Error with auto cancelling orders: " + e.getMessage());
+		}
+	}
+	
+	/**
+	 * this function updates no shows in the DB
+	 * @param status the status of the orders we want to target in the update
+	 */
+	public void updateNoShows(String status) {
+		try {
+			addLog("Updating orders to no-shows.");
+			addLog(oc.updateOrdersToNoShowsAccordingToStatus(status));
+		} catch(Exception e) {
+			addLog("Error with updating orders to no-shows: " + e.getMessage());
+		}
+	}
+	
+	private Message handleAcceptOrderReminder(Message m) {
+		boolean removedOnAccept = removeFromMap((Order) m.getData());
+		if(removedOnAccept) {
+	        addLog("Order acceptance confirmed, Order id: " + ((Order) m.getData()).getUserId());
+	        return new Message((Order) m.getData(), Protocol.ACCEPT_ORDER_REMINDER_CONFIRMATION);
+	    }
+		addLog("Order acceptance failed, Order id: " + ((Order) m.getData()).getOrderId());
+		return new Message((Order) m.getData(), Protocol.ERROR_ORDER_REMINDER_CONFIRMATION);
+	}
+	
+	private Message handleDeclineOrderReminder(Message m) {
+		if(!(m.getData() instanceof Order)) {
+			System.out.println("Unknown error declining reminder");
+			return null;
+		}
+		Order o = (Order) m.getData();
+		boolean removedOnDecline = removeFromMap(o);
+		CancelOrderMessage cancelOrderMessage = new 
+				CancelOrderMessage(o.getOrderId(), -1, o.getUserId().toString(), "Reminder");
+		cancelOrder(cancelOrderMessage);
+		System.out.println("done with cancelOrder");
+		if(removedOnDecline) {
+			addLog("Order cancellation confirmed, Order id: " + o.getUserId());
+			return new Message(m.getData(), Protocol.DECLINE_ORDER_REMINDER_CONFIRMATION);
+		}
+		addLog("Order cancellation failed, Order id: " + o.getOrderId());
+		return new Message((Order) m.getData(), Protocol.ERROR_ORDER_REMINDER_CONFIRMATION);
 	}
 }

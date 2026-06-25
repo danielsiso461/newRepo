@@ -19,12 +19,24 @@ import serverController.ServerController;
  */
 public class DBPasswordController {
 
+	/**
+	 * The password field where the user enters the DB password.
+	 */
 	@FXML
 	private PasswordField textID;
 
+	/**
+	 * The label that shows an error message if the password is wrong.
+	 */
 	@FXML
 	private Label errorLabel;
 
+	/**
+	 * Handles the click on the send button.
+	 *
+	 * Gets the password from the password field, checks if it is correct,
+	 * saves it, and opens the main server GUI.
+	 */
 	@FXML
 	private void handleSend() {
 		String password = textID.getText();
@@ -52,6 +64,12 @@ public class DBPasswordController {
 		openServerTableScreen();
 	}
 
+	/**
+	 * Opens the main server table screen.
+	 *
+	 * Loads the server table FXML file, creates the ServerController,
+	 * connects it to the GUI controller, and replaces the password screen.
+	 */
 	private void openServerTableScreen() {
 		try {
 			FXMLLoader loader =
