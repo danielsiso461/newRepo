@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -10,7 +11,11 @@ import common.RegisterSubscriberRequest;
 import common.Subscriber;
 
 /**
- * DB connector for the subscriber table.
+ * Handles database operations related to subscribers.
+ * 
+ * This connector supports subscriber retrieval, login validation, duplicate
+ * checks, registration, and access to subscriber contact and display
+ * information.
  */
 public class SubscriberConnection extends AbstractDBConnection {
 
@@ -19,6 +24,9 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 */
 	private static SubscriberConnection instance;
 
+	/*
+	 * Subscriber table column names.
+	 */
 	private final String SUBSCRIBER_ID = "subscriber_id";
 	private final String SUBSCRIBER_NAME = "subscriber_name";
 	private final String SUBSCRIBER_ID_NUMBER = "subscriber_id_number";
@@ -31,7 +39,9 @@ public class SubscriberConnection extends AbstractDBConnection {
 	private final String PASSWORD = "password";
 
 	/**
-	 * Private constructor for Singleton.
+	 * Creates a new SubscriberConnection instance.
+	 * 
+	 * The constructor is private because this class is implemented as a singleton.
 	 * 
 	 * @throws SQLException if the connection to the database fails
 	 */
@@ -42,7 +52,10 @@ public class SubscriberConnection extends AbstractDBConnection {
 	/**
 	 * Returns the single instance of SubscriberConnection.
 	 * 
-	 * @return the only SubscriberConnection instance
+	 * If no instance exists, or if the current database connection is closed, a new
+	 * instance is created.
+	 * 
+	 * @return the active SubscriberConnection instance
 	 * @throws SQLException if creating the database connection fails
 	 */
 	public static SubscriberConnection getInstance() throws SQLException {
@@ -54,7 +67,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Returns the table name used by this DB connector.
+	 * Returns the database table name used by this connector.
 	 * 
 	 * @return the subscriber table name
 	 */
@@ -67,7 +80,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * Converts the current ResultSet row into a Subscriber object.
 	 * 
 	 * @param rs the ResultSet positioned on the current subscriber row
-	 * @return a Subscriber object
+	 * @return a Subscriber object containing the selected subscriber data
 	 * @throws SQLException if reading data from the ResultSet fails
 	 */
 	private Subscriber convertResultSetToSubscriber(ResultSet rs) throws SQLException {
@@ -79,7 +92,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Returns a subscriber by subscriber ID.
+	 * Retrieves a subscriber by subscriber ID.
 	 * 
 	 * @param subscriberId the subscriber ID to search for
 	 * @return a Subscriber object if found, otherwise null
@@ -115,7 +128,8 @@ public class SubscriberConnection extends AbstractDBConnection {
 	/**
 	 * Searches for a subscriber by subscriber ID.
 	 * 
-	 * This method is kept for compatibility with older code.
+	 * This method delegates to getSubscriberById and is kept for compatibility with
+	 * older code.
 	 * 
 	 * @param subscriberId the subscriber ID to search for
 	 * @return a Subscriber object if found, otherwise null
@@ -126,7 +140,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Checks whether a subscriber exists.
+	 * Checks whether a subscriber exists in the database.
 	 * 
 	 * @param subscriberId the subscriber ID to check
 	 * @return true if the subscriber exists, otherwise false
@@ -154,7 +168,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Checks existing customer login details and returns the matching subscriber.
+	 * Validates subscriber login details and returns the matching subscriber.
 	 * 
 	 * @param username the username entered by the customer
 	 * @param password the password entered by the customer
@@ -195,7 +209,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * 
 	 * @param username the username to check
 	 * @return true if the username already exists, otherwise false
-	 * @throws SQLException if the query fails
+	 * @throws SQLException if the select query fails
 	 */
 	public boolean isUsernameExists(String username) throws SQLException {
 		ensureConnection();
@@ -223,7 +237,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * 
 	 * @param idNumber the ID number to check
 	 * @return true if the ID number already exists, otherwise false
-	 * @throws SQLException if the query fails
+	 * @throws SQLException if the select query fails
 	 */
 	public boolean isIdNumberExists(String idNumber) throws SQLException {
 		ensureConnection();
@@ -249,11 +263,12 @@ public class SubscriberConnection extends AbstractDBConnection {
 	/**
 	 * Registers a new subscriber in the subscriber table.
 	 * 
-	 * The method assumes that duplicate checks were already performed before
-	 * calling it.
+	 * The method receives registration details, builds the subscriber's full name,
+	 * converts the ID number to the internal subscriber ID, and inserts the new
+	 * subscriber record into the database.
 	 * 
 	 * @param request the subscriber registration details
-	 * @throws SQLException if the insert query fails
+	 * @throws SQLException if the request is missing or if the insert query fails
 	 */
 	public void registerSubscriber(RegisterSubscriberRequest request) throws SQLException {
 		ensureConnection();
@@ -303,7 +318,7 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Adds a new subscriber.
+	 * Adds a new subscriber using direct subscriber details.
 	 * 
 	 * This method is kept for older parts of the project that may still create
 	 * subscribers without username and password.
@@ -311,11 +326,11 @@ public class SubscriberConnection extends AbstractDBConnection {
 	 * @param subscriberId the subscriber ID
 	 * @param subscriberName the subscriber full name
 	 * @param idNumber the subscriber ID number
-	 * @param phone the subscriber phone
-	 * @param email the subscriber email
+	 * @param phone the subscriber phone number
+	 * @param email the subscriber email address
 	 * @param familyMembersCount the number of family members
-	 * @param paymentMethod the payment method
-	 * @param creditCardLast4 last four digits of credit card
+	 * @param paymentMethod the selected payment method
+	 * @param creditCardLast4 the last four digits of the credit card
 	 * @return true if the insert request was executed
 	 * @throws SQLException if the insert query fails
 	 */
@@ -354,10 +369,10 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Returns the subscriber phone number by subscriber ID.
+	 * Retrieves the subscriber phone number by subscriber ID.
 	 * 
-	 * @param subscriberId the subscriber ID
-	 * @return the subscriber phone number, or null if not found
+	 * @param subscriberId the subscriber ID to search for
+	 * @return the subscriber phone number, or null if no subscriber was found
 	 * @throws SQLException if the select query fails
 	 */
 	public String getPhoneNumberById(int subscriberId) throws SQLException {
@@ -386,13 +401,14 @@ public class SubscriberConnection extends AbstractDBConnection {
 	}
 	
 	/**
-	 * Returns detailed subscriber information as display text.
+	 * Retrieves detailed subscriber information as display text.
 	 * 
-	 * This method is used by the service representative user information screen.
+	 * This method is used by the service representative user information screen and
+	 * returns formatted subscriber details for display.
 	 * 
 	 * @param subscriberId the subscriber ID to search for
-	 * @return display text if the subscriber exists, otherwise null
-	 * @throws SQLException if the query fails
+	 * @return formatted display text if the subscriber exists, otherwise null
+	 * @throws SQLException if the select query fails
 	 */
 	public String getSubscriberInformationTextById(int subscriberId) throws SQLException {
 		ensureConnection();
@@ -442,3 +458,4 @@ public class SubscriberConnection extends AbstractDBConnection {
 		return null;
 	}
 }
+

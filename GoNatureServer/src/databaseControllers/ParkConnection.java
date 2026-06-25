@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.math.BigDecimal;
@@ -12,10 +13,17 @@ import common.ParkVisitorCounterSnapshot;
 import common.ParkVisitorCounterUpdateRequest;
 
 /**
- * DB connector for the park table.
+ * Handles database operations related to parks.
+ * 
+ * This connector supports retrieving park information, checking capacity,
+ * managing visitor counters, logging counter updates, and updating approved
+ * park parameters.
  */
 public class ParkConnection extends AbstractDBConnection {
 
+	/*
+	 * Park table column names.
+	 */
 	private static final String PARK_ID = "park_id";
 	private static final String PARK_NAME = "park_name";
 	private static final String MAX_CAPACITY = "max_capacity";
@@ -26,6 +34,9 @@ public class ParkConnection extends AbstractDBConnection {
 	private static final String IS_ACTIVE = "is_active";
 	private static final String PROMOTIONS = "promotions";
 
+	/*
+	 * Visitor counter log table and column names.
+	 */
 	private static final String PARK_VISITOR_COUNTER_LOG = "park_visitor_counter_log";
 	private static final String EMPLOYEE_ID = "employee_id";
 	private static final String ACTION_TYPE = "action_type";
@@ -33,6 +44,9 @@ public class ParkConnection extends AbstractDBConnection {
 	private static final String VISITORS_BEFORE = "visitors_before";
 	private static final String VISITORS_AFTER = "visitors_after";
 
+	/*
+	 * Supported park parameter names.
+	 */
 	private static final String PARAMETER_MAX_CAPACITY = "max_capacity";
 	private static final String PARAMETER_PLACES_FOR_UNPLANNED_VISITORS =
 			"places_for_unplanned_visitors";
@@ -40,17 +54,46 @@ public class ParkConnection extends AbstractDBConnection {
 			"estimated_visit_duration_hours";
 	private static final String PARAMETER_PROMOTIONS = "promotions";
 
+	/**
+	 * Integer value that represents an active park in the database.
+	 */
 	private static final int ACTIVE_TRUE = 1;
 
+	/**
+	 * Minimum allowed number of visitors in a counter update.
+	 */
 	private static final int MIN_COUNTER_UPDATE_AMOUNT = 1;
+
+	/**
+	 * Maximum allowed number of visitors in a counter update.
+	 */
 	private static final int MAX_COUNTER_UPDATE_AMOUNT = 15;
 
+	/**
+	 * The single instance of ParkConnection.
+	 */
 	private static ParkConnection instance;
 
+	/**
+	 * Creates a new ParkConnection instance.
+	 * 
+	 * The constructor is private because this class is implemented as a singleton.
+	 * 
+	 * @throws SQLException if connecting to the database fails
+	 */
 	private ParkConnection() throws SQLException {
 		connect();
 	}
 
+	/**
+	 * Returns the single instance of ParkConnection.
+	 * 
+	 * If no instance exists, or if the current database connection is closed, a new
+	 * instance is created.
+	 * 
+	 * @return the active ParkConnection instance
+	 * @throws SQLException if creating the database connection fails
+	 */
 	public static ParkConnection getInstance() throws SQLException {
 		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
 			instance = new ParkConnection();
@@ -59,11 +102,23 @@ public class ParkConnection extends AbstractDBConnection {
 		return instance;
 	}
 
+	/**
+	 * Returns the database table name used by this connector.
+	 * 
+	 * @return the park table name
+	 */
 	@Override
 	public String getTableName() {
 		return ConstantsDBTableNames.PARK;
 	}
 
+	/**
+	 * Converts the current ResultSet row into a Park object.
+	 * 
+	 * @param rs the ResultSet positioned on a park row
+	 * @return a Park object containing the row data
+	 * @throws SQLException if reading data from the ResultSet fails
+	 */
 	private Park convertResultSetToPark(ResultSet rs) throws SQLException {
 		return new Park(
 				rs.getInt(PARK_ID),
@@ -78,6 +133,13 @@ public class ParkConnection extends AbstractDBConnection {
 		);
 	}
 
+	/**
+	 * Converts the current ResultSet row into a park visitor counter snapshot.
+	 * 
+	 * @param rs the ResultSet positioned on a park counter row
+	 * @return a ParkVisitorCounterSnapshot object containing the counter data
+	 * @throws SQLException if reading data from the ResultSet fails
+	 */
 	private ParkVisitorCounterSnapshot convertResultSetToCounterSnapshot(ResultSet rs)
 			throws SQLException {
 
@@ -89,6 +151,12 @@ public class ParkConnection extends AbstractDBConnection {
 		);
 	}
 
+	/**
+	 * Retrieves all active parks from the database.
+	 * 
+	 * @return a list of active parks
+	 * @throws SQLException if the select query fails
+	 */
 	public List<Park> getAllActiveParks() throws SQLException {
 		ensureConnection();
 
@@ -116,6 +184,12 @@ public class ParkConnection extends AbstractDBConnection {
 		return parks;
 	}
 
+	/**
+	 * Retrieves all parks from the database, including inactive parks.
+	 * 
+	 * @return a list of all parks
+	 * @throws SQLException if the select query fails
+	 */
 	public List<Park> getAllFullParks() throws SQLException {
 		ensureConnection();
 
@@ -134,6 +208,13 @@ public class ParkConnection extends AbstractDBConnection {
 		return parks;
 	}
 
+	/**
+	 * Retrieves full park details by park ID.
+	 * 
+	 * @param parkId the park ID to search for
+	 * @return the matching Park object, or null if no park was found
+	 * @throws SQLException if the select query fails
+	 */
 	public Park getFullParkById(int parkId) throws SQLException {
 		ensureConnection();
 
@@ -159,14 +240,39 @@ public class ParkConnection extends AbstractDBConnection {
 		return null;
 	}
 
+	/**
+	 * Retrieves information for all active parks.
+	 * 
+	 * This method delegates to getAllActiveParks and is kept for compatibility with
+	 * existing code.
+	 * 
+	 * @return a list of active parks
+	 * @throws SQLException if the select query fails
+	 */
 	public List<Park> getAllActiveParksInfo() throws SQLException {
 		return getAllActiveParks();
 	}
 
+	/**
+	 * Retrieves park details by park ID.
+	 * 
+	 * This method delegates to getFullParkById.
+	 * 
+	 * @param parkId the park ID to search for
+	 * @return the matching Park object, or null if no park was found
+	 * @throws SQLException if the select query fails
+	 */
 	public Park getParkById(int parkId) throws SQLException {
 		return getFullParkById(parkId);
 	}
 
+	/**
+	 * Retrieves the full entry price of a specific park.
+	 * 
+	 * @param parkId the park ID to search for
+	 * @return the full entry price, or -1 if the park was not found
+	 * @throws SQLException if the select query fails
+	 */
 	public double getFullEntryPrice(int parkId) throws SQLException {
 		ensureConnection();
 
@@ -192,6 +298,13 @@ public class ParkConnection extends AbstractDBConnection {
 		return -1;
 	}
 
+	/**
+	 * Retrieves the promotion discount percentage of a specific park.
+	 * 
+	 * @param parkId the park ID to search for
+	 * @return the promotion percentage, or 0 if no promotion was found
+	 * @throws SQLException if the select query fails
+	 */
 	public double getPromotionPercent(int parkId) throws SQLException {
 		ensureConnection();
 
@@ -217,10 +330,25 @@ public class ParkConnection extends AbstractDBConnection {
 		return 0;
 	}
 
+	/**
+	 * Checks whether a park has an active promotion.
+	 * 
+	 * @param parkId the park ID to check
+	 * @return true if the park has a promotion greater than zero, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
 	public boolean hasPromotion(int parkId) throws SQLException {
 		return getPromotionPercent(parkId) > 0;
 	}
 
+	/**
+	 * Checks whether the park currently has enough available capacity.
+	 * 
+	 * @param parkId the park ID to check
+	 * @param requestedVisitors the number of visitors requested
+	 * @return true if the park has enough available capacity, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
 	public boolean hasAvailableCapacity(int parkId, int requestedVisitors)
 			throws SQLException {
 
@@ -252,6 +380,19 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Checks whether there is enough capacity for an order on a specific date.
+	 * 
+	 * The calculation reserves part of the park capacity for unplanned visitors and
+	 * compares the remaining capacity with already approved orders.
+	 * 
+	 * @param parkId the park ID to check
+	 * @param orderDate the requested visit date
+	 * @param requestedVisitors the number of visitors requested
+	 * @return true if the order can be approved without exceeding capacity,
+	 *         otherwise false
+	 * @throws SQLException if the select query fails
+	 */
 	public boolean hasAvailableOrderCapacity(int parkId,
 			java.time.LocalDate orderDate, int requestedVisitors)
 			throws SQLException {
@@ -293,12 +434,25 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Checks whether a park exists and is active.
+	 * 
+	 * @param parkId the park ID to check
+	 * @return true if the park exists and is active, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
 	public boolean isParkActive(int parkId) throws SQLException {
 		Park park = getFullParkById(parkId);
 
 		return park != null && park.isActive();
 	}
 
+	/**
+	 * Retrieves the names of all active parks.
+	 * 
+	 * @return a list of active park names
+	 * @throws SQLException if the select query fails
+	 */
 	public List<String> getActiveParksNames() throws SQLException {
 		ensureConnection();
 
@@ -326,6 +480,13 @@ public class ParkConnection extends AbstractDBConnection {
 		return activeParkNames;
 	}
 
+	/**
+	 * Retrieves a park ID by its park name.
+	 * 
+	 * @param parkName the park name to search for
+	 * @return the matching park ID, or -1 if no park was found
+	 * @throws SQLException if the select query fails
+	 */
 	public int getParkIdByName(String parkName) throws SQLException {
 		ensureConnection();
 
@@ -351,6 +512,12 @@ public class ParkConnection extends AbstractDBConnection {
 		return -1;
 	}
 
+	/**
+	 * Retrieves visitor counter snapshots for all active parks.
+	 * 
+	 * @return a list of visitor counter snapshots
+	 * @throws SQLException if the select query fails
+	 */
 	public List<ParkVisitorCounterSnapshot> getAllParkVisitorCounters()
 			throws SQLException {
 
@@ -380,6 +547,13 @@ public class ParkConnection extends AbstractDBConnection {
 		return counters;
 	}
 
+	/**
+	 * Retrieves the visitor counter snapshot of a specific active park.
+	 * 
+	 * @param parkId the park ID to search for
+	 * @return the matching counter snapshot, or null if no active park was found
+	 * @throws SQLException if the select query fails
+	 */
 	public ParkVisitorCounterSnapshot getParkVisitorCounter(int parkId)
 			throws SQLException {
 
@@ -408,6 +582,21 @@ public class ParkConnection extends AbstractDBConnection {
 		return null;
 	}
 
+	/**
+	 * Updates the current visitor counter of a park.
+	 * 
+	 * The update is performed inside a transaction. The method validates the
+	 * request, locks the relevant park row, updates the visitor amount, writes a log
+	 * record, and commits the transaction.
+	 * 
+	 * @param parkId the park ID to update
+	 * @param employeeId the employee ID performing the update
+	 * @param actionType the counter action type, either entry or exit
+	 * @param amount the number of visitors to add or remove
+	 * @return true if the visitor counter was updated successfully
+	 * @throws SQLException if validation fails, capacity rules are violated, or the
+	 *         update query fails
+	 */
 	public boolean updateCurrentVisitors(int parkId, int employeeId,
 			String actionType, int amount) throws SQLException {
 
@@ -457,6 +646,14 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Validates a visitor counter update request.
+	 * 
+	 * @param actionType the requested counter action type
+	 * @param amount the number of visitors in the update
+	 * @throws SQLException if the action type is invalid or the amount is outside
+	 *         the allowed range
+	 */
 	private void validateCounterUpdateRequest(String actionType, int amount)
 			throws SQLException {
 
@@ -470,6 +667,14 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Loads park counter data and locks the selected park row for update.
+	 * 
+	 * @param parkId the park ID to load
+	 * @return the counter data for the park, or null if the park was not found or
+	 *         is inactive
+	 * @throws SQLException if the select query fails
+	 */
 	private CounterData loadCounterDataForUpdate(int parkId) throws SQLException {
 		String sql = "SELECT "
 				+ CURRENT_VISITORS + ", "
@@ -498,6 +703,17 @@ public class ParkConnection extends AbstractDBConnection {
 		return null;
 	}
 
+	/**
+	 * Calculates the visitor counter value after an entry or exit update.
+	 * 
+	 * @param visitorsBefore the number of visitors before the update
+	 * @param maxCapacity the park maximum capacity
+	 * @param actionType the counter action type
+	 * @param amount the number of visitors to add or remove
+	 * @return the number of visitors after the update
+	 * @throws SQLException if the update would exceed capacity or create a negative
+	 *         visitor count
+	 */
 	private int calculateVisitorsAfterUpdate(int visitorsBefore, int maxCapacity,
 			String actionType, int amount) throws SQLException {
 
@@ -520,6 +736,14 @@ public class ParkConnection extends AbstractDBConnection {
 		return visitorsAfter;
 	}
 
+	/**
+	 * Updates the current visitor counter value of a park.
+	 * 
+	 * @param parkId the park ID to update
+	 * @param visitorsAfter the new visitor counter value
+	 * @throws SQLException if the update does not affect any row or if the query
+	 *         fails
+	 */
 	private void updateCurrentVisitorsValue(int parkId, int visitorsAfter)
 			throws SQLException {
 
@@ -539,6 +763,17 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Inserts a log record for a visitor counter update.
+	 * 
+	 * @param parkId the park ID whose counter was updated
+	 * @param employeeId the employee ID that performed the update
+	 * @param actionType the counter action type
+	 * @param amount the number of visitors added or removed
+	 * @param visitorsBefore the visitor counter value before the update
+	 * @param visitorsAfter the visitor counter value after the update
+	 * @throws SQLException if the insert query fails
+	 */
 	private void insertCounterUpdateLog(int parkId, int employeeId,
 			String actionType, int amount, int visitorsBefore,
 			int visitorsAfter) throws SQLException {
@@ -564,6 +799,19 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Updates a configurable park parameter.
+	 * 
+	 * The method validates the requested parameter, converts the new value to the
+	 * correct type, and updates the matching column in the park table.
+	 * 
+	 * @param parkId the park ID to update
+	 * @param parameterName the parameter name to update
+	 * @param newValue the new value as received from the request
+	 * @return true if the parameter was updated successfully, otherwise false
+	 * @throws SQLException if the parameter name or value is invalid, or if the
+	 *         update query fails
+	 */
 	public boolean updateParkParameter(int parkId, String parameterName,
 			String newValue) throws SQLException {
 
@@ -598,6 +846,13 @@ public class ParkConnection extends AbstractDBConnection {
 		);
 	}
 
+	/**
+	 * Maps a park parameter name to the matching database column name.
+	 * 
+	 * @param parameterName the logical parameter name
+	 * @return the matching database column name, or null if the parameter is
+	 *         unknown
+	 */
 	private String getParkColumnByParameterName(String parameterName) {
 		switch (parameterName) {
 
@@ -618,6 +873,14 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Converts a park parameter value from string to the required database type.
+	 * 
+	 * @param parameterName the parameter being converted
+	 * @param newValue the new value as a string
+	 * @return the converted value in the correct type
+	 * @throws SQLException if the value is invalid for the requested parameter
+	 */
 	private Object convertParkParameterValue(String parameterName, String newValue)
 			throws SQLException {
 
@@ -647,6 +910,14 @@ public class ParkConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Converts a string value to a positive integer.
+	 * 
+	 * @param value the string value to convert
+	 * @param parameterName the parameter name used for the error message
+	 * @return the converted positive integer
+	 * @throws SQLException if the value is not positive or cannot be converted
+	 */
 	private int convertPositiveInteger(String value, String parameterName)
 			throws SQLException {
 
@@ -659,6 +930,14 @@ public class ParkConnection extends AbstractDBConnection {
 		return number;
 	}
 
+	/**
+	 * Converts a string value to a non-negative integer.
+	 * 
+	 * @param value the string value to convert
+	 * @param parameterName the parameter name used for the error message
+	 * @return the converted non-negative integer
+	 * @throws SQLException if the value is negative or cannot be converted
+	 */
 	private int convertNonNegativeInteger(String value, String parameterName)
 			throws SQLException {
 
@@ -671,6 +950,13 @@ public class ParkConnection extends AbstractDBConnection {
 		return number;
 	}
 
+	/**
+	 * Converts and validates a promotion percentage value.
+	 * 
+	 * @param value the promotion percentage as a string
+	 * @return the converted promotion percentage
+	 * @throws SQLException if the percentage is outside the range 0 to 100
+	 */
 	private BigDecimal convertPromotionPercent(String value) throws SQLException {
 		BigDecimal percent = new BigDecimal(value);
 
@@ -682,8 +968,12 @@ public class ParkConnection extends AbstractDBConnection {
 		return percent;
 	}
 
+	/**
+	 * Holds visitor counter values used during a transactional counter update.
+	 */
 	private static class CounterData {
 		private int currentVisitors;
 		private int maxCapacity;
 	}
 }
+

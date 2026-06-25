@@ -1,4 +1,3 @@
-
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -1070,4 +1069,3 @@ public final class OrderConnection extends AbstractDBConnection {
 		throw new CloneNotSupportedException();
 	}
 }
-

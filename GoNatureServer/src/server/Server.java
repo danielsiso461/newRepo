@@ -1,3 +1,4 @@
+
 package server;
 
 import java.io.IOException;
@@ -20,24 +21,53 @@ import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 
 /**
- * This class represents the networking side of the server.
+ * Represents the networking side of the server.
  * 
- * The class is implemented as a Singleton, so only one server instance can exist
+ * This class receives messages from clients, forwards requests to the server
+ * controller, sends responses back to clients, and manages connected users.
+ * The class is implemented as a singleton so only one server instance can exist
  * during runtime.
  */
 public final class Server extends AbstractServer {
 
+	/**
+	 * The single instance of Server.
+	 */
 	private static Server instance = null;
 
+	/**
+	 * The controller connection used to handle server requests and user state.
+	 */
 	private ServerAndControllerConnection serverController;
 
+	/**
+	 * Maps connected user IDs to their client connections.
+	 */
 	private Map<String, ConnectionToClient> currIdConnection = new HashMap<>();
 
+	/**
+	 * Creates a new Server instance.
+	 * 
+	 * The constructor is private because this class is implemented as a singleton.
+	 * 
+	 * @param port the port on which the server listens
+	 * @param serverController the controller used for handling client requests
+	 */
 	private Server(int port, ServerAndControllerConnection serverController) {
 		super(port);
 		this.serverController = serverController;
 	}
 
+	/**
+	 * Returns the single instance of Server.
+	 * 
+	 * If no instance exists, a new server is created with the given port and
+	 * controller.
+	 * 
+	 * @param port the port on which the server should listen
+	 * @param serverController the controller used for handling client requests
+	 * @return the singleton Server instance
+	 */
 	public static Server getInstance(int port,
 			ServerAndControllerConnection serverController) {
 
@@ -48,6 +78,16 @@ public final class Server extends AbstractServer {
 		return instance;
 	}
 
+	/**
+	 * Handles a message received from a client.
+	 * 
+	 * The method validates the message, handles logout or disconnection requests,
+	 * registers the client if needed, sends the request to the server controller,
+	 * and returns the controller response to the relevant client connection.
+	 * 
+	 * @param msg the message received from the client
+	 * @param client the client connection that sent the message
+	 */
 	@Override
 	public void handleMessageFromClient(Object msg, ConnectionToClient client) {
 		System.out.println("Message received: " + msg + " from " + client);
@@ -111,6 +151,16 @@ public final class Server extends AbstractServer {
 		}
 	}
 
+	/**
+	 * Registers a client connection with a user ID when possible.
+	 * 
+	 * The method extracts a user ID from the received message and associates it with
+	 * the client connection if the client is not already registered.
+	 * 
+	 * @param message the message received from the client
+	 * @param client the client connection to register
+	 * @return true if the client can continue processing, otherwise false
+	 */
 	private boolean registerClientIfNeeded(Message message, ConnectionToClient client) {
 		if (client == null || client.getInfo("User") != null) {
 			return true;
@@ -147,6 +197,15 @@ public final class Server extends AbstractServer {
 		return true;
 	}
 
+	/**
+	 * Extracts a user ID from a client message according to the message type.
+	 * 
+	 * Different request types store the user ID in different data objects, so this
+	 * method centralizes the extraction logic.
+	 * 
+	 * @param message the message from which to extract the user ID
+	 * @return the extracted user ID, or null if the message does not contain one
+	 */
 	private String extractUserIdFromMessage(Message message) {
 		if (message == null || message.getData() == null) {
 			return null;
@@ -200,6 +259,17 @@ public final class Server extends AbstractServer {
 		return null;
 	}
 
+	/**
+	 * Binds a user ID to a client connection.
+	 * 
+	 * The method creates a User object from the client connection, registers it in
+	 * the server controller, and stores the connection in the active connections
+	 * map.
+	 * 
+	 * @param id the user ID to bind
+	 * @param client the client connection to bind
+	 * @return true if the binding was successful or not needed, otherwise false
+	 */
 	private boolean bindIdToClientConnection(String id, ConnectionToClient client) {
 		if (id == null || id.trim().isEmpty() || client == null) {
 			return true;
@@ -238,6 +308,18 @@ public final class Server extends AbstractServer {
 		return true;
 	}
 
+	/**
+	 * Binds a client connection after a successful login or access request.
+	 * 
+	 * The method checks the controller response and, if the login was successful,
+	 * extracts the user ID from the returned subscriber, employee, or occasional
+	 * customer request.
+	 * 
+	 * @param requestMessage the original request message
+	 * @param responseMessage the response message returned by the controller
+	 * @param client the client connection to bind
+	 * @return true if the client can continue, otherwise false
+	 */
 	private boolean bindClientAfterSuccessfulLogin(Message requestMessage,
 			Message responseMessage, ConnectionToClient client) {
 
@@ -289,6 +371,14 @@ public final class Server extends AbstractServer {
 		return true;
 	}
 
+	/**
+	 * Processes a client logout request.
+	 * 
+	 * The method removes the user from the active users list, clears the user data
+	 * from the client connection, and sends a logout success response.
+	 * 
+	 * @param client the client connection that requested logout
+	 */
 	private void processClientLogout(ConnectionToClient client) {
 		if (client == null) {
 			return;
@@ -312,16 +402,36 @@ public final class Server extends AbstractServer {
 		}
 	}
 
+	/**
+	 * Handles a client disconnection event.
+	 * 
+	 * @param client the disconnected client connection
+	 */
 	@Override
 	protected void clientDisconnected(ConnectionToClient client) {
 		processClientDisconnection(client);
 	}
 
+	/**
+	 * Handles an exception that occurred in a client connection.
+	 * 
+	 * @param client the client connection where the exception occurred
+	 * @param exception the exception that occurred
+	 */
 	@Override
 	protected void clientException(ConnectionToClient client, Throwable exception) {
 		processClientDisconnection(client);
 	}
 
+	/**
+	 * Processes a client disconnection.
+	 * 
+	 * The method makes sure the disconnection is handled only once, removes the user
+	 * from the active users list, removes the connection from the ID map, and closes
+	 * the client connection.
+	 * 
+	 * @param client the client connection to disconnect
+	 */
 	private void processClientDisconnection(ConnectionToClient client) {
 		if (client == null) {
 			return;
@@ -350,6 +460,12 @@ public final class Server extends AbstractServer {
 		}
 	}
 
+	/**
+	 * Called when the server starts listening for client connections.
+	 * 
+	 * The method prints the server status and updates the server controller with the
+	 * local host name and IP address.
+	 */
 	@Override
 	protected void serverStarted() {
 		System.out.println("Server listening for connections on port " + getPort());
@@ -364,11 +480,23 @@ public final class Server extends AbstractServer {
 		}
 	}
 
+	/**
+	 * Called when the server stops listening for client connections.
+	 */
 	@Override
 	protected void serverStopped() {
 		System.out.println("Server has stopped listening for connections.");
 	}
 
+	/**
+	 * Creates a User object from a client connection.
+	 * 
+	 * The created user contains the client's host name, IP address, and connection
+	 * status.
+	 * 
+	 * @param client the client connection used to create the user
+	 * @return a User object that represents the connected client
+	 */
 	public static User makeUserFromConnectionToClient(ConnectionToClient client) {
 		return new User(
 				client.getInetAddress().getHostName(),
@@ -378,11 +506,11 @@ public final class Server extends AbstractServer {
 	}
 
 	/**
-	 * Sends a reminder to a connected user.
+	 * Sends a reminder message to a connected user.
 	 * 
-	 * @param id the user's id
-	 * @param message the reminder message
-	 * @return 1 on success, -1 on failure
+	 * @param id the user's ID
+	 * @param message the reminder message to send
+	 * @return 1 if the reminder was sent successfully, or -1 on failure
 	 */
 	public int sendReminderToUser(String id, Message message) {
 		ConnectionToClient connection = currIdConnection.get(id);
@@ -401,10 +529,10 @@ public final class Server extends AbstractServer {
 	}
 
 	/**
-	 * Checks whether a user is currently connected.
+	 * Checks whether a user is currently connected to the server.
 	 * 
-	 * @param id the user's id
-	 * @return true if connected, otherwise false
+	 * @param id the user's ID
+	 * @return true if the user is connected, otherwise false
 	 */
 	public boolean isUserConnected(String id) {
 		return currIdConnection.containsKey(id);
@@ -413,7 +541,7 @@ public final class Server extends AbstractServer {
 	/**
 	 * Checks whether a user has pending reminders after login.
 	 * 
-	 * @param id the user's id
+	 * @param id the user's ID
 	 */
 	private void checkForReminderOnLogin(String id) {
 		if (id != null && !id.isBlank()) {
@@ -421,8 +549,15 @@ public final class Server extends AbstractServer {
 		}
 	}
 
+	/**
+	 * Prevents cloning of the singleton instance.
+	 * 
+	 * @return never returns, because cloning is not supported
+	 * @throws CloneNotSupportedException always thrown to prevent cloning
+	 */
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
 	}
 }
+

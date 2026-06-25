@@ -1,3 +1,4 @@
+
 package serverGUI;
 
 import javafx.application.Application;
@@ -6,30 +7,29 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-/*
- * this class is the main class for launching the server application
+/**
+ * Main class for launching the server application.
  * 
- * the class loads the DB password GUI first
- * only after the password is entered, the server table GUI will be opened
+ * This class loads the database password window first. After the user enters the
+ * database password, the main server table GUI is opened by DBPasswordController.
  */
 public class ServerMain extends Application {
 
-	/*
-	 * default constructor for JavaFX
+	/**
+	 * Default constructor required by JavaFX.
 	 */
 	public ServerMain() {
 		// for javafx
 	}
 
-	/*
-	 * this function starts the server GUI application
+	/**
+	 * Starts the server GUI application.
 	 * 
-	 * loads the DB password FXML file
-	 * displays the password window first
-	 * the main server window will be opened later from DBPasswordController
-	 * after the user enters the DB password
+	 * The method loads the database password FXML file and displays the password
+	 * window as the first screen of the server application.
 	 * 
 	 * @param stage the primary stage of the application
+	 * @throws Exception if loading the FXML file fails
 	 */
 	@Override
 	public void start(Stage stage) throws Exception {
@@ -45,8 +45,8 @@ public class ServerMain extends Application {
 		stage.show();
 	}
 
-	/*
-	 * main function that launches the server application
+	/**
+	 * Launches the server application.
 	 * 
 	 * @param args command line arguments
 	 */
@@ -54,3 +54,4 @@ public class ServerMain extends Application {
 		launch(args);
 	}
 }
+

@@ -1,3 +1,4 @@
+
 package serverGUI;
 
 import java.net.URL;
@@ -20,23 +21,21 @@ import javafx.stage.WindowEvent;
 import serverCommon.User;
 import serverController.ServerController;
 
-/*
- * This class is the UI controller for the server window.
+/**
+ * Controls the server GUI window.
  * 
- * It manages the connected users table,
- * displays server host and IP details,
- * and shows server actions in the log area.
+ * This controller manages the connected users table, displays the server host
+ * and IP details, and shows server actions in the log area.
  */
-
 public class ClientConnectionTableController {
 
-	/*
+	/**
 	 * The controller that connects the GUI with the server logic.
 	 */
 	private ServerController serverController;
 
-	/*
-	 * The text area that displays server log messages.
+	/**
+	 * Text area used to display server log messages.
 	 */
 	@FXML
 	private TextArea serverLogArea;
@@ -71,18 +70,17 @@ public class ClientConnectionTableController {
 	@FXML // fx:id="userTable"
 	private TableView<User> userTable; // Value injected by FXMLLoader
 
-	/*
-	 * The observable list that stores the users displayed in the table.
+	/**
+	 * Observable list that stores the users displayed in the table.
 	 */
 	private ObservableList<User> data = FXCollections.observableArrayList();
 
-	/*
-	 * This method is called automatically by the FXMLLoader.
+	/**
+	 * Initializes the server GUI after the FXML file is loaded.
 	 * 
-	 * It initializes the table columns,
-	 * connects the table to the observable list,
-	 * initializes the log area,
-	 * and handles the server window close action.
+	 * The method validates FXML injections, configures the table columns, connects
+	 * the table to the observable user list, initializes the log area, and defines
+	 * the behavior when the server window is closed.
 	 */
 	@FXML
 	void initialize() {
@@ -144,12 +142,13 @@ public class ClientConnectionTableController {
 		});
 	}
 
-	/*
-	 * This method handles adding a new connected user to the user table.
+	/**
+	 * Adds a newly connected user to the user table.
 	 * 
-	 * It also adds a log message that describes the connected user.
+	 * The method updates the table on the JavaFX application thread and adds a log
+	 * message describing the connected user.
 	 * 
-	 * @param u the user to add
+	 * @param u the user to add to the table
 	 */
 	public void onUserConnected(User u) {
 		Platform.runLater(() -> {
@@ -160,13 +159,14 @@ public class ClientConnectionTableController {
 					+ ", Host = " + u.getHostName());
 		});
 	}
-	/*
-	 * This method handles updating the data of a disconnected user.
+
+	/**
+	 * Updates the table row of a disconnected user.
 	 * 
-	 * It updates the user row in the table
-	 * and adds a log message about the disconnection.
+	 * The method refreshes the relevant user row and adds a log message describing
+	 * the disconnection.
 	 * 
-	 * @param u the user to update
+	 * @param u the disconnected user to update
 	 */
 	public void onUserDisconnected(User u) {
 		Platform.runLater(() -> {
@@ -182,13 +182,14 @@ public class ClientConnectionTableController {
 					+ ", Host = " + u.getHostName());
 		});
 	}
-	/*
-	 * This method adds a new message to the server log area.
+
+	/**
+	 * Adds a new message to the server log area.
 	 * 
-	 * The message is shown with the current time.
-	 * Platform.runLater is used because GUI updates must run on the JavaFX thread.
+	 * The message is displayed with the current time. Platform.runLater is used
+	 * because GUI updates must run on the JavaFX application thread.
 	 * 
-	 * @param message the message to show in the server log
+	 * @param message the message to display in the server log
 	 */
 	public void addLog(String message) {
 		Platform.runLater(() -> {
@@ -204,10 +205,10 @@ public class ClientConnectionTableController {
 		});
 	}
 
-	/*
-	 * This method connects the ServerController to the UI controller.
+	/**
+	 * Connects the ServerController to this GUI controller.
 	 * 
-	 * @param serverController the controller to connect
+	 * @param serverController the server controller to connect
 	 */
 	public void setServerController(ServerController serverController) {
 		this.serverController = serverController;
@@ -215,13 +216,13 @@ public class ClientConnectionTableController {
 		addLog("Server controller connected to GUI.");
 	}
 
-	/*
-	 * This method updates the labels with server data.
+	/**
+	 * Updates the server host and IP labels in the GUI.
 	 * 
-	 * It also writes the server host and IP details to the log area.
+	 * The method also writes the server connection details to the log area.
 	 * 
-	 * @param hostName the server's host name
-	 * @param ip       the server's IP address
+	 * @param hostName the server host name
+	 * @param ip the server IP address
 	 */
 	public void setLabels(String hostName, String ip) {
 		Platform.runLater(() -> {
@@ -232,3 +233,4 @@ public class ClientConnectionTableController {
 		addLog("Server started on host: " + hostName + ", IP: " + ip);
 	}
 }
+

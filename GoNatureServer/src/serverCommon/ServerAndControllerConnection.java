@@ -1,45 +1,59 @@
+
 package serverCommon;
 
 import common.Message;
 
 /**
- * This interface implements the abstract methods used by the server to relay
- * information to the UI and back.
+ * Defines the communication contract between the server networking layer and
+ * the server controller.
+ * 
+ * Implementing classes use this interface to update the UI about server state,
+ * manage connected users, handle client requests, close the server safely, and
+ * check reminders for connected users.
  */
 public interface ServerAndControllerConnection {
 	/**
-	 * Method that when overriden is used to add user to Set when they connect to
-	 * server
+	 * Adds a user to the connected users collection when the user connects to the
+	 * server.
+	 * 
+	 * @param u the user that connected to the server
+	 * @return true if the user was added successfully, otherwise false
 	 */
 	public abstract boolean addUserOnUserConnected(User u);
 
 	/**
-	 * Method that when overriden is used to remove user from Set when they
-	 * disconnect from server
+	 * Removes a user from the connected users collection when the user disconnects
+	 * from the server.
+	 * 
+	 * @param u the user that disconnected from the server
 	 */
 	public abstract void removeUserOnUserDisconnected(User u);
 
 	/**
-	 * Method that when overriden is used to handle user requests.
+	 * Handles a request received from a connected client.
+	 * 
+	 * @param m the message received from the client
+	 * @return the response message that should be sent back to the client
 	 */
 	public abstract Message handleRequest(Message m);
 
-	/*
-	 * this method presents the connection details of the server
+	/**
+	 * Presents the server connection details in the user interface.
 	 * 
-	 * @param hostName 	the server's hostName
-	 * @param ip		the server's ip
+	 * @param hostName the server host name
+	 * @param ip the server IP address
 	 */
 	public abstract void presentServerConnection(String hostName, String ip);
 	
 	/**
-	 * Method that when overriden is used to close the server safely.
+	 * Closes the server safely.
 	 */
 	public abstract void closeServer();
 	
 	/**
-	 * this method checks if a given user has reminders
-	 * @param id the user's id
+	 * Checks whether a specific user has pending reminders.
+	 * 
+	 * @param id the user's ID
 	 */
 	void checkForUserReminder(String id);
 }

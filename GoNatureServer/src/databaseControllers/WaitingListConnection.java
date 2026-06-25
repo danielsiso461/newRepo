@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -11,18 +12,29 @@ import java.util.List;
 
 import common.WaitingListMessage;
 
-/*
- * This class handles all database operations related to the waiting_list table.
+/**
+ * Handles database operations related to the waiting_list table.
  *
  * The waiting list is used when a visitor cannot immediately create an order
- * because the requested park/date does not have enough available capacity.
+ * because the requested park and date do not have enough available capacity.
+ * This connector manages waiting requests, offers, expirations, rejections, and
+ * accepted offers that are converted into approved orders.
  */
 public class WaitingListConnection extends AbstractDBConnection {
 
+	/**
+	 * The single instance of WaitingListConnection.
+	 */
 	private static WaitingListConnection instance = null;
 
+	/**
+	 * The waiting list table name.
+	 */
 	private static final String TABLE_NAME = "waiting_list";
 
+	/*
+	 * Waiting list table column names.
+	 */
 	private static final String WAITING_ID = "waiting_id";
 	private static final String SUBSCRIBER_ID = "subscriber_id";
 	private static final String PARK_ID = "park_id";
@@ -34,16 +46,35 @@ public class WaitingListConnection extends AbstractDBConnection {
 	private static final String OFFERED_AT = "offered_at";
 	private static final String OFFER_EXPIRES_AT = "offer_expires_at";
 
+	/*
+	 * Supported waiting request status values.
+	 */
 	private static final String STATUS_WAITING = "waiting";
 	private static final String STATUS_OFFERED = "offered";
 	private static final String STATUS_CANCELLED = "cancelled";
 	private static final String STATUS_EXPIRED = "expired";
 	private static final String STATUS_CONFIRMED = "confirmed";
 
+	/**
+	 * Creates a new WaitingListConnection instance.
+	 * 
+	 * The constructor is private because this class is implemented as a singleton.
+	 * 
+	 * @throws SQLException if connecting to the database fails
+	 */
 	private WaitingListConnection() throws SQLException {
 		connect();
 	}
 
+	/**
+	 * Returns the single instance of WaitingListConnection.
+	 * 
+	 * If no instance exists, or if the current database connection is closed, a new
+	 * instance is created.
+	 * 
+	 * @return the active WaitingListConnection instance
+	 * @throws SQLException if creating the database connection fails
+	 */
 	public static WaitingListConnection getInstance() throws SQLException {
 		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
 			instance = new WaitingListConnection();
@@ -52,11 +83,27 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return instance;
 	}
 
+	/**
+	 * Returns the database table name used by this connector.
+	 * 
+	 * @return the waiting list table name
+	 */
 	@Override
 	public String getTableName() {
 		return TABLE_NAME;
 	}
 
+	/**
+	 * Calculates the next queue position for a park and requested order date.
+	 * 
+	 * The method counts only active waiting requests, meaning requests with waiting
+	 * or offered status.
+	 * 
+	 * @param parkId the park ID related to the waiting request
+	 * @param requestedOrderDate the requested visit date and hour
+	 * @return the next available queue position
+	 * @throws SQLException if the select query fails
+	 */
 	public int getNextQueuePosition(int parkId, LocalDateTime requestedOrderDate)
 			throws SQLException {
 
@@ -84,6 +131,17 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return 1;
 	}
 
+	/**
+	 * Checks whether a waiting request already exists with a specific status.
+	 * 
+	 * @param subscriberId the subscriber ID related to the request
+	 * @param parkId the requested park ID
+	 * @param requestedOrderDate the requested visit date and hour
+	 * @param numberOfVisitors the requested number of visitors
+	 * @param waitingStatus the waiting request status to check
+	 * @return true if a matching waiting request exists, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
 	private boolean waitingRequestExistsByStatus(int subscriberId, int parkId,
 			LocalDateTime requestedOrderDate, int numberOfVisitors,
 			String waitingStatus) throws SQLException {
@@ -116,6 +174,18 @@ public class WaitingListConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Checks whether the subscriber already has an active matching waiting request.
+	 * 
+	 * Active requests are requests with waiting or offered status.
+	 * 
+	 * @param subscriberId the subscriber ID related to the request
+	 * @param parkId the requested park ID
+	 * @param requestedOrderDate the requested visit date and hour
+	 * @param numberOfVisitors the requested number of visitors
+	 * @return true if an active matching request exists, otherwise false
+	 * @throws SQLException if the select query fails
+	 */
 	private boolean activeWaitingRequestExists(int subscriberId, int parkId,
 			LocalDateTime requestedOrderDate, int numberOfVisitors)
 			throws SQLException {
@@ -135,6 +205,20 @@ public class WaitingListConnection extends AbstractDBConnection {
 		);
 	}
 
+	/**
+	 * Adds a subscriber to the waiting list.
+	 * 
+	 * If an identical active waiting request already exists, the method returns -1.
+	 * Otherwise, it creates a new waiting request with the next queue position.
+	 * 
+	 * @param subscriberId the subscriber ID to add to the waiting list
+	 * @param parkId the requested park ID
+	 * @param requestedOrderDate the requested visit date and hour
+	 * @param numberOfVisitors the requested number of visitors
+	 * @return the assigned queue position, or -1 if a duplicate active request
+	 *         exists
+	 * @throws SQLException if the insert or select query fails
+	 */
 	public int addToWaitingList(int subscriberId, int parkId,
 			LocalDateTime requestedOrderDate, int numberOfVisitors)
 			throws SQLException {
@@ -174,6 +258,19 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return queuePosition;
 	}
 
+	/**
+	 * Offers an available place to the first matching waiting request.
+	 * 
+	 * The selected request must match the park and date, have waiting status, and
+	 * request no more visitors than the available places. The offer expires one hour
+	 * after it is created.
+	 * 
+	 * @param parkId the park ID with available places
+	 * @param orderDate the visit date with available places
+	 * @param availablePlaces the number of available places
+	 * @return true if an offer was created, otherwise false
+	 * @throws SQLException if the select or update query fails
+	 */
 	public boolean offerFirstMatchingWaitingRequest(int parkId,
 			LocalDate orderDate, int availablePlaces) throws SQLException {
 
@@ -230,6 +327,16 @@ public class WaitingListConnection extends AbstractDBConnection {
 		);
 	}
 
+	/**
+	 * Rejects an offered waiting request and offers the place to the next match.
+	 * 
+	 * The method cancels the current offered request and then tries to create an
+	 * offer for the next suitable waiting request.
+	 * 
+	 * @param waitingId the waiting request ID to reject
+	 * @return true if the offered request was rejected successfully, otherwise false
+	 * @throws SQLException if the select or update query fails
+	 */
 	public boolean rejectWaitingOfferAndOfferNext(int waitingId) throws SQLException {
 		ensureConnection();
 
@@ -294,6 +401,16 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return true;
 	}
 
+	/**
+	 * Expires old waiting list offers and tries to offer the place to the next match.
+	 * 
+	 * Each offered request whose expiration time has passed is marked as expired.
+	 * After that, the method attempts to offer the same place to the next suitable
+	 * waiting request.
+	 * 
+	 * @return the number of offers that were expired
+	 * @throws SQLException if the select or update query fails
+	 */
 	public int expireOldOffersAndOfferNext() throws SQLException {
 		ensureConnection();
 
@@ -349,6 +466,13 @@ public class WaitingListConnection extends AbstractDBConnection {
 		return expiredCount;
 	}
 
+	/**
+	 * Marks an offered waiting request as confirmed.
+	 * 
+	 * @param waitingId the waiting request ID to confirm
+	 * @return true if the offer was accepted successfully, otherwise false
+	 * @throws SQLException if the update query fails
+	 */
 	public boolean acceptWaitingOffer(int waitingId) throws SQLException {
 		ensureConnection();
 
@@ -370,6 +494,16 @@ public class WaitingListConnection extends AbstractDBConnection {
 		);
 	}
 
+	/**
+	 * Retrieves active waiting list messages for a specific subscriber.
+	 * 
+	 * The method returns waiting requests and valid offered requests that have not
+	 * expired yet.
+	 * 
+	 * @param subscriberId the subscriber ID whose waiting requests should be loaded
+	 * @return a list of waiting list messages for the subscriber
+	 * @throws SQLException if the select query fails
+	 */
 	public List<WaitingListMessage> getOfferedRequestsForSubscriber(int subscriberId)
 			throws SQLException {
 
@@ -429,6 +563,19 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 	
 	
+	/**
+	 * Accepts a waiting list offer and creates an approved order from it.
+	 * 
+	 * The method locks the offered waiting request, validates that the offer still
+	 * exists and has not expired, creates a new approved order, and marks the
+	 * waiting request as confirmed. All actions are performed inside one
+	 * transaction.
+	 * 
+	 * @param waitingId the waiting request ID to accept
+	 * @return the new order number if the order was created successfully, or -1 if
+	 *         the offer could not be accepted
+	 * @throws SQLException if the transaction, insert, or update query fails
+	 */
 	public int acceptWaitingOfferAndCreateOrder(int waitingId) throws SQLException {
 		ensureConnection();
 
@@ -567,6 +714,13 @@ public class WaitingListConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Calculates the next order number for an order created from an accepted waiting
+	 * list offer.
+	 * 
+	 * @return the next available order number, or 1 if no orders exist
+	 * @throws SQLException if the select query fails
+	 */
 	private int getNextOrderNumberForWaitingAcceptedOrder() throws SQLException {
 		ensureConnection();
 
@@ -587,6 +741,12 @@ public class WaitingListConnection extends AbstractDBConnection {
 	}
 	
 
+	/**
+	 * Prevents cloning of the singleton instance.
+	 * 
+	 * @return never returns, because cloning is not supported
+	 * @throws CloneNotSupportedException always thrown to prevent cloning
+	 */
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();

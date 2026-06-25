@@ -1,21 +1,24 @@
+
 package serverGUI;
 
-/*
- * this class holds constants relevant for the server GUI
- * including FXML paths and default configuration values
+/**
+ * Holds constants that are relevant to the server GUI.
+ * 
+ * This class contains FXML file paths and other fixed configuration values used
+ * by the server-side user interface.
  */
 public class ConstantsServerGUI {
 
-	/*
-	 * path of the client connection table FXML file
+	/**
+	 * FXML paths used by the server GUI screens.
 	 */
 	protected static final String 
 			USER_TABLE = "/serverGUI/ClientConnectionTable.fxml",
 			DB_PASSWORD = "/serverGUI/DBPasswordPage.fxml";
 	
 
-	/*
-	 * private constructor to prevent object creation
+	/**
+	 * Private constructor to prevent object creation.
 	 */
 	private ConstantsServerGUI() {}
 }

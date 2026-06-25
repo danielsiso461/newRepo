@@ -22,6 +22,12 @@ import common.EntryPriceReceipt;
  * 
  * The class is implemented as a singleton so the server uses one shared bill
  * database connector during runtime.
+ * Handles database operations related to bills and entry price receipts.
+ * 
+ * This connector creates bills from visit records, loads bill information, and
+ * calculates entry payment receipts according to the visit price calculation
+ * view. The class is implemented as a singleton so the server uses one shared
+ * bill database connector during runtime.
  */
 public class BillConnection extends AbstractDBConnection {
 
@@ -66,6 +72,7 @@ public class BillConnection extends AbstractDBConnection {
 
     /**
      * Creates a new bill database connection.
+     * Creates a new BillConnection instance.
      * 
      * The constructor is private because this class is implemented as a singleton.
      * 
@@ -114,6 +121,14 @@ public class BillConnection extends AbstractDBConnection {
      * @param visitId the ID of the visit for which the bill should be created
      * @return true if the bill was created successfully, otherwise false
      * @throws SQLException if the insert operation fails
+     * Creates a bill for an existing visit.
+     *
+     * This query is kept as a full SQL query because it inserts values using a
+     * SELECT query from the visit_price_calculation view.
+     * 
+     * @param visitId the visit ID for which the bill should be created
+     * @return true if the bill was created successfully, otherwise false
+     * @throws SQLException if the insert query fails
      */
     public boolean createBillFromVisit(int visitId) throws SQLException {
         ensureConnection();
@@ -145,6 +160,14 @@ public class BillConnection extends AbstractDBConnection {
      * @param visitId the ID of the visit whose bills should be retrieved
      * @return a list of bill records that match the given visit ID
      * @throws SQLException if the select operation fails
+     * Returns the bill records that belong to a specific visit.
+     *
+     * The method returns a list of rows instead of exposing a ResultSet outside the
+     * database layer.
+     * 
+     * @param visitId the visit ID whose bill records should be loaded
+     * @return a list of bill rows as Object arrays
+     * @throws SQLException if the select query fails
      */
     public List<Object[]> getBillByVisitId(int visitId) throws SQLException {
         ensureConnection();
@@ -189,6 +212,15 @@ public class BillConnection extends AbstractDBConnection {
      * @return the entry price receipt for the matching visit
      * @throws SQLException if no visit is found, if bill creation fails, or if the
      *         receipt cannot be loaded
+     *
+     * The method finds the latest visit that belongs to the order, creates a bill
+     * if one does not already exist, and then loads the bill as an
+     * EntryPriceReceipt object.
+     *
+     * @param orderNumber the order number for which the receipt should be loaded
+     * @return the entry price receipt for the matching visit
+     * @throws SQLException if the visit or bill cannot be found, or if a database
+     *         operation fails
      */
     public EntryPriceReceipt calculateReceiptByOrderNumber(int orderNumber)
             throws SQLException {
@@ -216,6 +248,11 @@ public class BillConnection extends AbstractDBConnection {
      * @param orderNumber the order number used to search for the visit
      * @return the matching VisitData object, or null if no visit was found
      * @throws SQLException if the select operation fails
+     * Finds the latest visit data for a specific order number.
+     * 
+     * @param orderNumber the order number to search for
+     * @return the matching VisitData object, or null if no visit was found
+     * @throws SQLException if the select query fails
      */
     private VisitData findVisitDataByOrderNumber(int orderNumber) throws SQLException {
         ensureConnection();
@@ -252,6 +289,9 @@ public class BillConnection extends AbstractDBConnection {
      * Creates a bill for the given visit only if one does not already exist.
      * 
      * @param visitId the ID of the visit that should have a bill
+     * Creates a bill for a visit only if no bill exists yet.
+     * 
+     * @param visitId the visit ID for which a bill should exist
      * @throws SQLException if checking or creating the bill fails
      */
     private void createBillIfMissing(int visitId) throws SQLException {
@@ -272,6 +312,11 @@ public class BillConnection extends AbstractDBConnection {
      * @param visitId the ID of the visit to check
      * @return true if a bill exists for the visit, otherwise false
      * @throws SQLException if the select operation fails
+     * Checks whether a bill already exists for a specific visit.
+     * 
+     * @param visitId the visit ID to check
+     * @return true if a bill already exists, otherwise false
+     * @throws SQLException if the select query fails
      */
     private boolean billExists(int visitId) throws SQLException {
         ensureConnection();
@@ -304,6 +349,16 @@ public class BillConnection extends AbstractDBConnection {
      * @param visitId the ID of the visit whose bill should be loaded
      * @return an EntryPriceReceipt object containing the bill details
      * @throws SQLException if the bill cannot be found or loaded
+     * Loads a bill by visit ID and builds an EntryPriceReceipt object.
+     * 
+     * The receipt includes order details, customer details, park name, price
+     * information, discounts, and final price.
+     * 
+     * @param customerId the customer or subscriber ID
+     * @param orderNumber the order number related to the visit
+     * @param visitId the visit ID whose bill should be loaded
+     * @return the entry price receipt
+     * @throws SQLException if the bill cannot be found or the select query fails
      */
     private EntryPriceReceipt loadReceiptByVisitId(int customerId,
             int orderNumber, int visitId) throws SQLException {
@@ -388,6 +443,14 @@ public class BillConnection extends AbstractDBConnection {
      * @param rs the ResultSet containing the value
      * @param columnName the name of the money column
      * @return the monetary value as BigDecimal with two decimal places
+     * Reads a money value safely from the ResultSet.
+     * 
+     * If the database value is null, the method returns zero with two decimal
+     * digits.
+     * 
+     * @param rs the ResultSet containing the value
+     * @param columnName the column name to read
+     * @return the money value with two decimal digits
      * @throws SQLException if reading from the ResultSet fails
      */
     private BigDecimal getMoney(ResultSet rs, String columnName) throws SQLException {
@@ -409,6 +472,14 @@ public class BillConnection extends AbstractDBConnection {
      * @param rs the ResultSet containing the value
      * @param columnName the name of the percentage column
      * @return the percentage value as BigDecimal with two decimal places
+     * Reads a percent value safely from the ResultSet.
+     * 
+     * If the database value is null, the method returns zero with two decimal
+     * digits.
+     * 
+     * @param rs the ResultSet containing the value
+     * @param columnName the column name to read
+     * @return the percent value with two decimal digits
      * @throws SQLException if reading from the ResultSet fails
      */
     private BigDecimal getPercent(ResultSet rs, String columnName) throws SQLException {
@@ -426,6 +497,10 @@ public class BillConnection extends AbstractDBConnection {
      * 
      * @param value the monetary value to format
      * @return the formatted money string
+     * Formats a money value as text with two decimal digits.
+     * 
+     * @param value the money value to format
+     * @return the formatted money text
      */
     private String formatMoney(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP).toPlainString();
@@ -437,6 +512,10 @@ public class BillConnection extends AbstractDBConnection {
      * 
      * @param value the percentage value to format
      * @return the formatted percentage string
+     * Formats a percent value as text with two decimal digits and a percent sign.
+     * 
+     * @param value the percent value to format
+     * @return the formatted percent text
      */
     private String formatPercent(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP).toPlainString() + "%";
@@ -444,6 +523,7 @@ public class BillConnection extends AbstractDBConnection {
 
     /**
      * Holds basic visit data required for creating or loading a bill.
+     * Holds basic visit data needed for receipt calculation.
      */
     private static class VisitData {
         /**
@@ -462,3 +542,7 @@ public class BillConnection extends AbstractDBConnection {
         private int subscriberId;
     }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> stash

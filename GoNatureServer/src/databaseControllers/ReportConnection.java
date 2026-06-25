@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -12,16 +13,40 @@ import common.VisitDurationReportRow;
 import common.VisitorReportRow;
 
 /**
- * DB connector for report data.
+ * Handles database operations related to report data.
+ * 
+ * This connector retrieves different report types from the database, including
+ * visitor reports, cancellation reports, visit duration reports, and park usage
+ * reports. Each method converts the query results into report row objects that
+ * can be used by the client side.
  */
 public class ReportConnection extends AbstractDBConnection {
 
+	/**
+	 * The single instance of ReportConnection.
+	 */
 	private static ReportConnection instance;
 
+	/**
+	 * Creates a new ReportConnection instance.
+	 * 
+	 * The constructor is private because this class is implemented as a singleton.
+	 * 
+	 * @throws SQLException if connecting to the database fails
+	 */
 	private ReportConnection() throws SQLException {
 		connect();
 	}
 
+	/**
+	 * Returns the single instance of ReportConnection.
+	 * 
+	 * If no instance exists, or if the current database connection is closed, a new
+	 * instance is created.
+	 * 
+	 * @return the active ReportConnection instance
+	 * @throws SQLException if creating the database connection fails
+	 */
 	public static ReportConnection getInstance() throws SQLException {
 		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
 			instance = new ReportConnection();
@@ -30,11 +55,31 @@ public class ReportConnection extends AbstractDBConnection {
 		return instance;
 	}
 
+	/**
+	 * Returns the table name used by this connector.
+	 * 
+	 * This connector works with several report queries and views, so it does not
+	 * represent one specific database table.
+	 * 
+	 * @return an empty string because this connector is not bound to one table
+	 */
 	@Override
 	public String getTableName() {
 		return "";
 	}
 
+	/**
+	 * Retrieves the visitor report for a specific park and month.
+	 * 
+	 * The report groups visits by visitor type and includes the number of visits
+	 * and the total number of visitors for each type.
+	 * 
+	 * @param parkId the park ID to filter by
+	 * @param month the month to filter by
+	 * @param year the year to filter by
+	 * @return a list of visitor report rows
+	 * @throws SQLException if the select query fails
+	 */
 	public List<VisitorReportRow> getVisitorReport(int parkId, int month, int year)
 			throws SQLException {
 
@@ -93,6 +138,18 @@ public class ReportConnection extends AbstractDBConnection {
 		return rows;
 	}
 
+	/**
+	 * Retrieves the cancellation report for a specific park and month.
+	 * 
+	 * The report includes cancelled, expired, and no-show orders, grouped by status
+	 * and change reason.
+	 * 
+	 * @param parkId the park ID to filter by
+	 * @param month the month to filter by
+	 * @param year the year to filter by
+	 * @return a list of cancellation report rows
+	 * @throws SQLException if the select query fails
+	 */
 	public List<CancellationReportRow> getCancellationReport(int parkId, int month, int year)
 			throws SQLException {
 
@@ -144,6 +201,18 @@ public class ReportConnection extends AbstractDBConnection {
 		return rows;
 	}
 
+	/**
+	 * Retrieves the visit duration report for a specific park and month.
+	 * 
+	 * The report groups completed visits by visitor type and calculates the average
+	 * visit duration in minutes.
+	 * 
+	 * @param parkId the park ID to filter by
+	 * @param month the month to filter by
+	 * @param year the year to filter by
+	 * @return a list of visit duration report rows
+	 * @throws SQLException if the select query fails
+	 */
 	public List<VisitDurationReportRow> getVisitDurationReport(int parkId, int month, int year)
 			throws SQLException {
 
@@ -201,6 +270,18 @@ public class ReportConnection extends AbstractDBConnection {
 		return rows;
 	}
 
+	/**
+	 * Retrieves the park usage report for a specific park and month.
+	 * 
+	 * The report includes the number of visits, the average occupancy percentage,
+	 * and the maximum occupancy percentage during the selected period.
+	 * 
+	 * @param parkId the park ID to filter by
+	 * @param month the month to filter by
+	 * @param year the year to filter by
+	 * @return a list of park usage report rows
+	 * @throws SQLException if the select query fails
+	 */
 	public List<ParkUsageReportRow> getParkUsageReport(int parkId, int month, int year)
 			throws SQLException {
 

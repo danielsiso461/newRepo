@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -12,12 +13,22 @@ import java.time.LocalTime;
 import common.Visit;
 
 /**
- * DB connector for the visit table.
+ * Handles database operations related to park visits.
+ * 
+ * This connector supports creating visits from approved orders or occasional
+ * visitors, closing visits, checking open visits, and retrieving visit records
+ * from the visit table.
  */
 public class VisitConnection extends AbstractDBConnection {
 
+	/**
+	 * The single instance of VisitConnection.
+	 */
 	private static VisitConnection instance;
 
+	/*
+	 * Visit table column names.
+	 */
 	private final String VISIT_ID = "visit_id";
 	private final String ORDER_NUMBER = "order_number";
 	private final String PARK_ID = "park_id";
@@ -30,13 +41,36 @@ public class VisitConnection extends AbstractDBConnection {
 	private final String EXIT_HANDLED_BY_EMPLOYEE_ID = "exit_handled_by_employee_id";
 	private final String IDENTIFICATION_METHOD = "identification_method";
 
+	/**
+	 * Status value used for approved orders.
+	 */
 	private final String ORDER_STATUS_APPROVED = "approved";
+
+	/**
+	 * Visit type value used for visits created from orders.
+	 */
 	private final String VISIT_TYPE_ORDERED = "ordered";
 
+	/**
+	 * Creates a new VisitConnection instance.
+	 * 
+	 * The constructor is private because this class is implemented as a singleton.
+	 * 
+	 * @throws SQLException if connecting to the database fails
+	 */
 	private VisitConnection() throws SQLException {
 		connect();
 	}
 
+	/**
+	 * Returns the single instance of VisitConnection.
+	 * 
+	 * If no instance exists, or if the current database connection is closed, a new
+	 * instance is created.
+	 * 
+	 * @return the active VisitConnection instance
+	 * @throws SQLException if creating the database connection fails
+	 */
 	public static VisitConnection getInstance() throws SQLException {
 		if (instance == null || instance.conn == null || instance.conn.isClosed()) {
 			instance = new VisitConnection();
@@ -45,13 +79,21 @@ public class VisitConnection extends AbstractDBConnection {
 		return instance;
 	}
 
+	/**
+	 * Returns the database table name used by this connector.
+	 * 
+	 * @return the visit table name
+	 */
 	@Override
 	public String getTableName() {
 		return ConstantsDBTableNames.VISIT;
 	}
 
 	/**
-	 * This method checks that the database connection is open.
+	 * Ensures that the database connection is open.
+	 * 
+	 * If no connection exists, or if the current connection is closed, a new
+	 * connection is opened.
 	 * 
 	 * @throws SQLException if reconnecting to the database fails
 	 */
@@ -61,6 +103,14 @@ public class VisitConnection extends AbstractDBConnection {
 		}
 	}
 
+	/**
+	 * Reads an integer value from the ResultSet and supports null values.
+	 * 
+	 * @param rs the ResultSet containing the value
+	 * @param columnName the column name to read
+	 * @return the integer value, or null if the database value is null
+	 * @throws SQLException if reading from the ResultSet fails
+	 */
 	private Integer getNullableInt(ResultSet rs, String columnName) throws SQLException {
 		Object value = rs.getObject(columnName);
 
@@ -71,6 +121,14 @@ public class VisitConnection extends AbstractDBConnection {
 		return rs.getInt(columnName);
 	}
 
+	/**
+	 * Reads a timestamp value from the ResultSet and converts it to LocalDateTime.
+	 * 
+	 * @param rs the ResultSet containing the value
+	 * @param columnName the column name to read
+	 * @return the LocalDateTime value, or null if the database value is null
+	 * @throws SQLException if reading from the ResultSet fails
+	 */
 	private LocalDateTime getNullableDateTime(ResultSet rs, String columnName) throws SQLException {
 		Timestamp timestamp = rs.getTimestamp(columnName);
 
@@ -81,6 +139,13 @@ public class VisitConnection extends AbstractDBConnection {
 		return timestamp.toLocalDateTime();
 	}
 
+	/**
+	 * Converts the current ResultSet row into a Visit object.
+	 * 
+	 * @param rs the ResultSet positioned on a visit row
+	 * @return a Visit object containing the row data
+	 * @throws SQLException if reading data from the ResultSet fails
+	 */
 	private Visit convertResultSetToVisit(ResultSet rs) throws SQLException {
 		return new Visit(
 				rs.getInt(VISIT_ID),
@@ -132,8 +197,9 @@ public class VisitConnection extends AbstractDBConnection {
 	/**
 	 * Creates a new park visit using an order confirmation code.
 	 *
-	 * The confirmation code is used as a QR code simulation. The method checks the
-	 * order step by step so the server can return a specific failure message.
+	 * The confirmation code is used as a QR code simulation. The method validates
+	 * the matching order step by step so the server can return a specific failure
+	 * message.
 	 *
 	 * Return values:
 	 * - positive number: created visit ID
@@ -145,12 +211,13 @@ public class VisitConnection extends AbstractDBConnection {
 	 * - -6: the order has already been completed
 	 * - -7: the order is not valid for the current date and time
 	 *
-	 * @param confirmationCode       the order confirmation code used as QR simulation
-	 * @param parkId                 the park ID where the visitor entered
+	 * @param confirmationCode the order confirmation code used as QR simulation
+	 * @param parkId the park ID where the visitor entered
 	 * @param actualNumberOfVisitors the actual number of visitors entering
-	 * @param handledByEmployeeId    the employee ID that handled the entrance
-	 * @param identificationMethod   the identification method used at the entrance
-	 * @return the created visit ID, or a negative value if the visit cannot be created
+	 * @param handledByEmployeeId the employee ID that handled the entrance
+	 * @param identificationMethod the identification method used at the entrance
+	 * @return the created visit ID, or a negative value if the visit cannot be
+	 *         created
 	 * @throws SQLException if the select or insert query fails
 	 */
 	public int createVisitFromConfirmationCode(
@@ -338,9 +405,9 @@ public class VisitConnection extends AbstractDBConnection {
 	 *
 	 * The confirmation code is used as a QR code simulation at the park exit.
 	 *
-	 * @param confirmationCode          the order confirmation code
-	 * @param parkId                    the park ID
-	 * @param exitHandledByEmployeeId   the employee ID that handled the exit
+	 * @param confirmationCode the order confirmation code
+	 * @param parkId the park ID
+	 * @param exitHandledByEmployeeId the employee ID that handled the exit
 	 * @return the closed visit ID, or -1 if no open visit was found
 	 * @throws SQLException if the select or update query fails
 	 */
@@ -395,17 +462,19 @@ public class VisitConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method creates a new visit from an approved order.
+	 * Creates a new visit from an approved order.
 	 * 
-	 * First, the method checks that the given order exists and that its status is
-	 * approved. Then, it takes the park ID and subscriber ID from the order and
-	 * inserts a new visit record into the visit table.
+	 * The method checks that the order exists and is approved, then uses the order
+	 * data to insert a new ordered visit into the visit table.
 	 * 
-	 * @param orderNumber            the order number used to create the visit
-	 * @param actualNumberOfVisitors the actual number of visitors that entered the park
-	 * @param handledByEmployeeId    the employee ID of the worker who handled the entrance
-	 * @param identificationMethod    the identification method used at the entrance
-	 * @return the generated visit ID if the visit was created successfully, or -1 otherwise
+	 * @param orderNumber the order number used to create the visit
+	 * @param actualNumberOfVisitors the actual number of visitors that entered the
+	 *        park
+	 * @param handledByEmployeeId the employee ID of the worker who handled the
+	 *        entrance
+	 * @param identificationMethod the identification method used at the entrance
+	 * @return the generated visit ID if the visit was created successfully, or -1
+	 *         otherwise
 	 * @throws SQLException if the select or insert query fails
 	 */
 	public int createVisitFromOrder(
@@ -492,11 +561,12 @@ public class VisitConnection extends AbstractDBConnection {
 	 * This method is used for visitors who arrive at the park without a reservation.
 	 * The server should check park capacity before calling this method.
 	 *
-	 * @param parkId                 the park ID
+	 * @param parkId the park ID
 	 * @param actualNumberOfVisitors the actual number of visitors entering
-	 * @param handledByEmployeeId    the employee ID that handled the entrance
-	 * @param identificationMethod    the identification method used at the entrance
-	 * @return the generated visit ID if the visit was created successfully, or -1 otherwise
+	 * @param handledByEmployeeId the employee ID that handled the entrance
+	 * @param identificationMethod the identification method used at the entrance
+	 * @return the generated visit ID if the visit was created successfully, or -1
+	 *         otherwise
 	 * @throws SQLException if the insert query fails
 	 */
 	public int createOccasionalVisit(
@@ -547,14 +617,15 @@ public class VisitConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method closes an existing visit.
+	 * Closes an existing visit.
 	 * 
-	 * Closing a visit means updating its exit_time to the current time and saving the
+	 * Closing a visit updates its exit time to the current time and stores the
 	 * employee who handled the exit.
 	 * 
-	 * @param visitId                 the ID of the visit to close
-	 * @param exitHandledByEmployeeId the employee ID of the worker who handled the exit
-	 * @return true if the visit was closed successfully, false otherwise
+	 * @param visitId the ID of the visit to close
+	 * @param exitHandledByEmployeeId the employee ID of the worker who handled the
+	 *        exit
+	 * @return true if the visit was closed successfully, otherwise false
 	 * @throws SQLException if the update query fails
 	 */
 	public boolean closeVisit(int visitId, int exitHandledByEmployeeId) throws SQLException {
@@ -579,12 +650,12 @@ public class VisitConnection extends AbstractDBConnection {
 	/**
 	 * Closes an open visit using the visit ID.
 	 *
-	 * This method is mainly used for occasional visitors, because they do not have an
-	 * order confirmation code. The generated visit ID is given to the visitor at
+	 * This method is mainly used for occasional visitors, because they do not have
+	 * an order confirmation code. The generated visit ID is given to the visitor at
 	 * entrance and is used again when the visitor leaves the park.
 	 *
-	 * @param visitId                 the visit ID that was created at entrance
-	 * @param parkId                  the park ID where the exit is performed
+	 * @param visitId the visit ID that was created at entrance
+	 * @param parkId the park ID where the exit is performed
 	 * @param exitHandledByEmployeeId the employee ID that handled the exit
 	 * @return the closed visit ID, or -1 if no open visit was found
 	 * @throws SQLException if the update query fails
@@ -615,9 +686,9 @@ public class VisitConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Returns a visit by id.
+	 * Retrieves a visit by its ID.
 	 * 
-	 * @param visitId the visit ID
+	 * @param visitId the visit ID to search for
 	 * @return a Visit object if the visit exists, otherwise null
 	 * @throws SQLException if the select query fails
 	 */
@@ -643,3 +714,4 @@ public class VisitConnection extends AbstractDBConnection {
 		return null;
 	}
 }
+

@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -8,36 +9,43 @@ import java.time.LocalDate;
 import common.Order;
 
 /**
- * Checks whether an order can be booked without exceeding the park capacity.
+ * Checks whether a new order can be booked without exceeding the selected
+ * park's capacity.
+ * 
+ * The check compares the requested number of visitors with the park capacity,
+ * while also considering existing approved orders around the requested visit
+ * hour.
  */
 public class OrderExceedsParkCapacityCheck {
 
 	private static OrderExceedsParkCapacityCheck instance;
 
 	/**
-	 * The park DB connector used for the capacity query.
+	 * Park database connector used to execute the capacity check query.
 	 */
 	private final ParkConnection pc;
 
 	/**
-	 * The status value of approved orders.
+	 * Status value used for orders that are already approved.
 	 */
 	private static final String ORDER_STATUS_APPROVED = "approved";
 
 	/**
-	 * The alias returned by the capacity query.
+	 * Column alias returned by the capacity check query.
 	 */
 	private static final String RETURN_COLUMN = "exceeds_capacity";
 
 	/**
-	 * The number of hours in one day.
+	 * Number of hours in one full day.
 	 */
 	private static final int NUMBER_OF_HOURS_IN_A_DAY = 24;
 
 	/**
-	 * Private constructor for Singleton.
+	 * Creates an OrderExceedsParkCapacityCheck instance.
 	 * 
-	 * @param pc the park table connection
+	 * The constructor is private because this class is implemented as a singleton.
+	 * 
+	 * @param pc the park database connector used for the capacity query
 	 */
 	private OrderExceedsParkCapacityCheck(ParkConnection pc) {
 		this.pc = pc;
@@ -46,13 +54,13 @@ public class OrderExceedsParkCapacityCheck {
 	/**
 	 * Returns the single instance of OrderExceedsParkCapacityCheck.
 	 * 
-	 * The OrderConnection parameter is kept for compatibility with existing calls,
-	 * but the current capacity query uses one connection and joins the park and
+	 * The OrderConnection parameter is kept for compatibility with existing calls.
+	 * The current capacity query uses the park connection and joins the park and
 	 * order tables in the same SQL query.
 	 * 
-	 * @param pc the park table connection
-	 * @param oc the order table connection
-	 * @return the only OrderExceedsParkCapacityCheck instance
+	 * @param pc the park database connector
+	 * @param oc the order database connector, kept for compatibility
+	 * @return the singleton OrderExceedsParkCapacityCheck instance
 	 */
 	public static OrderExceedsParkCapacityCheck getInstance(ParkConnection pc, OrderConnection oc) {
 		if (instance == null) {
@@ -63,16 +71,16 @@ public class OrderExceedsParkCapacityCheck {
 	}
 
 	/**
-	 * Checks if the requested order exceeds the park capacity.
+	 * Checks whether the requested order exceeds the park's available capacity.
 	 * 
-	 * Returns:
-	 * -1 if there is a problem,
-	 *  0 if the order can be booked,
-	 *  1 if the order exceeds capacity.
+	 * The method returns -1 when the input is invalid or no matching park data is
+	 * found, 0 when the order can be booked, and 1 when the order exceeds the
+	 * allowed capacity.
 	 * 
 	 * @param order the order to check
-	 * @return the capacity check result
-	 * @throws SQLException if the query fails
+	 * @return -1 for an error, 0 if the order can be booked, or 1 if it exceeds
+	 *         capacity
+	 * @throws SQLException if the database query fails
 	 */
 	public int check(Order order) throws SQLException {
 		if (pc == null || order == null) {
