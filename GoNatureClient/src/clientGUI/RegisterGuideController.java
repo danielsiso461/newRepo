@@ -21,36 +21,41 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-/*
+/**
  * This class is the controller for the register guide screen.
  * 
  * The service representative can search an existing subscriber
  * and register that subscriber as a guide.
  */
 public class RegisterGuideController implements SearchSubscriberObserver, RegisterGuideObserver {
-
+	/**
+	 * Client controller used to communicate with the server.
+	 */
 	private ClientController clientController;
+	/**
+	 * The logged-in service representative.
+	 */
 	private Employee loggedInEmployee;
-
+	/** Subscriber ID input field. */
 	@FXML
 	private TextField subscriberIdField;
-
+	/** Displays the subscriber name. */
 	@FXML
 	private Label subscriberNameLabel;
-
+	/** Displays the subscriber email. */
 	@FXML
 	private Label subscriberEmailLabel;
-
+	/** Organization name input field. */
 	@FXML
 	private TextField organizationNameField;
-
+	/** Guide status selector. */
 	@FXML
 	private ComboBox<String> guideStatusComboBox;
-
+	/** Displays status messages. */
 	@FXML
 	private Label messageLabel;
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param clientController the active client controller
@@ -64,7 +69,7 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 		}
 	}
 
-	/*
+	/**
 	 * Sets the logged-in service representative.
 	 * 
 	 * @param employee the employee that opened this screen
@@ -72,7 +77,9 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 	}
-
+	/**
+	 * Initializes the register guide page.
+	 */
 	@FXML
 	private void initialize() {
 		guideStatusComboBox.getItems().addAll("active", "revoked");
@@ -82,7 +89,11 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 		subscriberEmailLabel.setText("-");
 		messageLabel.setText("");
 	}
-
+	/**
+	 * Handles searching for a subscriber.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleSearchSubscriber(ActionEvent event) {
 		String subscriberIdText = subscriberIdField.getText();
@@ -114,7 +125,11 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 
 		clientController.requestSearchSubscriber(subscriberId);
 	}
-
+	/**
+	 * Handles registering the selected subscriber as a guide.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleRegisterGuide(ActionEvent event) {
 		String subscriberIdText = subscriberIdField.getText();
@@ -166,7 +181,11 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 
 		clientController.requestRegisterGuide(request);
 	}
-
+	/**
+	 * Handles the guide registration result.
+	 *
+	 * @param response the response received from the server
+	 */
 	@Override
 	public void onRegisterGuideResult(OperationResponse response) {
 		Platform.runLater(() -> {
@@ -178,7 +197,11 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 			messageLabel.setText(response.getMessage());
 		});
 	}
-
+	/**
+	 * Clears the guide registration form.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleClear(ActionEvent event) {
 		subscriberIdField.clear();
@@ -191,7 +214,7 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 		messageLabel.setText("");
 	}
 
-	/*
+	/**
 	 * Receives the search subscriber result from the ClientController.
 	 * 
 	 * @param response the response received from the server
@@ -217,7 +240,11 @@ public class RegisterGuideController implements SearchSubscriberObserver, Regist
 			}
 		});
 	}
-
+	/**
+	 * Returns to the service representative home page.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleBack(ActionEvent event) {
 		try {

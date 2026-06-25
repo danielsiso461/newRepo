@@ -36,49 +36,76 @@ import javafx.stage.Stage;
  * Controls the reports screen.
  */
 public class ReportsPageController implements ReportObserver, ParkObserver {
-
+	/**
+	 * Visitor report type.
+	 */
     private static final String VISITOR_REPORT = "Visitor Report";
+    /**
+     * Cancellation report type.
+     */
     private static final String CANCELLATION_REPORT = "Cancellation Report";
+    /**
+     * Visit duration report type.
+     */
     private static final String VISIT_DURATION_REPORT = "Visit Duration Report";
+    /**
+     * Park usage report type.
+     */
     private static final String PARK_USAGE_REPORT = "Park Usage Report";
-
+    /**
+     * Client controller used to communicate with the server.
+     */
     private ClientController clientController;
-    
+    /**
+     * The employee currently logged in.
+     */
     private Employee loggedInEmployee;
-
+    /** Report type selector. */
     @FXML
     private ComboBox<String> reportTypeComboBox;
-
+    /** Park selector. */
     @FXML
     private ComboBox<Park> parkComboBox;
-
+    /** Month selector. */
     @FXML
     private ComboBox<Integer> monthComboBox;
-
+    /** Year selector. */
     @FXML
     private ComboBox<Integer> yearComboBox;
-
+    /****
+     * Shows the selected report.
+     */
     @FXML
     private Button showReportButton;
-
+    /** Displays the selected report. */
     @FXML
     private TableView<Object> reportsTableView;
-
+    /**
+     * Displays report data as a pie chart.
+     */
     @FXML
     private PieChart reportPieChart;
-
+    /** Displays report data as a bar chart. */
     @FXML
     private BarChart<String, Number> reportBarChart;
-
+    /**
+     * Bar chart category axis.
+     */
     @FXML
     private CategoryAxis barChartXAxis;
-
+    /**
+    * Bar chart value axis.
+    */
     @FXML
     private NumberAxis barChartYAxis;
-
+    /** Displays report status messages. */
     @FXML
     private Label statusLabel;
-
+    /**
+     * Sets the client controller and registers this controller as an observer.
+     *
+     * @param clientController the client controller to use
+     */
     public void setClientController(ClientController clientController) {
     	this.clientController = clientController;
 
@@ -88,11 +115,17 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     		this.clientController.requestActiveParks();
     	}
     }
-
+    /**
+     * Sets the logged-in employee.
+     *
+     * @param employee the logged-in employee
+     */
     public void setLoggedInEmployee(Employee employee) {
     	this.loggedInEmployee = employee;
     }
-
+    /**
+     * Initializes the reports page.
+     */
     @FXML
     private void initialize() {
         initReportTypes();
@@ -110,7 +143,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         statusLabel.setText("Status: Ready");
     }
-
+    /**
+     * Initializes the available report types.
+     */
     private void initReportTypes() {
         reportTypeComboBox.getItems().clear();
 
@@ -132,7 +167,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
             reportTypeComboBox.setValue(reportTypeComboBox.getItems().get(0));
         }
     }
-
+    /**
+     * Initializes the month and year filters.
+     */
     private void initDateFilters() {
         int currentMonth = LocalDate.now().getMonthValue();
         int currentYear = LocalDate.now().getYear();
@@ -151,7 +188,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         monthComboBox.setValue(currentMonth);
         yearComboBox.setValue(currentYear);
     }
-
+    /**
+     * Requests the selected report.
+     */
     @FXML
     private void handleShowReport() {
         if (clientController == null) {
@@ -195,7 +234,11 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         statusLabel.setText("Status: Loading report...");
         clientController.requestReport(request);
     }
-
+    /**
+     * Returns the employee ID used for report requests.
+     *
+     * @return the employee ID, or -1 if no employee is logged in
+     */
     private int getEmployeeIdForRequest() {
         if (!ClientSession.isEmployeeLoggedIn()) {
             return -1;
@@ -203,7 +246,11 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         return ClientSession.getEmployeeId();
     }
-
+    /**
+     * Handles the list of available parks.
+     *
+     * @param parks the parks returned by the server
+     */
     @Override
     public void onParksReceived(List<Park> parks) {
         if (parks == null || parks.isEmpty()) {
@@ -233,7 +280,11 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         parkComboBox.setItems(visibleParks);
         parkComboBox.setValue(visibleParks.get(0));
     }
-
+    /**
+     * Handles the report response from the server.
+     *
+     * @param response the report response
+     */
     @Override
     public void onReportResponse(OperationResponse response) {
         if (response == null) {
@@ -274,7 +325,11 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     // -------------------------------------------------------------------------
     // Visitor report
     // -------------------------------------------------------------------------
-
+    /**
+     * Displays the visitor report.
+     * @param rows the rows of the report
+     * 
+     */
     private void showVisitorReport(List<?> rows) {
         setupVisitorReportColumns();
         setTableItems(rows);
@@ -282,7 +337,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         statusLabel.setText("Status: Visitor report loaded");
     }
-
+    /** Configures the visitor report table columns. */
     private void setupVisitorReportColumns() {
         reportsTableView.getColumns().clear();
 
@@ -291,7 +346,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportsTableView.getColumns().add(createColumn("Number Of Visits", "numberOfVisits"));
         reportsTableView.getColumns().add(createColumn("Total Visitors", "totalVisitors"));
     }
-
+    /** Displays the visitor report pie chart. 
+     * @param rows the rows of the report
+     * */
     private void showVisitorPieChart(List<?> rows) {
         ObservableList<PieChart.Data> chartData = FXCollections.observableArrayList();
 
@@ -313,7 +370,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     // -------------------------------------------------------------------------
     // Cancellation report
     // -------------------------------------------------------------------------
-
+    /** Displays the cancellation report. 
+     * * @param rows the rows of the report
+     */
     private void showCancellationReport(List<?> rows) {
         setupCancellationReportColumns();
         setTableItems(rows);
@@ -321,7 +380,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         statusLabel.setText("Status: Cancellation report loaded");
     }
-
+    /** Configures the cancellation report table columns. */
     private void setupCancellationReportColumns() {
         reportsTableView.getColumns().clear();
 
@@ -330,7 +389,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportsTableView.getColumns().add(createColumn("Total Cancellations", "totalCancellations"));
         reportsTableView.getColumns().add(createColumn("Avg Days Before Visit", "averageDaysBeforeVisit"));
     }
-
+    /** Displays the cancellation report bar chart. 
+     * @param rows the rows of the report
+     * */
     private void showCancellationBarChart(List<?> rows) {
         Map<String, Integer> totalByStatus = new LinkedHashMap<>();
 
@@ -371,7 +432,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     // -------------------------------------------------------------------------
     // Visit duration report
     // -------------------------------------------------------------------------
-
+    /** Displays the visit duration report. 
+     * @param rows the rows of the report
+     * */
     private void showVisitDurationReport(List<?> rows) {
         setupVisitDurationReportColumns();
         setTableItems(rows);
@@ -379,7 +442,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         statusLabel.setText("Status: Visit duration report loaded");
     }
-
+    /** Configures the visit duration report table columns. 
+     * @param rows the rows of the report
+     * */
     private void setupVisitDurationReportColumns() {
         reportsTableView.getColumns().clear();
 
@@ -388,7 +453,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportsTableView.getColumns().add(createColumn("Number Of Visits", "numberOfVisits"));
         reportsTableView.getColumns().add(createColumn("Avg Duration Minutes", "averageDurationMinutes"));
     }
-
+    /** Displays the visit duration report bar chart. 
+     * @param rows the rows of the report
+     * */
     private void showVisitDurationBarChart(List<?> rows) {
         ObservableList<XYChart.Series<String, Number>> seriesList =
                 FXCollections.observableArrayList();
@@ -424,7 +491,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     // -------------------------------------------------------------------------
     // Park usage report
     // -------------------------------------------------------------------------
-
+    /** Displays the park usage report. 
+     * @param rows the rows of the report
+     * */
     private void showParkUsageReport(List<?> rows) {
         setupParkUsageReportColumns();
         setTableItems(rows);
@@ -432,7 +501,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         statusLabel.setText("Status: Park usage report loaded");
     }
-
+    /** Configures the park usage report table columns. */
     private void setupParkUsageReportColumns() {
         reportsTableView.getColumns().clear();
 
@@ -441,7 +510,9 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportsTableView.getColumns().add(createColumn("Avg Occupancy %", "averageOccupancyPercent"));
         reportsTableView.getColumns().add(createColumn("Max Occupancy %", "maxOccupancyPercent"));
     }
-
+    /** Displays the park usage report bar chart. 
+     * @param rows the rows of the report
+     * */
     private void showParkUsageBarChart(List<?> rows) {
         XYChart.Series<String, Number> averageSeries = new XYChart.Series<>();
         averageSeries.setName("Average Occupancy %");
@@ -478,14 +549,24 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
+    /**
+     * Creates a table column.
+     *
+     * @param title the column title
+     * @param propertyName the property name
+     * @return the created table column
+     */
     private TableColumn<Object, Object> createColumn(String title, String propertyName) {
         TableColumn<Object, Object> column = new TableColumn<>(title);
         column.setPrefWidth(180);
         column.setCellValueFactory(new PropertyValueFactory<>(propertyName));
         return column;
     }
-
+    /**
+     * Sets the report table items.
+     *
+     * @param rows the report rows
+     */
     private void setTableItems(List<?> rows) {
         ObservableList<Object> items = FXCollections.observableArrayList();
 
@@ -500,7 +581,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         reportsTableView.setItems(items);
     }
-
+    /** Clears the report display. */
     private void clearReportView() {
         reportsTableView.getItems().clear();
         reportsTableView.getColumns().clear();
@@ -510,7 +591,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
 
         hideCharts();
     }
-
+    /** Shows the pie chart. */
     private void showPieChart() {
         reportPieChart.setVisible(true);
         reportPieChart.setManaged(true);
@@ -518,7 +599,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportBarChart.setVisible(false);
         reportBarChart.setManaged(false);
     }
-
+    /** Shows the bar chart. */
     private void showBarChart() {
         reportPieChart.setVisible(false);
         reportPieChart.setManaged(false);
@@ -526,7 +607,7 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportBarChart.setVisible(true);
         reportBarChart.setManaged(true);
     }
-
+    /** Hides all charts. */
     private void hideCharts() {
         reportPieChart.setVisible(false);
         reportPieChart.setManaged(false);
@@ -534,7 +615,11 @@ public class ReportsPageController implements ReportObserver, ParkObserver {
         reportBarChart.setVisible(false);
         reportBarChart.setManaged(false);
     }
-    
+    /**
+     * Returns to the appropriate dashboard.
+     *
+     * @param event the button click event
+     */
     @FXML
     private void handleBack(ActionEvent event) {
     	try {

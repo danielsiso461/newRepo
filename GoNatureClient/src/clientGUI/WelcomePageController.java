@@ -21,7 +21,7 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import javafx.scene.control.TableView;
 
-/*
+/**
  * this class controls the welcome page of the client application
  * 
  * the page asks the user to enter an ID and a server address
@@ -39,31 +39,39 @@ public class WelcomePageController {
 	 */
 	//private String id;
 
-	/*
+	/**
 	 * stores the server address
 	 */
 	private String address;
-
+	/** ResourceBundle that was given to the FXMLLoader */
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
-
+    /** URL location of the FXML file that was given to the FXMLLoader */
     @FXML // URL location of the FXML file that was given to the FXMLLoader
     private URL location;
-
+    /**
+     * label used to command the user
+     */
     @FXML // fx:id="commandLabel"
     private Label commandLabel; // Value injected by FXMLLoader
-
+    /**
+     * button used to confirm entered server address
+     */
     @FXML // fx:id="confirmButton"
     private Button confirmButton; // Value injected by FXMLLoader
-
+    /**
+     * input field to enter server address
+     */
     @FXML // fx:id="inputField"
     private TextField inputField; // Value injected by FXMLLoader
-
+    /**
+     * message label to give feedback to user
+     */
     @FXML // fx:id="messageLabel"
     private Label messageLabel; // Value injected by FXMLLoader
 
     
-    /*
+    /**
      * This function handles pressing the confirm button.
      * 
      * The user enters the server address.
@@ -84,7 +92,7 @@ public class WelcomePageController {
     	launchOpeningScreen();
     }
 
-    /*
+    /**
      * this function initializes the welcome page
      * 
      * checks that all FXML components were injected correctly
@@ -117,7 +125,7 @@ public class WelcomePageController {
      		}
      	});
     }
-    /*
+    /**
      * This function loads and opens the opening screen.
      * 
      * It creates the client controller, gives it to the screens that need server

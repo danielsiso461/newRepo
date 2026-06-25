@@ -15,24 +15,39 @@ import javafx.stage.Stage;
 import clientCommon.ClientSession;
 
 
-/*
+/**
  * This class is the controller for the service representative home page.
  * 
  * The service representative is responsible for customer service actions,
  * such as registering subscribers, registering guides, and assisting customers.
  */
 public class ServiceRepresentativeHomePageController {
-
+	/**
+	 * Client controller used to communicate with the server.
+	 */
 	private ClientController clientController;
+	/**
+	 * The employee currently logged in.
+	 */
 	private Employee loggedInEmployee;
-
+	/**
+	 * Displays the welcome message for the logged-in employee.
+	 */
 	@FXML
 	private Label welcomeLabel;
-
+	/**
+	 * Sets the client controller.
+	 *
+	 * @param clientController the client controller to use
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 	}
-
+	/**
+	 * Sets the logged-in employee and updates the welcome label.
+	 *
+	 * @param employee the logged-in employee
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 
@@ -41,7 +56,7 @@ public class ServiceRepresentativeHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Opens the subscriber registration screen.
 	 * 
 	 * This screen is used by the service representative to register a new family
@@ -102,7 +117,13 @@ public class ServiceRepresentativeHomePageController {
 			e.printStackTrace();
 		}
 	}
-
+	/**
+	 * Opens the customer orders screen.
+	 *
+	 * This screen allows the service representative to view customer orders.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleViewCustomerOrders(ActionEvent event) {
 		try {
@@ -128,7 +149,7 @@ public class ServiceRepresentativeHomePageController {
 		}
 	}
 	
-	/*
+	/**
 	 * Opens the user information screen.
 	 * 
 	 * This screen allows the service representative to view information
@@ -164,7 +185,7 @@ public class ServiceRepresentativeHomePageController {
 		}
 	}
 
-	/*
+	/**
 	 * Handles logout from the park worker screen.
 	 * 
 	 * For now, this returns the user to the opening screen.

@@ -21,56 +21,92 @@ import javafx.stage.Stage;
 import javafx.scene.layout.HBox;
 
 
-/*
+/**
  * This controller handles the user information page.
  * 
  * The page allows a service representative to search and view information
  * about customers and employees.
  */
 public class UserInformationPageController implements UserInformationObserver {
-
+	/**
+	 * Customer user type option.
+	 */
 	private static final String USER_TYPE_CUSTOMER = "Customer";
+	/**
+	 * Employee user type option.
+	 */
 	private static final String USER_TYPE_EMPLOYEE = "Employee";
-
+	/**
+	 * Client controller used to communicate with the server.
+	 */
 	private ClientController clientController;
+	/**
+	 * The employee currently logged in.
+	 */
 	private Employee loggedInEmployee;
-	
+	/**
+	 * FXML path of the previous screen.
+	 */
 	private String previousScreenFxml;
+	/**
+	 * Title of the previous screen.
+	 */
 	private String previousScreenTitle;
-	
+	/**
+	 * Previous scene to return to.
+	 */
 	private Scene previousScene;
+	/**
+	 * Customer ID whose details should be displayed.
+	 */
 	private String customerIdForMyDetails;
-	
+	/**
+	 * Sets the previous screen to return to.
+	 *
+	 * @param previousScreenFxml the previous screen FXML path
+	 * @param previousScreenTitle the previous screen title
+	 */
 	public void setPreviousScreen(String previousScreenFxml, String previousScreenTitle) {
 		this.previousScreenFxml = previousScreenFxml;
 		this.previousScreenTitle = previousScreenTitle;
 	}
-	
+	/**
+	 * Sets the previous scene to return to.
+	 *
+	 * @param previousScene the previous scene
+	 * @param previousScreenTitle the previous screen title
+	 */
 	public void setPreviousScene(Scene previousScene, String previousScreenTitle) {
 		this.previousScene = previousScene;
 		this.previousScreenTitle = previousScreenTitle;
 	}
-
+	/** Displays the page title. */
 	@FXML
 	private Label titleLabel;
-
+	/** Displays status messages. */
 	@FXML
 	private Label messageLabel;
-
+	/** User ID input field. */
 	@FXML
 	private TextField userIdField;
-
+	/** Displays the retrieved user information. */
 	@FXML
 	private TextArea detailsTextArea;
-
+	/** User type selector. */
 	@FXML
 	private ChoiceBox<String> userTypeChoiceBox;
-	
+	/** Contains the search controls. */
 	@FXML
 	private HBox searchBox;
-
+	/**
+	 * Indicates whether the page is displaying personal details.
+	 */
 	private boolean myDetailsMode = false;
-
+	/**
+	 * Sets the client controller and registers this controller as an observer.
+	 *
+	 * @param clientController the client controller to use
+	 */
 	public void setClientController(ClientController clientController) {
 		this.clientController = clientController;
 
@@ -80,12 +116,18 @@ public class UserInformationPageController implements UserInformationObserver {
 		
 		loadMyDetailsIfReady();
 	}
-
+	/**
+	 * Sets the logged-in employee.
+	 *
+	 * @param employee the logged-in employee
+	 */
 	public void setLoggedInEmployee(Employee employee) {
 		this.loggedInEmployee = employee;
 		loadMyDetailsIfReady();
 	}
-
+	/**
+	 * Initializes the user information page.
+	 */
 	@FXML
 	private void initialize() {
 		if (titleLabel != null) {
@@ -107,7 +149,11 @@ public class UserInformationPageController implements UserInformationObserver {
 			detailsTextArea.setText("");
 		}
 	}
-
+	/**
+	 * Handles searching for customer or employee information.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleSearch(ActionEvent event) {
 		String searchValue = userIdField.getText();
@@ -168,7 +214,11 @@ public class UserInformationPageController implements UserInformationObserver {
 
 		messageLabel.setText("Please choose a valid user type.");
 	}
-
+	/**
+	 * Handles the server response for a user information search.
+	 *
+	 * @param response the operation response returned by the server
+	 */
 	@Override
 	public void onUserInformationResult(OperationResponse response) {
 		Platform.runLater(() -> {
@@ -187,7 +237,9 @@ public class UserInformationPageController implements UserInformationObserver {
 			}
 		});
 	}
-	
+	/**
+	 * Configures the page to display the logged-in employee's details.
+	 */
 	public void configureForMyDetails() {
 		myDetailsMode = true;
 
@@ -206,7 +258,11 @@ public class UserInformationPageController implements UserInformationObserver {
 
 		loadMyDetailsIfReady();
 	}
-	
+	/**
+	 * Configures the page to display the logged-in customer's details.
+	 *
+	 * @param customerId the customer ID to load
+	 */
 	public void configureForCustomerMyDetails(String customerId) {
 		myDetailsMode = true;
 		customerIdForMyDetails = customerId;
@@ -226,7 +282,9 @@ public class UserInformationPageController implements UserInformationObserver {
 
 		loadMyDetailsIfReady();
 	}
-	
+	/**
+	 * Loads personal details when the required data is available.
+	 */
 	private void loadMyDetailsIfReady() {
 		if (!myDetailsMode) {
 			return;
@@ -251,7 +309,11 @@ public class UserInformationPageController implements UserInformationObserver {
 			);
 		}
 	}
-
+	/**
+	 * Handles returning to the previous screen.
+	 *
+	 * @param event the button click event
+	 */
 	@FXML
 	private void handleBack(ActionEvent event) {
 		try {

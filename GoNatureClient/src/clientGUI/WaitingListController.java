@@ -19,7 +19,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-/*
+/**
  * This controller handles the waiting list page.
  *
  * The page displays the current visitor's active waiting list requests.
@@ -32,53 +32,62 @@ public class WaitingListController implements WaitingListObserver {
 	 */
 	private ClientController clientController;
 
-	/*
+	/**
 	 * The previous scene, used when returning to the order table page.
 	 */
 	private Scene prevScene;
 	
-	/*
+	/**
 	 * Keeps track of offered waiting list requests that already triggered
-	 * notification simulation popups in this screen session.
+	 * phone notification simulation popups in this screen session.
 	 */
 	private final Set<Integer> simulatedPhoneOfferIds = new HashSet<>();
+	/**
+	 * Keeps track of offered waiting list requests that already triggered
+	 * email notification simulation popups in this screen session.
+	 */
 	private final Set<Integer> simulatedEmailOfferIds = new HashSet<>();
+	/**
+	 * Indicates whether this controller has been closed.
+	 */
 	private boolean closed = false;
-	
+	/**
+	 * Displays the visitor's waiting list requests.
+	 */
 	@FXML // fx:id="offersTable"
 	private TableView<WaitingListMessage> offersTable; // Value injected by FXMLLoader
-
+	/** Waiting list ID column. */
 	@FXML // fx:id="waitingIdColumn"
 	private TableColumn<WaitingListMessage, Integer> waitingIdColumn; // Value injected by FXMLLoader
-
+	/** Park ID column. */
 	@FXML // fx:id="parkIdColumn"
 	private TableColumn<WaitingListMessage, Integer> parkIdColumn; // Value injected by FXMLLoader
-
+	/** Requested visit date column. */
 	@FXML // fx:id="requestedDateColumn"
 	private TableColumn<WaitingListMessage, java.time.LocalDateTime> requestedDateColumn; // Value injected by FXMLLoader
-
+	/** Number of visitors column. */
 	@FXML // fx:id="visitorsColumn"
 	private TableColumn<WaitingListMessage, Integer> visitorsColumn; // Value injected by FXMLLoader
-
+	/** Queue position column. */
 	@FXML // fx:id="queuePositionColumn"
 	private TableColumn<WaitingListMessage, Integer> queuePositionColumn; // Value injected by FXMLLoader
-
+	/** Waiting list status column. */
 	@FXML // fx:id="statusColumn"
 	private TableColumn<WaitingListMessage, String> statusColumn; // Value injected by FXMLLoader
-
+	/** Accept offer button. */
 	@FXML // fx:id="acceptButton"
 	private Button acceptButton; // Value injected by FXMLLoader
-
+	/** Reject offer button. */
 	@FXML // fx:id="rejectButton"
 	private Button rejectButton; // Value injected by FXMLLoader
-
+	/** Returns to the previous page. */
 	@FXML // fx:id="backButton"
 	private Button backButton; // Value injected by FXMLLoader
-
+	/** Displays status messages. */
 	@FXML // fx:id="messageLabel"
 	private Label messageLabel; // Value injected by FXMLLoader
 
-	/*
+	/**
 	 * Sets the ClientController for this page, registers this controller as a
 	 * waiting list observer, and loads the current visitor's waiting list requests.
 	 *
@@ -93,7 +102,7 @@ public class WaitingListController implements WaitingListObserver {
 		}
 	}
 
-	/*
+	/**
 	 * Sets the previous scene so the user can return to the order table page.
 	 *
 	 * @param prevScene the previous scene
@@ -102,7 +111,7 @@ public class WaitingListController implements WaitingListObserver {
 		this.prevScene = prevScene;
 	}
 
-	/*
+	/**
 	 * Initializes the waiting list page.
 	 *
 	 * This method connects the table columns to the WaitingListMessage fields and
@@ -142,7 +151,7 @@ public class WaitingListController implements WaitingListObserver {
 		messageLabel.setText("Loading your waiting list requests...");
 	}
 
-	/*
+	/**
 	 * Loads the current visitor's active waiting list requests from the server.
 	 */
 	private void loadWaitingListRequests() {
@@ -162,7 +171,7 @@ public class WaitingListController implements WaitingListObserver {
 		}
 	}
 
-	/*
+	/**
 	 * Enables Accept / Reject only for requests that are currently offered.
 	 *
 	 * @param selectedOffer the selected waiting list request
@@ -176,7 +185,7 @@ public class WaitingListController implements WaitingListObserver {
 		rejectButton.setDisable(!canRespond);
 	}
 
-	/*
+	/**
 	 * Handles clicking the Accept button.
 	 *
 	 * The method sends the selected offered waiting list request to the server so it
@@ -207,7 +216,7 @@ public class WaitingListController implements WaitingListObserver {
 		clientController.requestAcceptWaitingOffer(selectedOffer.getWaitingId());
 	}
 
-	/*
+	/**
 	 * Handles clicking the Reject button.
 	 *
 	 * The method sends the selected offered waiting list request to the server so it
@@ -238,7 +247,7 @@ public class WaitingListController implements WaitingListObserver {
 		clientController.requestRejectWaitingOffer(selectedOffer.getWaitingId());
 	}
 
-	/*
+	/**
 	 * Handles clicking the Back button.
 	 *
 	 * The method returns the user to the previous scene.
@@ -261,7 +270,7 @@ public class WaitingListController implements WaitingListObserver {
 		stage.setTitle("Order Table");
 		stage.show();
 	}
-	/*
+	/**
 	 * Shows notification simulation popups for offered waiting list requests.
 	 *
 	 * The popups simulate SMS and email messages that would be sent to the visitor
@@ -312,7 +321,7 @@ public class WaitingListController implements WaitingListObserver {
 	}
 	
 
-	/*
+	/**
 	 * Shows a notification simulation popup.
 	 *
 	 * @param title   the popup title
@@ -326,7 +335,7 @@ public class WaitingListController implements WaitingListObserver {
 		alert.showAndWait();
 	}
 
-	/*
+	/**
 	 * Returns a readable value for notification simulation.
 	 *
 	 * @param value the value to display
@@ -340,7 +349,7 @@ public class WaitingListController implements WaitingListObserver {
 		return value;
 	}
 
-	/*
+	/**
 	 * Handles the result of loading waiting list requests for the current subscriber.
 	 *
 	 * @param success true if the requests were loaded successfully
@@ -377,7 +386,7 @@ public class WaitingListController implements WaitingListObserver {
 		});
 	}
 
-	/*
+	/**
 	 * Handles the server response after requesting to join the waiting list.
 	 *
 	 * This screen does not create waiting list requests directly, so no UI action is
@@ -391,7 +400,7 @@ public class WaitingListController implements WaitingListObserver {
 		// No action is needed here at this stage.
 	}
 
-	/*
+	/**
 	 * Handles the result of rejecting a waiting list offer.
 	 *
 	 * @param success            true if the waiting list offer was rejected successfully
@@ -415,7 +424,7 @@ public class WaitingListController implements WaitingListObserver {
 		});
 	}
 
-	/*
+	/**
 	 * Handles the result of accepting a waiting list offer.
 	 *
 	 * @param success            true if the waiting list offer was accepted successfully
@@ -444,7 +453,7 @@ public class WaitingListController implements WaitingListObserver {
 		});
 	}
 
-	/*
+	/**
 	 * Handles server shutdown/disconnect.
 	 */
 	@Override

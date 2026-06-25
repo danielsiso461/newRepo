@@ -20,56 +20,68 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-/*
+/**
  * This class is the controller for the register subscriber screen.
  * 
  * The screen is used by a service representative to register a new family
  * subscriber in the GoNature system.
  */
 public class RegisterSubscriberController implements RegisterSubscriberObserver {
-
+	/**
+	 * Cash payment method.
+	 */
 	private static final String PAYMENT_CASH = "cash";
+	/**
+	 * Credit card payment method.
+	 */
 	private static final String PAYMENT_CREDIT_CARD = "credit_card";
-
+	/**
+	 * Client controller used to communicate with the server.
+	 */
 	private ClientController clientController;
+	/**
+	 * The logged-in service representative.
+	 */
 	private Employee loggedInEmployee;
-
+	/** Subscriber first name field. */
 	@FXML
 	private TextField firstNameField;
-
+	/** Subscriber last name field. */
 	@FXML
 	private TextField lastNameField;
-
+	/** Subscriber ID number field. */
 	@FXML
 	private TextField idNumberField;
-
+	/** Subscriber phone number field. */
 	@FXML
 	private TextField phoneField;
-
+	/** Subscriber email field. */
 	@FXML
 	private TextField emailField;
-
+	/** Family members count field. */
 	@FXML
 	private TextField familyMembersCountField;
-
+	/** Credit card last four digits field. */
 	@FXML
 	private TextField creditCardLast4Field;
-
+	/** Payment method selector. */
 	@FXML
 	private ComboBox<String> paymentMethodComboBox;
-
+	/** Displays registration status messages. */
 	@FXML
 	private Label messageLabel;
-
+	/** Username field. */
 	@FXML
 	private TextField usernameField;
-
+	/** Password field. */
 	@FXML
 	private PasswordField passwordField;
-
+	/** Password confirmation field. */
 	@FXML
 	private PasswordField confirmPasswordField;
-
+	/**
+	 * Initializes the register subscriber page.
+	 */
 	@FXML
 	private void initialize() {
 		paymentMethodComboBox.getItems().setAll(PAYMENT_CASH, PAYMENT_CREDIT_CARD);
@@ -84,7 +96,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		messageLabel.setText("");
 	}
 
-	/*
+	/**
 	 * Updates the credit card field according to the selected payment method.
 	 * 
 	 * If payment is cash, the credit card field is blocked and cleared.
@@ -106,7 +118,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		}
 	}
 
-	/*
+	/**
 	 * Sets the ClientController used by this screen.
 	 * 
 	 * @param clientController the active client controller
@@ -119,7 +131,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		}
 	}
 
-	/*
+	/**
 	 * Sets the logged-in service representative.
 	 * 
 	 * @param employee the employee that opened this screen
@@ -128,7 +140,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		this.loggedInEmployee = employee;
 	}
 
-	/*
+	/**
 	 * Handles the register subscriber button.
 	 * 
 	 * Validates the form locally and sends the subscriber data to the server.
@@ -281,7 +293,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		clientController.requestRegisterSubscriber(request);
 	}
 
-	/*
+	/**
 	 * Receives the register subscriber result from the ClientController.
 	 * 
 	 * @param response the response received from the server
@@ -307,7 +319,7 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		});
 	}
 
-	/*
+	/**
 	 * Clears all form fields.
 	 * 
 	 * @param event the button click event
@@ -317,7 +329,9 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		clearFieldsOnly();
 		showInfo("");
 	}
-
+	/**
+	 * Clears all input fields.
+	 */
 	private void clearFieldsOnly() {
 		firstNameField.clear();
 		lastNameField.clear();
@@ -333,23 +347,35 @@ public class RegisterSubscriberController implements RegisterSubscriberObserver 
 		paymentMethodComboBox.setValue(PAYMENT_CASH);
 		updatePaymentMethodFields();
 	}
-
+	/**
+	 * Displays a success message.
+	 *
+	 * @param message the message to display
+	 */
 	private void showSuccess(String message) {
 		messageLabel.setStyle("-fx-text-fill: green;");
 		messageLabel.setText(message);
 	}
-
+	/**
+	 * Displays an error message.
+	 *
+	 * @param message the message to display
+	 */
 	private void showError(String message) {
 		messageLabel.setStyle("-fx-text-fill: red;");
 		messageLabel.setText(message);
 	}
-
+	/**
+	 * Displays an informational message.
+	 *
+	 * @param message the message to display
+	 */
 	private void showInfo(String message) {
 		messageLabel.setStyle("-fx-text-fill: #2f5d8c;");
 		messageLabel.setText(message);
 	}
 
-	/*
+	/**
 	 * Returns to the service representative home page.
 	 * 
 	 * @param event the button click event
