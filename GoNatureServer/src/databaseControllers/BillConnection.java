@@ -1,4 +1,3 @@
-
 package databaseControllers;
 
 import java.math.BigDecimal;
@@ -12,16 +11,7 @@ import java.util.List;
 
 import common.EntryPriceReceipt;
 
-
 /**
- * Handles database operations related to bills and entry payment receipts.
- * 
- * This connector creates bills from visit records, checks whether a bill already
- * exists, retrieves bill data, and builds receipt objects for park entry
- * payments according to the visit_price_calculation view.
- * 
- * The class is implemented as a singleton so the server uses one shared bill
- * database connector during runtime.
  * Handles database operations related to bills and entry price receipts.
  * 
  * This connector creates bills from visit records, loads bill information, and
@@ -71,7 +61,6 @@ public class BillConnection extends AbstractDBConnection {
     private static final String PARK_NAME = "park_name";
 
     /**
-     * Creates a new bill database connection.
      * Creates a new BillConnection instance.
      * 
      * The constructor is private because this class is implemented as a singleton.
@@ -110,17 +99,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Creates a bill record for an existing visit.
-     * 
-     * This query is kept as a full SQL query because it inserts values using a
-     * SELECT query from the visit_price_calculation view.
-     * 
-     * The bill values are calculated by selecting data from the
-     * visit_price_calculation view and inserting the result into the bill table.
-     * 
-     * @param visitId the ID of the visit for which the bill should be created
-     * @return true if the bill was created successfully, otherwise false
-     * @throws SQLException if the insert operation fails
      * Creates a bill for an existing visit.
      *
      * This query is kept as a full SQL query because it inserts values using a
@@ -152,14 +130,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Retrieves all bill records that belong to a specific visit.
-     * 
-     * The method returns the data as a list of object arrays instead of exposing a
-     * ResultSet outside the database layer.
-     * 
-     * @param visitId the ID of the visit whose bills should be retrieved
-     * @return a list of bill records that match the given visit ID
-     * @throws SQLException if the select operation fails
      * Returns the bill records that belong to a specific visit.
      *
      * The method returns a list of rows instead of exposing a ResultSet outside the
@@ -203,15 +173,6 @@ public class BillConnection extends AbstractDBConnection {
 
     /**
      * Calculates or loads an entry payment receipt by order number.
-     * 
-     * The method finds the latest visit related to the given order number, creates a
-     * bill if one does not already exist, and returns the bill data as an
-     * EntryPriceReceipt object.
-     * 
-     * @param orderNumber the order number used to locate the visit
-     * @return the entry price receipt for the matching visit
-     * @throws SQLException if no visit is found, if bill creation fails, or if the
-     *         receipt cannot be loaded
      *
      * The method finds the latest visit that belongs to the order, creates a bill
      * if one does not already exist, and then loads the bill as an
@@ -243,11 +204,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Finds the latest visit data related to a specific order number.
-     * 
-     * @param orderNumber the order number used to search for the visit
-     * @return the matching VisitData object, or null if no visit was found
-     * @throws SQLException if the select operation fails
      * Finds the latest visit data for a specific order number.
      * 
      * @param orderNumber the order number to search for
@@ -286,9 +242,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Creates a bill for the given visit only if one does not already exist.
-     * 
-     * @param visitId the ID of the visit that should have a bill
      * Creates a bill for a visit only if no bill exists yet.
      * 
      * @param visitId the visit ID for which a bill should exist
@@ -307,11 +260,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Checks whether a bill already exists for the given visit.
-     * 
-     * @param visitId the ID of the visit to check
-     * @return true if a bill exists for the visit, otherwise false
-     * @throws SQLException if the select operation fails
      * Checks whether a bill already exists for a specific visit.
      * 
      * @param visitId the visit ID to check
@@ -339,16 +287,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Loads bill data for a visit and converts it into an EntryPriceReceipt object.
-     * 
-     * The receipt includes order details, customer details, visit details, park
-     * information, discount breakdown, and the final payment amount.
-     * 
-     * @param customerId the ID of the customer related to the visit
-     * @param orderNumber the order number related to the visit
-     * @param visitId the ID of the visit whose bill should be loaded
-     * @return an EntryPriceReceipt object containing the bill details
-     * @throws SQLException if the bill cannot be found or loaded
      * Loads a bill by visit ID and builds an EntryPriceReceipt object.
      * 
      * The receipt includes order details, customer details, park name, price
@@ -435,14 +373,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Reads a monetary value from the ResultSet safely.
-     * 
-     * If the database value is null, zero is returned. The result is always rounded
-     * to two decimal places.
-     * 
-     * @param rs the ResultSet containing the value
-     * @param columnName the name of the money column
-     * @return the monetary value as BigDecimal with two decimal places
      * Reads a money value safely from the ResultSet.
      * 
      * If the database value is null, the method returns zero with two decimal
@@ -464,14 +394,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Reads a percentage value from the ResultSet safely.
-     * 
-     * If the database value is null, zero is returned. The result is always rounded
-     * to two decimal places.
-     * 
-     * @param rs the ResultSet containing the value
-     * @param columnName the name of the percentage column
-     * @return the percentage value as BigDecimal with two decimal places
      * Reads a percent value safely from the ResultSet.
      * 
      * If the database value is null, the method returns zero with two decimal
@@ -493,10 +415,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Formats a monetary value as a plain string with two decimal places.
-     * 
-     * @param value the monetary value to format
-     * @return the formatted money string
      * Formats a money value as text with two decimal digits.
      * 
      * @param value the money value to format
@@ -507,11 +425,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Formats a percentage value as a plain string with two decimal places and a
-     * percent sign.
-     * 
-     * @param value the percentage value to format
-     * @return the formatted percentage string
      * Formats a percent value as text with two decimal digits and a percent sign.
      * 
      * @param value the percent value to format
@@ -522,7 +435,6 @@ public class BillConnection extends AbstractDBConnection {
     }
 
     /**
-     * Holds basic visit data required for creating or loading a bill.
      * Holds basic visit data needed for receipt calculation.
      */
     private static class VisitData {
@@ -542,4 +454,3 @@ public class BillConnection extends AbstractDBConnection {
         private int subscriberId;
     }
 }
-
