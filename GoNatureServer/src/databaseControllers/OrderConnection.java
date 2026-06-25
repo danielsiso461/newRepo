@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -468,11 +469,12 @@ public final class OrderConnection extends AbstractDBConnection {
 
 			updated = updateStmt.executeUpdate() > 0;
 		}
-
-		if (updated) {
+		
+		//@todo this table was removed
+		/*if (updated) {
 			OrderStatusHistoryConnection.getInstance().addHistory(orderNumber, oldStatus, newStatus,
 					changedByEmployeeId, reason);
-		}
+		}*/
 
 		return updated;
 	}
@@ -908,5 +910,102 @@ public final class OrderConnection extends AbstractDBConnection {
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
+	}
+	
+	/**
+	 *  this method gets all orders that need reminders
+	 * @param date the date of the orders
+	 * @param hour the hour of the orders
+	 * @param status the status of the order
+	 * @return the list of those orders
+	 * @throws SQLException on sql error
+	 * 
+	 */
+	public List<Order> getOrdersByDateAndHourAndStatus(LocalDate date, int hour, String status) throws SQLException {
+
+		String sql = """
+					SELECT
+				   		o.order_number,
+				   		order_date,
+				   		order_hour,
+				   		number_of_visitors,
+				   		o.order_status,
+				   		o.customer_id,
+				   		o.email,
+				   		o.park_id,
+				   		s.subscriber_phone
+					FROM `order` o
+					LEFT JOIN subscriber s
+				   	ON o.subscriber_id = s.subscriber_id
+					WHERE o.order_date = ?
+				 		AND o.order_hour = ?
+				 		AND o.order_status = ?;
+				""";
+
+		List<Order> orders = new ArrayList<>();
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setObject(1, date);
+			pstmt.setInt(2, hour);
+			pstmt.setString(3, status);
+			
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					Order o = new Order(rs.getInt(ORDER_NUMBER), rs.getObject(ORDER_DATE, LocalDate.class),
+							rs.getInt(ORDER_HOUR), rs.getString(ORDER_STATUS), rs.getInt(ORDER_CUSTOMER_ID),
+							rs.getInt(VISITOR_NUMBER), rs.getString(EMAIL), rs.getInt(PARK_ID), rs.getString("subscriber_phone"));
+					orders.add(o);
+				}
+			}
+		}
+
+		return orders;
+	}
+	
+	/**
+	 * this method auto cancels orders according to the time given and status
+	 * @param date the expiration date
+	 * @param hour the expiration hour
+	 * @param status the status we want to change
+	 * @throws SQLException on sql error
+	 */
+	public void autoCancelOrderList(LocalDate date, int hour, String status) throws SQLException {
+		updateFields(new String[] { ORDER_STATUS }, List.of("expired"),
+				new String[] { ORDER_DATE, ORDER_HOUR, ORDER_STATUS }, List.of(date, hour, status));
+
+	}
+	
+	/**
+	 * this method updates orders that weren't used as no_show
+	 * @param status the status of the orders we want to change
+	 * @return a message of success / failure
+	 * @throws SQLException on sql error
+	 */
+	public String updateOrdersToNoShowsAccordingToStatus(String status) throws SQLException {
+		String retMessage, sql = """
+						UPDATE `order` o
+						JOIN park p ON o.park_id = p.park_id
+						SET o.order_status = 'no_show'
+						WHERE o.order_status = ?
+						AND DATE_ADD(
+					    DATE_ADD(o.order_date, INTERVAL o.order_hour HOUR),
+					    INTERVAL p.estimated_visit_duration_hours HOUR
+						) < NOW();
+					""";
+		
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, status);
+
+			int rows = pstmt.executeUpdate();
+
+			if (rows > 0) {
+				retMessage = "No show update completed successfully!";
+			} else {
+				retMessage = "No show update failed: record not found.";
+			}
+
+			pstmt.close();
+		}
+		return retMessage;
 	}
 }

@@ -532,4 +532,57 @@ public class Order implements Serializable {
 				"Order Date: " + orderDate.toString() + " " +
 				"Placement Date: " + placementDate.toString();
 	}
+	
+	/**
+	 * this is a constructor for the case of reminder
+	 * @param orderId the order's id
+	 * @param orderDate the date of the order
+	 * @param orderHour the hour of the order
+	 * @param orderStatus the status of the order
+	 * @param userId the user's id
+	 * @param email the order's email
+	 * @param parkId the id of the order's park
+	 * @param phoneNumber the phone number of the order
+	 */
+	public Order(int orderId, LocalDate orderDate, int orderHour, String orderStatus, int userId, 
+			int visitorNumber, String email, int parkId, String phoneNumber) {
+		this.orderId = orderId;
+		this.orderDate = orderDate;
+		this.orderHour = orderHour;
+		this.orderStatus = orderStatus;
+		this.userId = userId;
+		this.visitorNumber = visitorNumber;
+		this.email = email;
+		this.parkId = parkId;
+		this.phoneNumber = phoneNumber;
+	}
+	
+	/**
+	 * this method handles comparison between two order objects
+	 * @param obj the given object to compare
+	 * @return true if they are equal or false otherwise
+	 */
+	@Override
+	public boolean equals(Object obj) {
+	    if (this == obj) {
+	        return true;
+	    }
+
+	    if (!(obj instanceof Order)) {
+	        return false;
+	    }
+
+	    Order other = (Order) obj;
+	    return this.orderId.equals(other.orderId);
+	}
+	
+	/**
+	 * this method handles hashing order objects
+	 * this function is here as a pair for equals, it doesn't see actual use yet
+	 * @return the hash code of the object
+	 */
+	@Override
+	public int hashCode() {
+	    return Integer.hashCode(orderId);
+	}
 }

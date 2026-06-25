@@ -740,4 +740,19 @@ public class OrderTableDisplayController implements OrderObserver, Runnable {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * this method updates a given order's status to canceled
+	 * @param o the order
+	 */
+	@Override
+	public void reminderDeclined(Order o) {
+		Platform.runLater(() -> {
+			int index = data.indexOf(o);
+			if (index >= 0) {
+				data.get(index).setOrderStatus("cancelled");
+			    data.set(index, data.get(index));
+			}
+		});
+	}
 }

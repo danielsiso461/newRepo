@@ -162,7 +162,9 @@ public final class Server extends AbstractServer {
 		if (!currIdConnection.containsKey(u.getUserId())) {
 			currIdConnection.put(u.getUserId(), client);
 		}
-
+		
+		checkForReminderOnLogin(userId);
+		
 		return true;
 	}
 
@@ -224,7 +226,7 @@ public final class Server extends AbstractServer {
 		return null;
 	}
 
-	/*
+	/**
 	 * Binds a user id to the current client connection.
 	 *
 	 * This method is used after successful login responses, so employees and
@@ -264,6 +266,8 @@ public final class Server extends AbstractServer {
 		if (!currIdConnection.containsKey(id)) {
 			currIdConnection.put(id, client);
 		}
+
+		checkForReminderOnLogin(u.getUserId());
 
 		System.out.println("Bound user ID " + id + " to client connection.");
 	}
@@ -476,5 +480,39 @@ public final class Server extends AbstractServer {
 	@Override
 	protected Object clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
+	}
+	
+	/**
+	 * this method sends a reminder to the user
+	 * @param id the user's id
+	 * @param m the message to send
+	 * @return 1 on success and -1 on exception
+	 */
+	public int sendReminderToUser(String id, Message m) {
+		ConnectionToClient c = currIdConnection.get(id);
+		try {
+			c.sendToClient(m);
+			return 1;
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
+			return -1;
+		}
+	}
+	
+	/**
+	 * this method checks if a user is connected by id
+	 * @param id the user's id
+	 * @return true if user is connected and false otherwise
+	 */
+	public boolean isUserConnected(String id) {
+		return currIdConnection.containsKey(id);
+	}
+	
+	/**
+	 * this method checks if a user has pending reminders
+	 * @param id the user's id
+	 */
+	private void checkForReminderOnLogin(String id) {
+		serverController.checkForUserReminder(id);
 	}
 }

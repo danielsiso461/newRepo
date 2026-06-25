@@ -36,4 +36,10 @@ public interface ServerAndControllerConnection {
 	 * Method that when overriden is used to close the server safely.
 	 */
 	public abstract void closeServer();
+	
+	/**
+	 * this method checks if a given user has reminders
+	 * @param id the user's id
+	 */
+	void checkForUserReminder(String id);
 }

@@ -5,8 +5,41 @@ import java.util.ArrayList;
 import java.util.List;
 
 import client.Client;
-import clientCommon.*;
-import common.*;
+import clientCommon.ChatIF;
+import clientCommon.EmployeeLoginObserver;
+import clientCommon.EntryPriceObserver;
+import clientCommon.ExistingCustomerLoginObserver;
+import clientCommon.MakeOrderObserver;
+import clientCommon.OccasionalCustomerAccessObserver;
+import clientCommon.OrderObserver;
+import clientCommon.ParkEntranceObserver;
+import clientCommon.ParkObserver;
+import clientCommon.ParkParameterObserver;
+import clientCommon.ParkVisitorCounterObserver;
+import clientCommon.RegisterGuideObserver;
+import clientCommon.RegisterSubscriberObserver;
+import clientCommon.ReportObserver;
+import clientCommon.SearchSubscriberObserver;
+import clientCommon.WaitingListObserver;
+import clientGUI.MakePopUp;
+import common.CancelOrderMessage;
+import common.EmployeeLoginRequest;
+import common.EntryPriceRequest;
+import common.ExistingCustomerLoginRequest;
+import common.GuideRegistrationRequest;
+import common.Message;
+import common.OperationResponse;
+import common.Order;
+import common.Park;
+import common.ParkEntranceMessage;
+import common.ParkParameterChangeRequest;
+import common.ParkVisitorCounterSnapshot;
+import common.ParkVisitorCounterUpdateRequest;
+import common.Protocol;
+import common.RegisterSubscriberRequest;
+import common.ReportRequest;
+import common.UpdateMessage;
+import common.WaitingListMessage;
 import javafx.application.Platform;
 
 /**
@@ -784,7 +817,23 @@ public class ClientController implements ChatIF {
 			
 		case CLIENT_LOGOUT_USER_SUCCESS:
 			System.out.println("User logged out successfully from server.");
-			break;	
+			break;
+			
+		case ORDER_REMINDER:
+			handleOrderReminder(message);
+			break;
+		
+		case ACCEPT_ORDER_REMINDER_CONFIRMATION:
+			handleOrderReminderAcceptanceConfirmation(message);
+			break;
+			
+		case DECLINE_ORDER_REMINDER_CONFIRMATION:
+			handleOrderReminderDeclineConfirmation(message);
+			break;
+		
+		case ERROR_ORDER_REMINDER_CONFIRMATION:
+			handleOrderReminderAnswerConfirmationError(message);
+			break;
 
 		default:
 			System.out.println("Error: unknown server response in ClientController: " + type);
@@ -1098,6 +1147,38 @@ public class ClientController implements ChatIF {
 
 	private interface OperationResponseConsumer {
 		void accept(OperationResponse response);
+	}
+	
+	/**
+	 * this method notifies order observers that an order was canceled via reminder
+	 * @param o the order
+	 */
+	private void notifyReminderDeclined(Order o) {
+		for (OrderObserver observer : orderObservers) {
+			observer.reminderDeclined(o);
+		}
+	}
+	
+	private void handleOrderReminder(Message message) {
+		MakePopUp.makeReminderPopup(this, (Order) message.getData(), "Order Reminder");
+	}
+	
+	private void handleOrderReminderAcceptanceConfirmation(Message message) {
+		MakePopUp.makePopup("Confirmed: Order accepted",
+				"Order reminder accepted successfully\nOrder ID: " + 
+				((Order) message.getData()).getOrderId());
+	}
+	private void handleOrderReminderDeclineConfirmation(Message message) {
+		System.out.println("handleOrderReminderDeclineConfirmation");
+		MakePopUp.makePopup("Confirmed: Order cancelled",
+				"Order cancelled successfully\nOrder ID: " + 
+				((Order) message.getData()).getOrderId());
+		notifyReminderDeclined((Order) message.getData());
+	}
+	private void handleOrderReminderAnswerConfirmationError(Message message) {
+		MakePopUp.makePopup("Error: Order Reminder",
+				"Order Confirmation Error\nOrder ID: " + 
+				((Order) message.getData()).getOrderId());
 	}
 }
      

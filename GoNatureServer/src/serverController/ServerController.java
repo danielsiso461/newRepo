@@ -6,9 +6,34 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-import common.*;
+import common.CancelOrderMessage;
+import common.CommonConstants;
+import common.Employee;
+import common.EmployeeLoginRequest;
+import common.EntryPriceReceipt;
+import common.EntryPriceRequest;
+import common.ExistingCustomerLoginRequest;
+import common.GuideRegistrationRequest;
+import common.Message;
+import common.OperationResponse;
+import common.Order;
+import common.Park;
+import common.ParkEntranceMessage;
+import common.ParkParameterChangeRequest;
+import common.ParkVisitorCounterSnapshot;
+import common.ParkVisitorCounterUpdateRequest;
+import common.Protocol;
+import common.RegisterSubscriberRequest;
+import common.ReportRequest;
+import common.Subscriber;
+import common.UpdateMessage;
+import common.WaitingListMessage;
 import databaseControllers.BillConnection;
 import databaseControllers.DBConnectionPool;
 import databaseControllers.EmployeeConnection;
@@ -25,6 +50,7 @@ import server.Server;
 import serverCommon.ServerAndControllerConnection;
 import serverCommon.User;
 import serverGUI.ClientConnectionTableController;
+import timerController.TimerController;
 
 /**
  * This class connects the networking part of the server and the server GUI.
@@ -71,7 +97,9 @@ public class ServerController implements ServerAndControllerConnection {
 	private ReportConnection rc;
 	private BillConnection bc;
 	private OrderExceedsParkCapacityCheck orderChecker;
-
+	
+	private TimerController tc;
+	
 	private int allTimeUserCount = 1;
 
 	private ClientConnectionTableController serverGUIController;
@@ -123,7 +151,16 @@ public class ServerController implements ServerAndControllerConnection {
 			e.printStackTrace();
 			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
 		}
-
+		
+		try {
+			tc = new TimerController(this);
+			tc.start();
+			addLog("Timer controller started.");
+		} catch(Exception e) {
+			e.printStackTrace();
+			addLog("ERROR - Failed to create database connection objects: " + e.getMessage());
+		}
+		
 		try {
 			server.listen();
 			addLog("Server started listening for clients.");
@@ -395,7 +432,13 @@ public class ServerController implements ServerAndControllerConnection {
 
 		case GET_ALL_ORDERS_REQUEST:
 			return handleGetAllOrdersForServiceRepresentative();	
-
+		
+		case ACCEPT_ORDER_REMINDER:
+			return handleAcceptOrderReminder(m);
+			
+		case DECLINE_ORDER_REMINDER:
+			return handleDeclineOrderReminder(m);
+			
 		default:
 			System.out.println("Error: client request unknown");
 			addLog("ERROR - Unknown client request: " + type);
@@ -791,14 +834,23 @@ public class ServerController implements ServerAndControllerConnection {
 		}
 
 		CancelOrderMessage cancelOrderMessage = (CancelOrderMessage) m.getData();
-
+		return cancelOrder(cancelOrderMessage);
+		
+	}
+	
+	/**
+	 * helper function that handles canceling an order
+	 * @param cancelOrderMessage the info of the order to cancel
+	 * @return the response to the user (success / failure)
+	 */
+	private Message cancelOrder(CancelOrderMessage cancelOrderMessage) {
 		int changedByEmployeeId = 1;
-
+		
 		try {
 			expireOldWaitingOffers();
 
 			Order cancelledOrder = oc.getOrderByNumber(cancelOrderMessage.getOrderId());
-
+			
 			boolean cancelled = oc.cancelOrder(
 					cancelOrderMessage.getOrderId(),
 					changedByEmployeeId,
@@ -830,7 +882,7 @@ public class ServerController implements ServerAndControllerConnection {
 
 				return new Message(cancelOrderMessage, Protocol.CANCEL_ORDER_SUCCESS);
 			}
-
+			
 			addLog("Order cancellation failed. Order was not found or was not updated. Order ID: "
 					+ cancelOrderMessage.getOrderId());
 
@@ -2195,6 +2247,8 @@ public class ServerController implements ServerAndControllerConnection {
 			addLog("ERROR - Failed to close server: " + e.getMessage());
 		} finally {
 			closeDBConnection();
+			if(tc != null)
+				tc.shutDown();
 		}
 	}
 
@@ -2434,5 +2488,217 @@ public class ServerController implements ServerAndControllerConnection {
 			entranceMessage.setResponseMessage("Server error while loading current visitors.");
 			return new Message(entranceMessage, Protocol.GET_CURRENT_VISITORS_FAILURE);
 		}
+	}
+	
+	/**
+	 * this variable is a map that identifies reminders by user <user_id, Orders_to_remind>
+	 * we use a concurrent hashmap for thread safe operations as this is a shared resource
+	 * we use a concurrent linked queue - to keep the insertion order and get thread safe operations
+	 */
+	ConcurrentHashMap<String, ConcurrentLinkedQueue<Order>> remindersByUser = new ConcurrentHashMap<>();
+	
+	/**
+	 * this function adds reminders to orders ~24 hours before they happen
+	 * according to the target time and status
+	 * @param date the data to target
+	 * @param hour the hour to target
+	 * @param status the status to target
+	 */
+	public void addReminder(LocalDate date, int hour, String status) {
+		List<Order> newReminders = new ArrayList<>();
+		try {
+			addLog("Setting reminder for orders. Date: " + date + " hour: " + hour);
+			newReminders = oc.getOrdersByDateAndHourAndStatus(date, hour, status);
+		} catch(Exception e) {
+			addLog("Error with adding new reminders: " + e.getMessage());
+		}
+		
+		Set<String> newUsersToRemind = new HashSet<>();
+		
+		//simulate messages
+		String id;
+		addLog("Sending reminders start (email / phone)");
+		for(Order o : newReminders) {
+			id = o.getUserId().toString();
+			newUsersToRemind.add(id);
+			remindersByUser.computeIfAbsent(id, key -> new ConcurrentLinkedQueue<>()).add(o);
+			String phoneLog = o.getPhoneNumber() == null ? "" : (", " + o.getPhoneNumber());
+			addLog("SIMULATION! Sending reminder messages to: " + o.getEmail() +
+					phoneLog + " regarding order number: " + o.getOrderId());
+		}
+		addLog("Sending reminders end  (email / phone)");
+		
+		sendRemindersToConnectedUsers(newUsersToRemind);
+	}
+	
+	/**
+	 * this function sends reminder to all relevant connected users
+	 * @param newUsersToRemind the users to remind
+	 */
+	private void sendRemindersToConnectedUsers(Set<String> newUsersToRemind) {
+		if(newUsersToRemind == null || newUsersToRemind.isEmpty())
+			return;
+		for(String id : newUsersToRemind) {
+			if(!server.isUserConnected(id)) {
+				addLog("User " + id + " is not connected, cannot send reminder");
+				continue;
+			}
+			remindConnectedUser(id);	
+		}
+	}
+	
+	/**
+	 * this function sends each reminder given user
+	 * @param id the user id
+	 */
+	private void remindConnectedUser(String id) {
+		Queue<Order> orders = remindersByUser.get(id);
+		if(orders == null || orders.isEmpty())
+			return;
+		
+		for(Order o : orders) {
+			if (isExpired(o)) {
+			    continue;
+			}
+			int ret = server.sendReminderToUser(id, new Message(o, Protocol.ORDER_REMINDER));
+			if(ret == -1) {
+				addLog("Unknown error occurred trying to send reminder to user " + id);
+			}
+			else if(ret == 1) {
+				addLog("Reminder sent to user " + id + " successfully");
+			}
+		}
+	}
+	
+	/**
+	 * this method checks if a given order is expired
+	 * @param o the order
+	 * @return true if expired false otherwise
+	 */
+	private boolean isExpired(Order o) {
+	    LocalDate expiredDate = tc.getExpiredDate();
+	    int expiredHour = tc.getExpiredHourAsInt();
+
+	    return o.getOrderDate().isBefore(expiredDate)
+	        || (o.getOrderDate().equals(expiredDate)
+	            && o.getOrderHour() <= expiredHour);
+	}
+	
+	
+	/**
+	 * this method removes an order from the reminder list
+	 * @param o the order to remove
+	 * @return true if the order was removed and false otherwise
+	 * 
+	 */
+	private boolean removeFromMap(Order o) {
+		Queue<Order> orders = remindersByUser.get(o.getUserId().toString());
+		if (orders != null) {
+	        orders.remove(o);
+
+	        if (orders.isEmpty()) {
+	            remindersByUser.remove(o.getUserId().toString(), orders);
+	        }
+	        return true;
+	    }
+		return false;
+	}
+	
+	/**
+	 * this method checks if a given user has reminders
+	 * @param id the user's id
+	 */
+	public void checkForUserReminder(String id) {
+		if(!remindersByUser.containsKey(id))
+			return;
+		remindConnectedUser(id);
+	}
+	
+	/**
+	 * this function auto cancels due orders that users didn't answer their reminders
+	 * according to the target time and status
+	 * @param date the data to target
+	 * @param hour the hour to target
+	 * @param status the status to target
+	 */
+	public void removeReminder(LocalDate date, int hour, String status) {
+		boolean toRemove = false;
+		
+		String id;
+		ConcurrentLinkedQueue<Order> orders;
+		Order o;
+		for(Map.Entry<String, ConcurrentLinkedQueue<Order>> entry : remindersByUser.entrySet()) {
+			id = entry.getKey();
+			orders = entry.getValue();
+			
+			while(!orders.isEmpty()) {
+				o = orders.peek();
+				if(o.getOrderDate().isAfter(date) ||
+						   (o.getOrderDate().equals(date) && o.getOrderHour() > hour))
+					break;
+				if(o.getOrderDate().equals(date) && o.getOrderHour() == hour &&
+						o.getOrderStatus().equals(status)) {
+					toRemove = true;
+					addLog("SIMULATION! Order auto cancelled: " + 
+							o.getEmail() + ", " + o.getPhoneNumber() +
+							" regarding order number: " + o.getOrderId());
+				}
+				orders.poll();
+			}
+			
+			if (orders.isEmpty()) {
+	            remindersByUser.remove(id, orders);
+	        }
+		}
+		
+		try {
+			addLog("Auto cancelling orders with expired reminders.");
+			if(toRemove)
+				oc.autoCancelOrderList(date, hour, status);
+		} catch(Exception e) {
+			addLog("Error with auto cancelling orders: " + e.getMessage());
+		}
+	}
+	
+	/**
+	 * this function updates no shows in the DB
+	 * @param status the status of the orders we want to target in the update
+	 */
+	public void updateNoShows(String status) {
+		try {
+			addLog("Updating orders to no-shows.");
+			addLog(oc.updateOrdersToNoShowsAccordingToStatus(status));
+		} catch(Exception e) {
+			addLog("Error with updating orders to no-shows: " + e.getMessage());
+		}
+	}
+	
+	private Message handleAcceptOrderReminder(Message m) {
+		boolean removedOnAccept = removeFromMap((Order) m.getData());
+		if(removedOnAccept) {
+	        addLog("Order acceptance confirmed, Order id: " + ((Order) m.getData()).getUserId());
+	        return new Message((Order) m.getData(), Protocol.ACCEPT_ORDER_REMINDER_CONFIRMATION);
+	    }
+		addLog("Order acceptance failed, Order id: " + ((Order) m.getData()).getOrderId());
+		return new Message((Order) m.getData(), Protocol.ERROR_ORDER_REMINDER_CONFIRMATION);
+	}
+	
+	private Message handleDeclineOrderReminder(Message m) {
+		if(!(m.getData() instanceof Order)) {
+			System.out.println("Unknown error declining reminder");
+			return null;
+		}
+		Order o = (Order) m.getData();
+		boolean removedOnDecline = removeFromMap(o);
+		CancelOrderMessage cancelOrderMessage = new 
+				CancelOrderMessage(o.getOrderId(), -1, o.getUserId().toString(), "Reminder");
+		cancelOrder(cancelOrderMessage);
+		System.out.println("done with cancelOrder");
+		if(removedOnDecline) {
+			addLog("Order cancellation confirmed, Order id: " + o.getUserId());
+			return new Message(m.getData(), Protocol.DECLINE_ORDER_REMINDER_CONFIRMATION);
+		}
+		addLog("Order cancellation failed, Order id: " + o.getOrderId());
+		return new Message((Order) m.getData(), Protocol.ERROR_ORDER_REMINDER_CONFIRMATION);
 	}
 }
