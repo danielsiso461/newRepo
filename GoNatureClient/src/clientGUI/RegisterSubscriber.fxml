@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/25"
+<AnchorPane xmlns="http://javafx.com/javafx/21.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="clientGUI.RegisterSubscriberController"
             stylesheets="@gonature-theme.css"
@@ -29,19 +29,6 @@
                     AnchorPane.bottomAnchor="0.0"
                     AnchorPane.leftAnchor="0.0"
                     AnchorPane.rightAnchor="0.0">
-
-            <top>
-                <HBox alignment="CENTER_RIGHT"
-                      prefHeight="58.0"
-                      style="-fx-padding: 16 24 0 24;">
-                    <children>
-                        <Button text="Back"
-                                prefWidth="110.0"
-                                styleClass="back-button"
-                                onAction="#handleBack"/>
-                    </children>
-                </HBox>
-            </top>
 
             <center>
                 <VBox alignment="CENTER"
@@ -214,6 +201,11 @@
                                                 prefWidth="120.0"
                                                 styleClass="secondary-button"
                                                 onAction="#handleClear"/>
+
+                                        <Button text="Back"
+                                                prefWidth="120.0"
+                                                styleClass="secondary-button"
+                                                onAction="#handleBack"/>
                                     </children>
                                 </HBox>
 
@@ -225,12 +217,13 @@
             </center>
 
             <bottom>
-                <HBox alignment="CENTER" prefHeight="70.0">
+                <HBox alignment="CENTER" prefHeight="55.0">
                     <children>
                         <Label fx:id="messageLabel"
                                text=""
                                wrapText="true"
-                               styleClass="status-label"/>
+                               maxWidth="520.0"
+                               styleClass="info-label"/>
                     </children>
                 </HBox>
             </bottom>
