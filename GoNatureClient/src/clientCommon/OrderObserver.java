@@ -1,3 +1,4 @@
+
 package clientCommon;
 
 import java.util.List;
@@ -6,48 +7,50 @@ import common.CancelOrderMessage;
 import common.Order;
 import common.UpdateMessage;
 
-/*
- * this interface represents all UI items waiting on order-related updates from the server
+/**
+ * Interface for UI components that receive order-related updates from the server.
  */
 public interface OrderObserver {
-	/*
-	 * this function handles receiving all user orders from the server
+	/**
+	 * This method is called when the user's orders are received from the server.
 	 * 
-	 * @param rows 	the orders
+	 * @param rows the list of orders
 	 */
 	void onOrdersReceived(List<Order> rows);
 
-	/*
-	 * this function handles receiving an update result for an order from the server
+	/**
+	 * This method is called when the server returns an update result for an order.
 	 * 
-	 * @param success 			whether the update was successful
-	 * @param updateMessage 	the data of the update
+	 * @param success whether the update was successful
+	 * @param updateMessage the update data
 	 */
 	void onUpdateResult(boolean success, UpdateMessage updateMessage);
 
-	/*
-	 * this function handles receiving a cancellation result for an order from the server
+	/**
+	 * This method is called when the server returns a cancellation result for an order.
 	 * 
-	 * @param success				whether the cancellation was successful
-	 * @param cancelOrderMessage	the data of the cancellation request
+	 * @param success whether the cancellation was successful
+	 * @param cancelOrderMessage the cancellation request data
 	 */
 	void onCancelResult(boolean success, CancelOrderMessage cancelOrderMessage);
 
-	/*
-	 * this function adds an order to the order table
+	/**
+	 * Adds an order to the order table.
 	 * 
-	 * @param o the order to add to the order table
+	 * @param o the order to add
 	 */
 	void addOrder(Order o);
 
-	/*
-	 * this function handles the server shutting the client down
+	/**
+	 * This method handles the server shutting down the client.
 	 */
 	void handleExit();
 	
 	/**
-	 * this method notifies order observers that an order was canceled via reminder
+	 * This method notifies order observers that an order was canceled via reminder.
+	 * 
 	 * @param o the order
 	 */
     void reminderDeclined(Order o);
 }
+

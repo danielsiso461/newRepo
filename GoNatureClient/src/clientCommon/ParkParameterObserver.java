@@ -1,3 +1,4 @@
+
 package clientCommon;
 
 import java.util.List;
@@ -13,11 +14,16 @@ public interface ParkParameterObserver {
 
     /**
      * Called when pending park parameter change requests are received.
+     *
+     * @param requests the list of pending park parameter change requests
      */
     void onPendingParkParameterRequestsReceived(List<ParkParameterChangeRequest> requests);
 
     /**
-     * Called when a create / approve / reject action receives a response.
+     * Called when a create, approve, or reject action receives a response.
+     *
+     * @param response the operation response received from the server
+     * @param responseType the protocol type of the response
      */
     void onParkParameterOperationResponse(OperationResponse response, Protocol responseType);
 }

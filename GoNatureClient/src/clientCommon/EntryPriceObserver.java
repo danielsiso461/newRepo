@@ -7,5 +7,10 @@ import common.OperationResponse;
  */
 public interface EntryPriceObserver {
 
+    /**
+     * This method is called when the server returns the entry price calculation result.
+     *
+     * @param response the response received from the server
+     */
     void onEntryPriceCalculated(OperationResponse response);
 }
