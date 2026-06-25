@@ -542,7 +542,4 @@ public class BillConnection extends AbstractDBConnection {
         private int subscriberId;
     }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> stash
