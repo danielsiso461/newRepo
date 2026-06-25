@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -11,7 +12,11 @@ import java.util.List;
 import common.GuideRegistrationRequest;
 
 /**
- * DB connector for the guide table.
+ * Handles database operations related to guides.
+ * 
+ * This connector supports checking whether a subscriber is already registered
+ * as a guide, registering new guides, and validating whether a subscriber is an
+ * active guide.
  */
 public class GuideConnection extends AbstractDBConnection {
 
@@ -21,44 +26,45 @@ public class GuideConnection extends AbstractDBConnection {
     private static final GuideConnection INSTANCE = new GuideConnection();
 
     /**
-     * The guide table's guide id column.
+     * Column name for the guide ID.
      */
     private final String GUIDE_ID = "guide_id";
 
     /**
-     * The guide table's subscriber id column.
+     * Column name for the subscriber ID.
      */
     private final String SUBSCRIBER_ID = "subscriber_id";
 
     /**
-     * The guide table's authorized employee id column.
+     * Column name for the employee who authorized the guide.
      */
     private final String AUTHORIZED_BY_EMPLOYEE_ID = "authorized_by_employee_id";
 
     /**
-     * The guide table's organization name column.
+     * Column name for the guide's organization name.
      */
     private final String ORGANIZATION_NAME = "organization_name";
 
     /**
-     * The guide table's guide status column.
+     * Column name for the guide status.
      */
     private final String GUIDE_STATUS = "guide_status";
 
     /**
-     * The guide table's created at column.
+     * Column name for the guide creation timestamp.
      */
     private final String CREATED_AT = "created_at";
 
     /**
-     * The status value that represents an active guide.
+     * Status value that represents an active guide.
      */
     private final String GUIDE_STATUS_ACTIVE = "active";
 
     /**
-     * Private constructor for Singleton.
+     * Creates the GuideConnection singleton instance.
      * 
-     * It creates the database connection once.
+     * The constructor is private to prevent external object creation and opens the
+     * database connection when the singleton is initialized.
      */
     private GuideConnection() {
         super();
@@ -73,14 +79,14 @@ public class GuideConnection extends AbstractDBConnection {
     /**
      * Returns the single instance of GuideConnection.
      * 
-     * @return the only GuideConnection instance
+     * @return the singleton GuideConnection instance
      */
     public static GuideConnection getInstance() {
         return INSTANCE;
     }
 
     /**
-     * Returns the table name used by this DB connector.
+     * Returns the database table name used by this connector.
      * 
      * @return the guide table name
      */
@@ -92,8 +98,8 @@ public class GuideConnection extends AbstractDBConnection {
     /**
      * Checks whether a subscriber is already registered as a guide.
      * 
-     * @param subscriberId the subscriber id to check
-     * @return true if the subscriber is already registered as a guide, otherwise false
+     * @param subscriberId the subscriber ID to check
+     * @return true if the subscriber already has a guide record, otherwise false
      * @throws SQLException if the select query fails
      */
     public boolean isSubscriberAlreadyGuide(int subscriberId) throws SQLException {
@@ -123,8 +129,9 @@ public class GuideConnection extends AbstractDBConnection {
      * The method inserts a new guide record into the guide table using the data
      * received from the registration request.
      * 
-     * @param request the guide registration request
-     * @return true if the insert request was executed, false if the request is null
+     * @param request the guide registration request containing the guide details
+     * @return true if the guide registration was inserted, or false if the request
+     *         is null
      * @throws SQLException if the insert query fails
      */
     public boolean registerGuide(GuideRegistrationRequest request) throws SQLException {
@@ -157,10 +164,10 @@ public class GuideConnection extends AbstractDBConnection {
     }
 
     /**
-     * Returns the guide id if the subscriber is an active guide.
+     * Returns the guide ID if the subscriber is registered as an active guide.
      * 
-     * @param subscriberId the subscriber id to check
-     * @return the guide id if the subscriber is an active guide, otherwise null
+     * @param subscriberId the subscriber ID to check
+     * @return the guide ID if the subscriber is an active guide, otherwise null
      * @throws SQLException if the select query fails
      */
     public Integer isActiveGuide(int subscriberId) throws SQLException {
@@ -191,10 +198,14 @@ public class GuideConnection extends AbstractDBConnection {
     }
 
     /**
-     * Prevents cloning of the Singleton instance.
+     * Prevents cloning of the singleton instance.
+     * 
+     * @return never returns, because cloning is not supported
+     * @throws CloneNotSupportedException always thrown to prevent cloning
      */
     @Override
     protected Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
 }
+

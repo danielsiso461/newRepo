@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.PreparedStatement;
@@ -5,14 +6,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * This class is the DB connector used when working with the notification table.
+ * Handles database operations related to system notifications.
  * 
- * The class is implemented as a Singleton, so the server will use only one
- * database connection object for notifications during runtime.
- * 
- * The notification table stores simulated messages that the system prepares for
- * users, such as order confirmations, visit reminders, cancellations, and waiting
- * list offers.
+ * This connector is responsible for creating simulated notification records,
+ * retrieving notification report data, and updating notification statuses.
+ * The class is implemented as a singleton so the server uses one notification
+ * database connector during runtime.
  */
 public class NotificationConnection extends AbstractDBConnection {
 
@@ -22,9 +21,10 @@ public class NotificationConnection extends AbstractDBConnection {
 	private static NotificationConnection instance;
 
 	/**
-	 * Private constructor for Singleton.
+	 * Creates a new NotificationConnection instance.
 	 * 
-	 * It creates the database connection once.
+	 * The constructor is private because this class is implemented as a singleton.
+	 * It opens the database connection when the instance is created.
 	 * 
 	 * @throws SQLException if the connection to the database fails
 	 */
@@ -35,10 +35,10 @@ public class NotificationConnection extends AbstractDBConnection {
 	/**
 	 * Returns the single instance of NotificationConnection.
 	 * 
-	 * If no instance exists, or if the existing database connection is closed, a new
+	 * If no instance exists, or if the current database connection is closed, a new
 	 * instance is created.
 	 * 
-	 * @return the only NotificationConnection instance
+	 * @return the active NotificationConnection instance
 	 * @throws SQLException if creating the database connection fails
 	 */
 	public static NotificationConnection getInstance() throws SQLException {
@@ -49,7 +49,7 @@ public class NotificationConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * Returns the table name used by this DB connector.
+	 * Returns the database table name used by this connector.
 	 * 
 	 * @return the notification table name
 	 */
@@ -60,15 +60,15 @@ public class NotificationConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method creates an order confirmation notification for a specific order.
+	 * Creates an order confirmation notification for a specific order.
 	 * 
-	 * The notification is created using data from the order, subscriber, and park
-	 * tables. The created notification is marked as sent because it represents a
-	 * simulated popup message.
+	 * The notification data is built using details from the order, subscriber, and
+	 * park tables. The created notification is marked as sent because it represents
+	 * a simulated popup message.
 	 * 
 	 * @param orderNumber the order number for which the confirmation notification
 	 *                    should be created
-	 * @return true if the notification was created successfully, false otherwise
+	 * @return true if the notification was created successfully, otherwise false
 	 * @throws SQLException if the insert query fails
 	 */
 	public boolean createOrderConfirmationNotification(int orderNumber) throws SQLException {
@@ -92,11 +92,11 @@ public class NotificationConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method returns all notifications from the notification report view.
+	 * Retrieves all notifications from the notification report view.
 	 * 
 	 * The results are ordered from the newest notification to the oldest.
 	 * 
-	 * @return a ResultSet containing all notifications from notification_report
+	 * @return a ResultSet containing all records from the notification report view
 	 * @throws SQLException if the select query fails
 	 */
 	public ResultSet getAllNotifications() throws SQLException {
@@ -107,12 +107,13 @@ public class NotificationConnection extends AbstractDBConnection {
 	}
 
 	/**
-	 * This method marks a notification as sent.
+	 * Marks a notification as sent.
 	 * 
-	 * It updates the notification status to sent and stores the sending time.
+	 * The method updates the notification status to sent and stores the current
+	 * sending time.
 	 * 
-	 * @param notificationId the ID of the notification to mark as sent
-	 * @return true if the notification was updated successfully, false otherwise
+	 * @param notificationId the ID of the notification to update
+	 * @return true if the notification was updated successfully, otherwise false
 	 * @throws SQLException if the update query fails
 	 */
 	public boolean markAsSent(int notificationId) throws SQLException {

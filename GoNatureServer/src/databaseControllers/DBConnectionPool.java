@@ -1,3 +1,4 @@
+
 package databaseControllers;
 
 import java.sql.Connection;
@@ -7,14 +8,12 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * This class manages a pool of database connections.
+ * Manages a reusable pool of database connections.
  * 
- * Instead of opening a new database connection every time a connector needs to
- * work with the database, this class creates and reuses a limited number of
- * connections.
- * 
- * The connection pool improves performance and prevents creating too many open
- * connections to the database.
+ * Instead of creating a new database connection for every database operation,
+ * this class keeps a limited number of open connections and reuses them when
+ * needed. This improves performance and helps prevent exceeding the allowed
+ * number of open database connections.
  */
 public class DBConnectionPool {
 
@@ -32,9 +31,10 @@ public class DBConnectionPool {
 	private int createdConnections;
 
 	/**
-	 * Private constructor for Singleton.
+	 * Creates an empty connection pool.
 	 * 
-	 * The pool itself is created only once during runtime.
+	 * The constructor is private because this class is implemented as a singleton.
+	 * The actual database connections are created only when the pool is first used.
 	 */
 	private DBConnectionPool() {
 		availableConnections = new LinkedList<>();
@@ -42,9 +42,9 @@ public class DBConnectionPool {
 	}
 
 	/**
-	 * Returns the single instance of DBConnectionPool.
+	 * Returns the single instance of the connection pool.
 	 * 
-	 * @return the single DBConnectionPool instance
+	 * @return the singleton DBConnectionPool instance
 	 */
 	public static DBConnectionPool getInstance() {
 		if (instance == null) { 
@@ -55,22 +55,24 @@ public class DBConnectionPool {
 	}
 
 	/**
-	 * Saves the database password that was entered by the user.
+	 * Stores the database password entered by the user.
 	 * 
-	 * @param dbPassword the database password
+	 * The password is later used when creating new database connections.
+	 * 
+	 * @param dbPassword the database password to store
 	 */
 	public void setPassword(String dbPassword) {
 		this.password = dbPassword;
 	}
 
 	/**
-	 * Checks whether the entered database password is correct.
+	 * Tests whether the provided database password is valid.
 	 * 
-	 * This method opens a temporary connection only for testing and closes it
-	 * immediately afterwards.
+	 * This method creates a temporary database connection only for validation and
+	 * closes it immediately after the test.
 	 * 
-	 * @param dbPassword the database password entered by the user
-	 * @return true if the connection succeeds, false otherwise
+	 * @param dbPassword the database password to test
+	 * @return true if the connection succeeds, otherwise false
 	 */
 	public static boolean testConnection(String dbPassword) {
 		try {
@@ -83,12 +85,13 @@ public class DBConnectionPool {
 	}
 
 	/**
-	 * Initializes the connection pool.
+	 * Initializes the connection pool with a predefined number of connections.
 	 * 
-	 * This method creates a few database connections in advance and stores them in
-	 * the available connections queue.
+	 * The method creates the initial database connections and stores them in the
+	 * queue of available connections.
 	 * 
-	 * @throws SQLException if creating a database connection fails
+	 * @throws SQLException if the password is missing or if a connection cannot be
+	 *         created
 	 */
 	private void initializePool() throws SQLException {
 		if (password == null || password.isEmpty()) {
@@ -102,26 +105,27 @@ public class DBConnectionPool {
 	}
 
 	/**
-	 * Creates a new database connection.
+	 * Creates a new database connection using the configured URL, username, and
+	 * password.
 	 * 
 	 * @return a new database connection
-	 * @throws SQLException if creating the connection fails
+	 * @throws SQLException if the connection cannot be created
 	 */
 	private Connection createNewConnection() throws SQLException {
 		return DriverManager.getConnection(URL, USER, password);
 	}
 
 	/**
-	 * Gives a database connection from the pool.
+	 * Provides an available database connection from the pool.
 	 * 
-	 * If the pool has available connections, one of them is returned.
-	 * If there are no available connections and the maximum pool size was not
-	 * reached, a new connection is created.
-	 * If the maximum pool size was reached, the method waits until another
-	 * connection is released back to the pool.
+	 * If an available connection exists, it is returned. If the pool is empty and
+	 * the maximum pool size has not been reached, a new connection is created. If
+	 * the maximum size has been reached, the method waits until another connection
+	 * is released back to the pool.
 	 * 
-	 * @return an available database connection
-	 * @throws SQLException if getting a connection fails
+	 * @return an open database connection
+	 * @throws SQLException if a connection cannot be provided or if the waiting
+	 *         thread is interrupted
 	 */
 	public synchronized Connection getConnection() throws SQLException {
 		if (availableConnections.isEmpty() && createdConnections == 0) {
@@ -155,12 +159,12 @@ public class DBConnectionPool {
 	}
 
 	/**
-	 * Returns a database connection back to the pool.
+	 * Releases a database connection back to the pool.
 	 * 
-	 * The connection is not closed immediately. It is saved for reuse by another
-	 * database operation.
+	 * Open connections are stored for reuse by future database operations. Closed
+	 * connections are removed from the pool count.
 	 * 
-	 * @param connection the connection to return to the pool
+	 * @param connection the connection to release back to the pool
 	 */
 	public synchronized void releaseConnection(Connection connection) {
 		if (connection == null) {
@@ -180,9 +184,10 @@ public class DBConnectionPool {
 	}
 
 	/**
-	 * Closes all available connections in the pool.
+	 * Closes all currently available connections in the pool.
 	 * 
-	 * This method should be called when the server is closed.
+	 * This method is intended to be called when the server shuts down, in order to
+	 * release database resources properly.
 	 */
 	public synchronized void closeAllConnections() {
 		while (!availableConnections.isEmpty()) {

@@ -8,23 +8,30 @@ import java.sql.Statement;
 import java.util.List;
 
 /**
- * Base class for database connector classes.
+ * Provides a common base for all database connector classes.
+ * 
+ * This class manages the database connection and supplies reusable helper
+ * methods for executing general INSERT and UPDATE operations, as well as
+ * building SELECT queries for subclasses.
  */
 public abstract class AbstractDBConnection {
 
 	protected Connection conn;
 
 	/**
-	 * Connects to the database by taking a connection from the connection pool.
+	 * Opens a database connection by retrieving one from the connection pool.
 	 * 
-	 * @throws SQLException if the connection to the database fails
+	 * @throws SQLException if the connection cannot be obtained
 	 */
 	public void connect() throws SQLException {
 		conn = DBConnectionPool.getInstance().getConnection();
 	}
 
 	/**
-	 * Makes sure the database connection is open.
+	 * Ensures that the current database connection is valid and open.
+	 * 
+	 * If no connection exists, or if the existing connection is closed, a new
+	 * connection is opened from the connection pool.
 	 * 
 	 * @throws SQLException if reconnecting to the database fails
 	 */
@@ -35,40 +42,40 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Saves the DB password entered by the user.
+	 * Stores the database password entered by the user in the connection pool.
 	 * 
-	 * @param dbPassword the database password
+	 * @param dbPassword the database password to store
 	 */
 	public static void setPassword(String dbPassword) {
 		DBConnectionPool.getInstance().setPassword(dbPassword);
 	}
 
 	/**
-	 * Checks if the entered DB password is correct.
+	 * Tests whether the provided database password can establish a connection.
 	 * 
 	 * @param dbPassword the database password to test
-	 * @return true if the connection succeeds, otherwise false
+	 * @return true if the connection test succeeds, otherwise false
 	 */
 	public static boolean testConnection(String dbPassword) {
 		return DBConnectionPool.testConnection(dbPassword);
 	}
 
 	/**
-	 * Returns the table name used by the specific subclass.
+	 * Returns the database table name handled by the specific subclass.
 	 * 
-	 * @return the database table name
+	 * @return the table name used by the connector
 	 */
 	protected abstract String getTableName();
 
 	/**
-	 * General UPDATE query for the table used by the specific subclass.
+	 * Updates fields in the table associated with the current subclass.
 	 * 
-	 * @param columnNames the columns to update
+	 * @param columnNames the names of the columns to update
 	 * @param newValues the new values for the updated columns
 	 * @param keyColumns the columns used in the WHERE clause
-	 * @param keyValues the values used in the WHERE clause
+	 * @param keyValues the values used for the WHERE clause conditions
 	 * @return true if at least one row was updated, otherwise false
-	 * @throws SQLException if the update query fails
+	 * @throws SQLException if the update operation fails
 	 */
 	public boolean updateFields(String[] columnNames, List<Object> newValues,
 			String[] keyColumns, List<Object> keyValues) throws SQLException {
@@ -83,18 +90,18 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * General UPDATE query for a specific database table.
+	 * Updates fields in a specific database table.
 	 * 
-	 * This method is used when a connector needs to update a table that is different
-	 * from the table returned by getTableName().
+	 * This method is used when a connector needs to update a table other than the
+	 * one returned by getTableName().
 	 * 
-	 * @param tableName the table name to update
-	 * @param columnNames the columns to update
+	 * @param tableName the name of the table to update
+	 * @param columnNames the names of the columns to update
 	 * @param newValues the new values for the updated columns
 	 * @param keyColumns the columns used in the WHERE clause
-	 * @param keyValues the values used in the WHERE clause
+	 * @param keyValues the values used for the WHERE clause conditions
 	 * @return true if at least one row was updated, otherwise false
-	 * @throws SQLException if the update query fails
+	 * @throws SQLException if the update operation fails
 	 */
 	protected boolean updateFieldsInTable(String tableName, String[] columnNames,
 			List<Object> newValues, String[] keyColumns, List<Object> keyValues)
@@ -110,15 +117,18 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Executes a general UPDATE query for the given table.
+	 * Executes a general UPDATE statement for the given table.
 	 * 
-	 * @param tableName the table name to update
-	 * @param columnNames the columns to update
+	 * The method builds the SQL statement dynamically according to the columns and
+	 * key fields received as parameters.
+	 * 
+	 * @param tableName the name of the table to update
+	 * @param columnNames the names of the columns to update
 	 * @param newValues the new values for the updated columns
 	 * @param keyColumns the columns used in the WHERE clause
-	 * @param keyValues the values used in the WHERE clause
+	 * @param keyValues the values used for the WHERE clause conditions
 	 * @return true if at least one row was updated, otherwise false
-	 * @throws SQLException if the update query fails
+	 * @throws SQLException if the update operation fails
 	 */
 	private boolean updateFieldsInSpecificTable(String tableName,
 			String[] columnNames, List<Object> newValues,
@@ -183,11 +193,11 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * General INSERT query for the table used by the specific subclass.
+	 * Inserts a new record into the table associated with the current subclass.
 	 * 
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values the values corresponding to columnNames
-	 * @throws SQLException if the insert query fails
+	 * @param columnNames the names of the columns included in the INSERT statement
+	 * @param values the values to insert into the matching columns
+	 * @throws SQLException if the insert operation fails
 	 */
 	public void insertFields(String[] columnNames, List<Object> values)
 			throws SQLException {
@@ -200,15 +210,15 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * General INSERT query for a specific database table.
+	 * Inserts a new record into a specific database table.
 	 * 
-	 * This method is used when a connector needs to insert into a table that is
-	 * different from the table returned by getTableName().
+	 * This method is used when a connector needs to insert into a table other than
+	 * the one returned by getTableName().
 	 * 
-	 * @param tableName the table name to insert into
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values the values corresponding to columnNames
-	 * @throws SQLException if the insert query fails
+	 * @param tableName the name of the table to insert into
+	 * @param columnNames the names of the columns included in the INSERT statement
+	 * @param values the values to insert into the matching columns
+	 * @throws SQLException if the insert operation fails
 	 */
 	protected void insertFieldsInTable(String tableName, String[] columnNames,
 			List<Object> values) throws SQLException {
@@ -221,12 +231,15 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Executes a general INSERT query for the given table.
+	 * Executes a general INSERT statement for the given table.
 	 * 
-	 * @param tableName the table name to insert into
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values the values corresponding to columnNames
-	 * @throws SQLException if the insert query fails
+	 * The method builds the SQL statement dynamically according to the provided
+	 * column names and values.
+	 * 
+	 * @param tableName the name of the table to insert into
+	 * @param columnNames the names of the columns included in the INSERT statement
+	 * @param values the values to insert into the matching columns
+	 * @throws SQLException if the insert operation fails
 	 */
 	private void insertFieldsInSpecificTable(String tableName, String[] columnNames,
 			List<Object> values) throws SQLException {
@@ -278,15 +291,15 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * General INSERT query that returns the generated primary key.
+	 * Inserts a new record into the subclass table and returns the generated key.
 	 * 
-	 * This method is useful when inserting a row into a table with an auto-increment
-	 * primary key.
+	 * This method is mainly used for tables that contain an auto-increment primary
+	 * key.
 	 * 
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values the values corresponding to columnNames
+	 * @param columnNames the names of the columns included in the INSERT statement
+	 * @param values the values to insert into the matching columns
 	 * @return the generated key, or -1 if the insert failed
-	 * @throws SQLException if the insert query fails
+	 * @throws SQLException if the insert operation fails
 	 */
 	public int insertFieldsAndReturnGeneratedKey(String[] columnNames,
 			List<Object> values) throws SQLException {
@@ -299,14 +312,13 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * General INSERT query into a specific table that returns the generated primary
-	 * key.
+	 * Inserts a new record into a specific table and returns the generated key.
 	 * 
-	 * @param tableName the table name to insert into
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values the values corresponding to columnNames
+	 * @param tableName the name of the table to insert into
+	 * @param columnNames the names of the columns included in the INSERT statement
+	 * @param values the values to insert into the matching columns
 	 * @return the generated key, or -1 if the insert failed
-	 * @throws SQLException if the insert query fails
+	 * @throws SQLException if the insert operation fails
 	 */
 	protected int insertFieldsAndReturnGeneratedKeyInTable(String tableName,
 			String[] columnNames, List<Object> values) throws SQLException {
@@ -319,13 +331,16 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Executes an INSERT query for the given table and returns the generated key.
+	 * Executes an INSERT statement for the given table and returns the generated key.
 	 * 
-	 * @param tableName the table name to insert into
-	 * @param columnNames the columns that appear in the INSERT query
-	 * @param values the values corresponding to columnNames
-	 * @return the generated key, or -1 if the insert failed
-	 * @throws SQLException if the insert query fails
+	 * The generated key is retrieved from the database after a successful insert
+	 * operation.
+	 * 
+	 * @param tableName the name of the table to insert into
+	 * @param columnNames the names of the columns included in the INSERT statement
+	 * @param values the values to insert into the matching columns
+	 * @return the generated key, or -1 if the insert failed or no key was returned
+	 * @throws SQLException if the insert operation fails
 	 */
 	private int insertFieldsAndReturnGeneratedKeyInSpecificTable(String tableName,
 			String[] columnNames, List<Object> values) throws SQLException {
@@ -386,12 +401,12 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Builds a SELECT query for the table used by the specific subclass.
+	 * Builds a SELECT query for the table associated with the current subclass.
 	 * 
-	 * If keyColumns is null or empty, the query will not contain a WHERE clause.
-	 * If keyColumns has values, the conditions will be connected with AND.
+	 * If no columns are provided, all columns are selected. If key columns are
+	 * provided, they are added as WHERE conditions connected with AND.
 	 * 
-	 * @param columnNames the columns to select
+	 * @param columnNames the names of the columns to select, or null to select all
 	 * @param keyColumns the columns used in the WHERE clause
 	 * @return the generated SELECT query
 	 */
@@ -428,9 +443,10 @@ public abstract class AbstractDBConnection {
 	/**
 	 * Builds a SELECT query with WHERE conditions connected by AND.
 	 * 
-	 * This method is kept for compatibility with older code.
+	 * This method delegates to selectByFields and is kept for compatibility with
+	 * older code.
 	 * 
-	 * @param columnNames the columns to select
+	 * @param columnNames the names of the columns to select, or null to select all
 	 * @param keyColumns the columns used in the WHERE clause
 	 * @return the generated SELECT query
 	 */
@@ -439,12 +455,12 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Builds a SELECT query with FOR UPDATE.
+	 * Builds a SELECT query that locks the selected rows for update.
 	 * 
-	 * This method is used inside transactions when the selected row must be locked
-	 * until commit or rollback.
+	 * This method is intended for transaction-based operations where selected rows
+	 * must remain locked until the transaction is committed or rolled back.
 	 * 
-	 * @param columnNames the columns to select
+	 * @param columnNames the names of the columns to select, or null to select all
 	 * @param keyColumns the columns used in the WHERE clause
 	 * @return the generated SELECT FOR UPDATE query
 	 */
@@ -461,7 +477,9 @@ public abstract class AbstractDBConnection {
 	}
 
 	/**
-	 * Returns the DB connection to the connection pool.
+	 * Releases the current database connection back to the connection pool.
+	 * 
+	 * After the connection is released, the local connection reference is cleared.
 	 * 
 	 * @throws SQLException if releasing the connection fails
 	 */

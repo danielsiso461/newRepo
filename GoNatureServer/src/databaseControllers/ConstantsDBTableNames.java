@@ -1,103 +1,105 @@
 package databaseControllers;
 
 /**
- * This class holds constant names of tables and views
- * that exist in the database.
+ * Contains constant names for database tables and views.
+ * 
+ * This utility class centralizes table and view names used by the database
+ * connector classes, reducing hard-coded strings throughout the project.
  */
 public final class ConstantsDBTableNames {
 
 	/**
-	 * The name of the order table.
+	 * Database table that stores park orders.
 	 */
 	protected static final String ORDER = "order";
 
 	/**
-	 * The name of the employee table.
+	 * Database table that stores employee details.
 	 */
 	protected static final String EMPLOYEE = "employee";
 
 	/**
-	 * The name of the bill table.
+	 * Database table that stores payment bill records.
 	 */
 	protected static final String BILL = "bill";
 
 	/**
-	 * The name of the entry pricing model table.
+	 * Database table that stores entry pricing model data.
 	 */
 	protected static final String ENTRY_PRICING_MODEL = "entry_pricing_model";
 
 	/**
-	 * The name of the guide table.
+	 * Database table that stores guide details.
 	 */
 	protected static final String GUIDE = "guide";
 
 	/**
-	 * The name of the park table.
+	 * Database table that stores park details.
 	 */
 	protected static final String PARK = "park";
 
 	/**
-	 * The name of the subscriber table.
+	 * Database table that stores subscriber details.
 	 */
 	protected static final String SUBSCRIBER = "subscriber";
 
 	/**
-	 * The name of the visit table.
+	 * Database table that stores actual visit records.
 	 */
 	protected static final String VISIT = "visit";
 
 	/**
-	 * The name of the waiting list table.
+	 * Database table that stores waiting list records.
 	 */
 	protected static final String WAITING_LIST = "waiting_list";
 
 	/**
-	 * The name of the notification table.
+	 * Database table that stores system notifications.
 	 */
 	protected static final String NOTIFICATION = "notification";
 
 	/**
-	 * The name of the park parameter change request table.
+	 * Database table that stores park parameter change requests.
 	 */
 	protected static final String PARK_PARAMETER_CHANGE_REQUEST = "park_parameter_change_request";
 
 	/**
-	 * The name of the visit duration report view.
+	 * Database view used for visit duration reports.
 	 */
 	protected static final String VISIT_DURATION_REPORT = "visit_duration_report";
 
 	/**
-	 * The name of the cancellation report view.
+	 * Database view used for cancellation reports.
 	 */
 	protected static final String CANCELLATION_REPORT = "cancellation_report";
 
 	/**
-	 * The name of the visit price calculation view.
+	 * Database view used for calculating visit prices.
 	 */
 	protected static final String VISIT_PRICE_CALCULATION = "visit_price_calculation";
 
 	/**
-	 * The name of the visitor report by type view.
+	 * Database view used for visitor reports grouped by visitor type.
 	 */
 	protected static final String VISITOR_REPORT_BY_TYPE = "visitor_report_by_type";
 
 	/**
-	 * The name of the notification report view.
+	 * Database view used for notification reports.
 	 */
 	protected static final String NOTIFICATION_REPORT = "notification_report";
 
 	/**
-	 * The name of the park usage report view.
+	 * Database view used for park usage reports.
 	 */
 	protected static final String PARK_USAGE_REPORT = "park_usage_report";
 
 	/**
-	 * The name of the revenue report by park view.
+	 * Database view used for revenue reports grouped by park.
 	 */
 	protected static final String REVENUE_REPORT_BY_PARK = "revenue_report_by_park";
 
 	/**
-	 * Private constructor to prevent object creation.
+	 * Private constructor to prevent instantiation of this utility class.
 	 */
 	private ConstantsDBTableNames() {
 	}
